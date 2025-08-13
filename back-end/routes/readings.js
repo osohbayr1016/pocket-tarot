@@ -1,9 +1,21 @@
 const express = require("express");
 const { body, validationResult } = require("express-validator");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Reading = require("../models/Reading");
 const User = require("../models/User");
 
 const router = express.Router();
+
+// Check if API key is available
+const hasValidApiKey =
+  process.env.GEMINI_API_KEY &&
+  process.env.GEMINI_API_KEY !== "your_gemini_api_key_here" &&
+  process.env.GEMINI_API_KEY.length > 20;
+
+// Initialize Gemini AI only if we have a valid key
+const genAI = hasValidApiKey
+  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  : null;
 
 // Validation middleware
 const validateReading = [

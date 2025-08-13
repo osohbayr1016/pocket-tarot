@@ -10,10 +10,12 @@ export default function Navigation({
   onSectionChange,
 }: NavigationProps) {
   const sections = [
-    { id: "tarot", name: "🔮 Таро Уншилт", icon: "🔮" },
+    { id: "traditional-tarot", name: "🔮 Уламжлалт Таро", icon: "🔮" },
+    { id: "tarot", name: "🎴 Энгийн Таро", icon: "🎴" },
     { id: "dreams", name: "💭 Зүүдний Тайлал", icon: "💭" },
     { id: "horoscope", name: "⭐ Зурхайн Зурлага", icon: "⭐" },
     { id: "fortune", name: "🎯 Өдрийн Хувь", icon: "🎯" },
+    { id: "guidance", name: "🌟 Амьдралын Зөвлөмж", icon: "🌟" },
   ];
 
   return (

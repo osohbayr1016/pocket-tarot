@@ -29,6 +29,12 @@ export default function CardReading({
   const [question, setQuestion] = useState("");
   const [notes, setNotes] = useState("");
   const [mood, setMood] = useState("тодорхойгүй");
+  const [aiInterpretation, setAiInterpretation] = useState("");
+  const [isGettingAiInterpretation, setIsGettingAiInterpretation] =
+    useState(false);
+  const [showAiInterpretation, setShowAiInterpretation] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [isAiMock, setIsAiMock] = useState(false);
 
   const BASE_URL =
     process.env.NODE_ENV === "production"
@@ -51,6 +57,55 @@ export default function CardReading({
       clearTimeout(readingTimer);
     };
   }, []);
+
+  const getAiInterpretation = async () => {
+    setIsGettingAiInterpretation(true);
+    setAiError("");
+    setAiInterpretation("");
+    setIsAiMock(false);
+    setShowAiInterpretation(false);
+
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/api/ai/tarot-interpret`,
+        {
+          card,
+          question: question || userQuestion,
+          userContext: notes,
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }
+      );
+      const data = response.data;
+      if (data.success) {
+        setTimeout(() => {
+          setAiInterpretation(data.interpretation);
+          setIsAiMock(Boolean(data.isMock));
+          setShowAiInterpretation(true);
+          setIsGettingAiInterpretation(false);
+        }, 1200);
+      } else {
+        setAiError(data.message);
+        setShowAiInterpretation(false);
+        setIsGettingAiInterpretation(false);
+      }
+    } catch (error: any) {
+      if (error.response) {
+        setAiError(
+          error.response.data.message ||
+            `Серверийн алдаа: ${error.response.status}`
+        );
+      } else if (error.request) {
+        setAiError("Серверээс хариу ирсэнгүй. Сүлжээний алдаа байж магадгүй.");
+      } else {
+        setAiError("Алдаа: " + error.message);
+      }
+      setShowAiInterpretation(false);
+      setIsGettingAiInterpretation(false);
+    }
+  };
 
   const handleSaveReading = async () => {
     if (!user) {
@@ -122,6 +177,87 @@ export default function CardReading({
             <p className="text-lg text-pink-100 leading-relaxed">
               {card.future}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* AI Interpretation Section */}
+      {showReading && (
+        <div className="mb-8 animate-fade-in">
+          <div className="bg-gradient-to-r from-blue-800/30 to-indigo-800/30 backdrop-blur-sm rounded-lg p-6 border border-blue-400/20 max-w-2xl mx-auto">
+            <h2 className="text-2xl font-semibold mb-4 text-blue-200">
+              🤖 AI Тарт Тайлал 🤖
+            </h2>
+
+            {!showAiInterpretation && !isGettingAiInterpretation && (
+              <div className="text-center">
+                <p className="text-blue-100 mb-4">
+                  AI-ийн тусламжтайгаар илүү дэлгэрэнгүй, хувийн тарт тайлал
+                  авах
+                </p>
+                <button
+                  onClick={getAiInterpretation}
+                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                >
+                  🤖 AI Тайлал Авах
+                </button>
+              </div>
+            )}
+
+            {/* Show loading spinner while getting AI interpretation */}
+            {isGettingAiInterpretation && (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
+                <p className="text-blue-200 text-lg">AI тайлал хийж байна...</p>
+              </div>
+            )}
+
+            {/* Show AI interpretation result */}
+            {showAiInterpretation && aiInterpretation && (
+              <div className="text-left">
+                <pre className="text-lg text-blue-100 leading-relaxed whitespace-pre-wrap font-sans">
+                  {aiInterpretation}
+                </pre>
+              </div>
+            )}
+
+            {/* Show error if exists */}
+            {!isGettingAiInterpretation && aiError && (
+              <div className="text-center text-red-400 font-semibold py-4">
+                {aiError}
+              </div>
+            )}
+
+            {/* Show mock notice */}
+            {isAiMock && (
+              <div className="mt-4 p-3 bg-yellow-800/30 rounded-lg border border-yellow-400/20">
+                <p className="text-yellow-200 text-sm">
+                  💡 Энэ бол туршилтын хариулт юм. Жинхэнэ AI тайлалд Gemini API
+                  түлхүүр шаардлагатай.
+                  <br />
+                  <a
+                    href="https://makersuite.google.com/app/apikey"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-yellow-300 underline hover:text-yellow-100"
+                  >
+                    API түлхүүр авах
+                  </a>
+                </p>
+              </div>
+            )}
+
+            {/* Get new AI interpretation button */}
+            {showAiInterpretation && !isGettingAiInterpretation && (
+              <div className="text-center mt-4">
+                <button
+                  onClick={getAiInterpretation}
+                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                >
+                  🔄 Дахин AI Тайлал Авах
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

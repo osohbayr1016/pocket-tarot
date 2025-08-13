@@ -8,6 +8,8 @@ import Navigation from "./components/Navigation";
 import DreamInterpretation from "./components/DreamInterpretation";
 import Horoscope from "./components/Horoscope";
 import DailyFortune from "./components/DailyFortune";
+import LifeGuidance from "./components/LifeGuidance";
+import TraditionalTarotReading from "./components/TraditionalTarotReading";
 import { tarotCards, TarotCard as TarotCardType } from "./data/tarotCards";
 import axios from "axios";
 
@@ -22,7 +24,7 @@ export default function Home() {
   const [shuffling, setShuffling] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [activeSection, setActiveSection] = useState("tarot");
+  const [activeSection, setActiveSection] = useState("traditional-tarot");
 
   const [canSelect, setCanSelect] = useState(true);
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(
@@ -40,6 +42,7 @@ export default function Home() {
   const [readingsLoading, setReadingsLoading] = useState(false);
   const [readingsError, setReadingsError] = useState("");
   const [readingsFetched, setReadingsFetched] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(true);
 
   const selectCard = (card: TarotCardType, index: number) => {
     if (shuffling || shufflePhase !== "idle") return; // Prevent selection during shuffling
@@ -96,7 +99,12 @@ export default function Home() {
         })
         .catch(() => {
           localStorage.removeItem("tarot_token");
+        })
+        .finally(() => {
+          setIsPageLoading(false);
         });
+    } else {
+      setIsPageLoading(false);
     }
 
     // Check for auth error in URL
@@ -222,20 +230,33 @@ export default function Home() {
       />
 
       <div className="relative z-10 container mx-auto px-4 py-8">
+        {/* Loading Screen */}
+        {isPageLoading && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-400 mx-auto mb-4"></div>
+              <p className="text-purple-200 text-lg">
+                Pocket Tarot ачааллаж байна...
+              </p>
+            </div>
+          </div>
+        )}
         {/* Header */}
-        <header className="text-center mb-12">
+        <header className="text-center mb-12 animate-fade-in">
           <div className="flex justify-between items-center mb-8">
             <div></div>
-            <h1 className="text-5xl md:text-7xl font-bold">Pocket Tarot</h1>
+            <h1 className="text-5xl md:text-7xl font-bold animate-mystical-shimmer bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+              Pocket Tarot
+            </h1>
             <div className="flex items-center gap-4">
               {user ? (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 animate-scale-in">
                   <span className="text-purple-200 text-sm">
-                    Сайн байна, {user.firstName}!
+                    Сайн байна, {user.firstName}! ✨
                   </span>
                   <button
                     onClick={handleLogout}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-full transition-colors"
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-full transition-all duration-300 hover:scale-105"
                   >
                     Гарах
                   </button>
@@ -243,21 +264,177 @@ export default function Home() {
               ) : (
                 <button
                   onClick={() => setShowAuthModal(true)}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-full transition-colors"
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-full transition-all duration-300 hover:scale-105 animate-pulse-glow"
                 >
                   Нэвтрэх
                 </button>
               )}
             </div>
           </div>
-          <p className="text-xl text-purple-200 max-w-2xl mx-auto">
+          <p className="text-xl text-purple-200 max-w-2xl mx-auto animate-slide-in-left">
             Pocket Tarot ертөнцийн эртний мэргэн ухаанаар хувь заяагаа нээ.
-            Таро, зүүдний тайлал, зурхай, өдрийн хувь.
+            Таро, зүүдний тайлал, зурхай, өдрийн хувь, амьдралын зөвлөмж.
           </p>
         </header>
 
         {/* Main content */}
         <main className="max-w-6xl mx-auto">
+          {activeSection === "tarot" && (
+            <>
+              {!isReading ? (
+                <div className="text-center">
+                  {/* Question Input Section */}
+                  {showQuestionInput && (
+                    <div className="mb-12">
+                      <div className="bg-purple-800/30 backdrop-blur-sm rounded-lg p-8 border border-purple-400/20 max-w-2xl mx-auto">
+                        <h2 className="text-3xl font-bold mb-6 text-purple-200">
+                          🔮 Асуултаа Асуу 🔮
+                        </h2>
+                        <p className="text-lg text-purple-200 mb-6">
+                          Картуудад асуултаа асуу, тэд танд хариулт өгнө
+                        </p>
+                        <div className="space-y-4">
+                          <textarea
+                            value={userQuestion}
+                            onChange={(e) => setUserQuestion(e.target.value)}
+                            placeholder="Жишээ: Миний ирээдүй ямар байх вэ? Миний хайр ямар байх вэ? Миний ажил ямар байх вэ?"
+                            rows={4}
+                            className="w-full px-4 py-3 bg-white/10 border border-purple-400/30 rounded-lg text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none text-lg"
+                          />
+                          <div className="text-sm text-purple-300">
+                            💡 Зөвлөмж: Тодорхой, эерэг асуулт асууна уу
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* All Tarot Cards Display */}
+                  <div className="mb-12">
+                    <h2 className="text-3xl font-bold mb-8 text-purple-200">
+                      🔮 Нууцлаг Таро Картууд 🔮
+                    </h2>
+                    <div className="relative grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-11 gap-2 md:gap-3 p-4 md:p-6 bg-purple-900/20 rounded-lg border border-purple-400/20 max-w-5xl mx-auto animate-smooth-in">
+                      {/* Center point indicator during shuffle */}
+                      {shufflePhase === "shuffling" && (
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-purple-400 rounded-full opacity-50 animate-pulse z-10"></div>
+                      )}
+                      {tarotCards.map((card, index) => (
+                        <div
+                          key={index}
+                          onClick={() => selectCard(card, index)}
+                          className={`relative cursor-pointer transform transition-all duration-300 hover:scale-110 ${
+                            shufflePhase === "shuffling"
+                              ? "animate-shuffle"
+                              : ""
+                          } ${
+                            selectedCardIndex === index
+                              ? "animate-selected"
+                              : ""
+                          }`}
+                          style={
+                            {
+                              animationDelay:
+                                shufflePhase === "shuffling"
+                                  ? `${index * 0.1}s`
+                                  : "0s",
+                              "--start-x": `${((index % 11) - 5) * 25}px`,
+                              "--start-y": `${
+                                (Math.floor(index / 11) - 1) * 35
+                              }px`,
+                            } as React.CSSProperties
+                          }
+                        >
+                          <div className="w-16 h-24 sm:w-18 sm:h-26 md:w-20 md:h-28 bg-gradient-to-br from-purple-600 to-indigo-800 rounded-lg shadow-lg border-2 border-purple-400/30 hover:border-purple-300/50 cursor-pointer transition-all duration-300">
+                            <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent rounded-lg"></div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="text-center">
+                                <div className="text-2xl text-purple-300/30">
+                                  ?
+                                </div>
+                              </div>
+                            </div>
+                            {/* Mystical overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-indigo-900/40 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Instructions */}
+                  <div className="mb-8">
+                    <h2 className="text-2xl font-semibold mb-4 text-purple-200">
+                      🔮 Таро Уншилтын Заавар 🔮
+                    </h2>
+                    <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+                      <div className="bg-purple-800/30 backdrop-blur-sm rounded-lg p-6 border border-purple-400/20">
+                        <div className="text-3xl mb-3">1️⃣</div>
+                        <h3 className="font-semibold mb-2">
+                          Сэтгэлээ Төвлөрүүл
+                        </h3>
+                        <p className="text-sm text-purple-200">
+                          Бодлоо цэвэрлэж, ирээдүйд талаар юу мэдэхийг хүсэж
+                          байгаагаа төвлөрүүл.
+                        </p>
+                      </div>
+                      <div className="bg-purple-800/30 backdrop-blur-sm rounded-lg p-6 border border-purple-400/20">
+                        <div className="text-3xl mb-3">2️⃣</div>
+                        <h3 className="font-semibold mb-2">Картуудыг Холих</h3>
+                        <p className="text-sm text-purple-200">
+                          Картуудыг холих товчийг дарж, энергийг цэвэрлэ.
+                        </p>
+                      </div>
+                      <div className="bg-purple-800/30 backdrop-blur-sm rounded-lg p-6 border border-purple-400/20">
+                        <div className="text-3xl mb-3">3️⃣</div>
+                        <h3 className="font-semibold mb-2">Картаа Сонго</h3>
+                        <p className="text-sm text-purple-200">
+                          Таныг дуудаж байгаа картыг сонго, уншилтаа хүлээн ав.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Shuffle and instructions */}
+                  <div className="space-y-6">
+                    <button
+                      onClick={shuffleCards}
+                      disabled={shuffling}
+                      className="px-8 py-4 bg-gradient-to-r from-blue-950 to-blue-900 hover:from-black hover:to-blue-950 text-white font-semibold rounded-full text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {shuffling ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                          {shufflePhase === "shuffling"
+                            ? "Картуудыг Холиж Байна..."
+                            : ""}
+                        </div>
+                      ) : (
+                        "🔄 Картуудыг Холих 🔄"
+                      )}
+                    </button>
+
+                    <div className="text-purple-200 text-lg">
+                      <p>💫 Бүрэн нууцлаг картуудаас нэгийг сонгоно уу 💫</p>
+                      <p className="text-sm mt-2">
+                        Сэтгэлээ төвлөрүүлж, таныг дуудаж байгаа картыг сонгоно
+                        уу
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : selectedCard ? (
+                <CardReading
+                  card={selectedCard}
+                  onReset={resetReading}
+                  user={user}
+                  onLogin={handleLogin}
+                  userQuestion={userQuestion}
+                />
+              ) : null}
+            </>
+          )}
+
           {activeSection === "tarot" && (
             <>
               {!isReading ? (
@@ -413,10 +590,18 @@ export default function Home() {
               ) : null}
             </>
           )}
-
+          {activeSection === "traditional-tarot" && (
+            <TraditionalTarotReading
+              onReset={resetReading}
+              user={user}
+              onLogin={handleLogin}
+              userQuestion={userQuestion}
+            />
+          )}
           {activeSection === "dreams" && <DreamInterpretation />}
           {activeSection === "horoscope" && <Horoscope />}
           {activeSection === "fortune" && <DailyFortune />}
+          {activeSection === "guidance" && <LifeGuidance />}
 
           {/* Example buttons for PUT/DELETE/GET */}
           <div className="flex gap-4 justify-center my-8">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import axios from "axios";
 
 export default function DailyFortune() {
   const [fortune, setFortune] = useState("");
@@ -8,34 +9,64 @@ export default function DailyFortune() {
   const [birthMonth, setBirthMonth] = useState("");
   const [birthDay, setBirthDay] = useState("");
   const [showBirthInput, setShowBirthInput] = useState(true);
+  const [userContext, setUserContext] = useState("");
+  const [error, setError] = useState("");
+  const [isMock, setIsMock] = useState(false);
 
-  const getDailyFortune = () => {
+  const BASE_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://pocket-tarot-slp7.onrender.com"
+      : "http://localhost:5001";
+
+  const getDailyFortune = async () => {
     if (!birthMonth || !birthDay) {
       alert("Төрсөн сар, өдрөө сонгоно уу!");
       return;
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      const fortunes = [
-        "Өнөөдөр танд маш амжилттай өдөр байна! Шинэ боломжууд нээгдэж, таны хүсэл мөрөөдөл биелэх боломжтой.",
-        "Одоогийн байдлаар тайвшрал, төвлөрөл хэрэгтэй. Тэвчээртэй байснаар амжилтд хүрнэ.",
-        "Таны харилцааны хэлбэр сайжирч байна. Хүмүүстэй уулзалт, яриа чухал болно.",
-        "Мэргэжлийн амьдралд өөрчлөлт ирэх боломжтой. Шинэ санаа, төсөл хэрэгтэй.",
-        "Эрүүл мэндээ анхаар. Амрах цаг гаргаж, сэтгэл санаагаа цэвэрлэ.",
-        "Гэр бүлийн хүмүүстэй цагийг өнгөрүүлэх нь чухал. Хайр, дэмжлэг хэрэгтэй.",
-        "Санхүүгийн асуудалд болгоомжтой бай. Хэт их зарцуулахаас сэргийл.",
-        "Боловсрол, мэдлэгт анхаар. Шинэ зүйл сурах цаг ирлээ.",
-        "Аялал, аялгуу танд амжилттай болно. Шинэ газар, хүмүүстэй танилцах боломжтой.",
-        "Хувь хөгжлийн цаг. Өөрийгөө сайжруулах, шинэ урлаг сурах цаг.",
-      ];
+    setError("");
+    setFortune("");
+    setIsMock(false);
 
-      const randomFortune =
-        fortunes[Math.floor(Math.random() * fortunes.length)];
-      setFortune(randomFortune);
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/api/ai/daily-fortune`,
+        {
+          birthMonth,
+          birthDay,
+          userContext,
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }
+      );
+      const data = response.data;
+      if (data.success) {
+        setTimeout(() => {
+          setFortune(data.fortune);
+          setIsMock(Boolean(data.isMock));
+          setIsLoading(false);
+          setShowBirthInput(false);
+        }, 1200);
+      } else {
+        setError(data.message);
+        setIsLoading(false);
+      }
+    } catch (error: any) {
+      if (error.response) {
+        setError(
+          error.response.data.message ||
+            `Серверийн алдаа: ${error.response.status}`
+        );
+      } else if (error.request) {
+        setError("Серверээс хариу ирсэнгүй. Сүлжээний алдаа байж магадгүй.");
+      } else {
+        setError("Алдаа: " + error.message);
+      }
       setIsLoading(false);
-      setShowBirthInput(false);
-    }, 2000);
+    }
   };
 
   const resetFortune = () => {
@@ -110,6 +141,20 @@ export default function DailyFortune() {
                   ))}
                 </select>
               </div>
+
+              {/* User Context Input */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-purple-200 mb-2">
+                  Нэмэлт мэдээлэл (сонгох боломжтой)
+                </label>
+                <textarea
+                  value={userContext}
+                  onChange={(e) => setUserContext(e.target.value)}
+                  placeholder="Жишээ: Одоогийн амьдралын нөхцөл байдал, хүсэл мөрөөдөл, санаа зовниж буй асуудал..."
+                  rows={3}
+                  className="w-full px-3 py-2 bg-white/10 border border-purple-400/30 rounded-md text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"
+                />
+              </div>
             </div>
           </div>
         )}
@@ -134,6 +179,13 @@ export default function DailyFortune() {
           </div>
         )}
 
+        {/* Error Display */}
+        {error && (
+          <div className="text-center text-red-400 font-semibold py-4">
+            {error}
+          </div>
+        )}
+
         {/* Fortune Result */}
         {fortune && (
           <div className="space-y-6">
@@ -141,9 +193,30 @@ export default function DailyFortune() {
               <h3 className="text-3xl font-bold mb-6 text-green-200">
                 ✨ Өнөөдрийн Хувь ✨
               </h3>
-              <p className="text-xl text-green-100 leading-relaxed mb-8">
-                {fortune}
-              </p>
+              <div className="text-left">
+                <pre className="text-xl text-green-100 leading-relaxed mb-8 whitespace-pre-wrap font-sans">
+                  {fortune}
+                </pre>
+              </div>
+
+              {/* Mock notice */}
+              {isMock && (
+                <div className="mt-4 p-3 bg-yellow-800/30 rounded-lg border border-yellow-400/20">
+                  <p className="text-yellow-200 text-sm">
+                    💡 Энэ бол туршилтын хариулт юм. Жинхэнэ AI хувьд Gemini API
+                    түлхүүр шаардлагатай.
+                    <br />
+                    <a
+                      href="https://makersuite.google.com/app/apikey"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-yellow-300 underline hover:text-yellow-100"
+                    >
+                      API түлхүүр авах
+                    </a>
+                  </p>
+                </div>
+              )}
 
               {/* Lucky Elements */}
               <div className="grid md:grid-cols-3 gap-6">

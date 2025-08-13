@@ -1,11 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import axios from "axios";
 
 export default function Horoscope() {
   const [selectedSign, setSelectedSign] = useState("");
   const [horoscope, setHoroscope] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [birthDate, setBirthDate] = useState("");
+  const [userContext, setUserContext] = useState("");
+  const [error, setError] = useState("");
+  const [isMock, setIsMock] = useState(false);
+
+  const BASE_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://pocket-tarot-slp7.onrender.com"
+      : "http://localhost:5001";
 
   const zodiacSigns = [
     { id: "aries", name: "Хонь", emoji: "♈", dates: "3.21-4.19" },
@@ -22,29 +32,51 @@ export default function Horoscope() {
     { id: "pisces", name: "Загас", emoji: "♓", dates: "2.19-3.20" },
   ];
 
-  const getHoroscope = () => {
+  const getHoroscope = async () => {
     if (!selectedSign) return;
 
     setIsLoading(true);
-    setTimeout(() => {
-      const horoscopes = [
-        "Өнөөдөр танд амжилттай өдөр байна. Шинэ боломжууд нээгдэж, таны хүсэл мөрөөдөл биелэх боломжтой.",
-        "Одоогийн байдлаар тайвшрал хэрэгтэй. Төвлөрөл, тэвчээртэй байснаар амжилтд хүрнэ.",
-        "Таны харилцааны хэлбэр сайжирч байна. Хүмүүстэй уулзалт, яриа чухал болно.",
-        "Мэргэжлийн амьдралд өөрчлөлт ирэх боломжтой. Шинэ санаа, төсөл хэрэгтэй.",
-        "Эрүүл мэндээ анхаар. Амрах цаг гаргаж, сэтгэл санаагаа цэвэрлэ.",
-        "Гэр бүлийн хүмүүстэй цагийг өнгөрүүлэх нь чухал. Хайр, дэмжлэг хэрэгтэй.",
-        "Санхүүгийн асуудалд болгоомжтой бай. Хэт их зарцуулахаас сэргийл.",
-        "Боловсрол, мэдлэгт анхаар. Шинэ зүйл сурах цаг ирлээ.",
-        "Аялал, аялгуу танд амжилттай болно. Шинэ газар, хүмүүстэй танилцах боломжтой.",
-        "Хувь хөгжлийн цаг. Өөрийгөө сайжруулах, шинэ урлаг сурах цаг.",
-      ];
+    setError("");
+    setHoroscope("");
+    setIsMock(false);
 
-      const randomHoroscope =
-        horoscopes[Math.floor(Math.random() * horoscopes.length)];
-      setHoroscope(randomHoroscope);
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/api/ai/horoscope`,
+        {
+          zodiacSign: selectedSign,
+          birthDate,
+          userContext,
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }
+      );
+      const data = response.data;
+      if (data.success) {
+        setTimeout(() => {
+          setHoroscope(data.horoscope);
+          setIsMock(Boolean(data.isMock));
+          setIsLoading(false);
+        }, 1200);
+      } else {
+        setError(data.message);
+        setIsLoading(false);
+      }
+    } catch (error: any) {
+      if (error.response) {
+        setError(
+          error.response.data.message ||
+            `Серверийн алдаа: ${error.response.status}`
+        );
+      } else if (error.request) {
+        setError("Серверээс хариу ирсэнгүй. Сүлжээний алдаа байж магадгүй.");
+      } else {
+        setError("Алдаа: " + error.message);
+      }
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   return (
@@ -83,23 +115,63 @@ export default function Horoscope() {
           </div>
         </div>
 
-        {/* Get Horoscope Button */}
+        {/* Additional Input Fields */}
         {selectedSign && (
           <div className="bg-gradient-to-r from-pink-800/30 to-purple-800/30 backdrop-blur-sm rounded-lg p-6 border border-pink-400/20">
-            <button
-              onClick={getHoroscope}
-              disabled={isLoading}
-              className="px-8 py-4 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-semibold rounded-full text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Оддыг Уншиж Байна...
-                </div>
-              ) : (
-                "⭐ Өнөөдрийн Зурлага ⭐"
-              )}
-            </button>
+            <h3 className="text-xl font-semibold mb-4 text-pink-200">
+              📝 Нэмэлт Мэдээлэл 📝
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-pink-200 mb-2">
+                  Төрсөн огноо (сонгох боломжтой)
+                </label>
+                <input
+                  type="date"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/10 border border-pink-400/30 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-pink-200 mb-2">
+                  Нэмэлт мэдээлэл (сонгох боломжтой)
+                </label>
+                <textarea
+                  value={userContext}
+                  onChange={(e) => setUserContext(e.target.value)}
+                  placeholder="Жишээ: Одоогийн амьдралын нөхцөл байдал, хүсэл мөрөөдөл, санаа зовниж буй асуудал..."
+                  rows={3}
+                  className="w-full px-3 py-2 bg-white/10 border border-pink-400/30 rounded-md text-white placeholder-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-400 resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 text-center">
+              <button
+                onClick={getHoroscope}
+                disabled={isLoading}
+                className="px-8 py-4 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-semibold rounded-full text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Оддыг Уншиж Байна...
+                  </div>
+                ) : (
+                  "⭐ Өнөөдрийн Зурлага ⭐"
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Error Display */}
+        {error && (
+          <div className="text-center text-red-400 font-semibold py-4">
+            {error}
           </div>
         )}
 
@@ -109,7 +181,30 @@ export default function Horoscope() {
             <h3 className="text-2xl font-semibold mb-4 text-blue-200">
               ✨ Өнөөдрийн Зурлага ✨
             </h3>
-            <p className="text-lg text-blue-100 leading-relaxed">{horoscope}</p>
+            <div className="text-left">
+              <pre className="text-lg text-blue-100 leading-relaxed whitespace-pre-wrap font-sans">
+                {horoscope}
+              </pre>
+            </div>
+
+            {/* Mock notice */}
+            {isMock && (
+              <div className="mt-4 p-3 bg-yellow-800/30 rounded-lg border border-yellow-400/20">
+                <p className="text-yellow-200 text-sm">
+                  💡 Энэ бол туршилтын хариулт юм. Жинхэнэ AI зурлагад Gemini
+                  API түлхүүр шаардлагатай.
+                  <br />
+                  <a
+                    href="https://makersuite.google.com/app/apikey"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-yellow-300 underline hover:text-yellow-100"
+                  >
+                    API түлхүүр авах
+                  </a>
+                </p>
+              </div>
+            )}
           </div>
         )}
 

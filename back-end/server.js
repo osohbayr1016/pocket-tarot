@@ -14,6 +14,7 @@ require("dotenv").config({ path: envPath });
 const authRoutes = require("./routes/auth");
 const readingRoutes = require("./routes/readings");
 const dreamRoutes = require("./routes/dreams");
+const aiRoutes = require("./routes/ai");
 const { authenticateToken } = require("./middleware/auth");
 const passport = require("./config/passport");
 const sequelize = require("./sequelize");
@@ -105,6 +106,7 @@ connectDB();
 app.use("/api/auth", authRoutes);
 app.use("/api/readings", authenticateToken, readingRoutes);
 app.use("/api/dreams", dreamRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

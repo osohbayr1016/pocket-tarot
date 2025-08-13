@@ -8,6 +8,7 @@ interface TarotCardProps {
   isRevealed?: boolean;
   onClick?: () => void;
   userQuestion?: string;
+  isReversed?: boolean;
 }
 
 export default function TarotCard({
@@ -15,6 +16,7 @@ export default function TarotCard({
   isRevealed = false,
   onClick,
   userQuestion,
+  isReversed = false,
 }: TarotCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -65,7 +67,11 @@ export default function TarotCard({
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Card front */}
-      <div className="absolute inset-0 bg-gradient-to-br from-amber-100 via-yellow-100 to-orange-100 rounded-lg shadow-2xl border-2 border-amber-400/50 transform transition-transform duration-300 hover:rotate-1">
+      <div
+        className={`absolute inset-0 bg-gradient-to-br from-amber-100 via-yellow-100 to-orange-100 rounded-lg shadow-2xl border-2 border-amber-400/50 transform transition-transform duration-300 hover:rotate-1 ${
+          isReversed ? "rotate-180" : ""
+        }`}
+      >
         <div className="absolute inset-0 bg-gradient-to-br from-amber-400/10 to-transparent rounded-lg"></div>
 
         {/* Card header */}
@@ -96,8 +102,15 @@ export default function TarotCard({
               ✨ Картын Хариулт ✨
             </h4>
             <p className="text-gray-700 text-sm leading-relaxed font-semibold">
-              {card.meaning}
+              {isReversed && card.reversedMeaning
+                ? card.reversedMeaning
+                : card.meaning}
             </p>
+            {isReversed && (
+              <div className="mt-2 text-xs text-red-600 font-bold">
+                🔄 Урвуу карт
+              </div>
+            )}
           </div>
         </div>
 
