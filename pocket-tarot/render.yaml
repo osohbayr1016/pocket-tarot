@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: pocket-tarot-backend
+    env: node
+    plan: free
+    buildCommand: cd back-end && npm install
+    startCommand: cd back-end && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5001
+      - key: MONGODB_URI
+        sync: false  # Set this manually in Render dashboard
+      - key: JWT_SECRET
+        sync: false  # Set this manually in Render dashboard
+      - key: GEMINI_API_KEY
+        sync: false  # Set this manually in Render dashboard

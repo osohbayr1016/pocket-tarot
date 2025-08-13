@@ -1,0 +1,33 @@
+{
+  "name": "pocket-tarot",
+  "version": "1.0.0",
+  "description": "Pocket Tarot - Mystical Tarot Reading Website",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd back-end && npm run dev",
+    "dev:frontend": "cd front-end && npm run dev",
+    "build": "npm run build:frontend",
+    "build:frontend": "cd front-end && npm run build",
+    "build:backend": "cd back-end && npm run build",
+    "start": "cd back-end && npm start",
+    "start:frontend": "cd front-end && npm start",
+    "install:all": "npm install && cd front-end && npm install && cd ../back-end && npm install",
+    "deploy:prepare": "npm run install:all && npm run build",
+    "deploy:vercel": "cd front-end && vercel --prod",
+    "deploy:backend": "cd back-end && npm run deploy"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "tarot",
+    "fortune-telling",
+    "mystical",
+    "nextjs",
+    "express",
+    "mongodb"
+  ],
+  "author": "Pocket Tarot Team",
+  "license": "MIT"
+}
