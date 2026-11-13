@@ -7,6 +7,7 @@ import { tarotCards } from "../data/tarotCards";
 import { tarotSpreads, type TarotSpread } from "../data/tarotSpreads";
 import { drawSpread, interpretReading, type DrawnCard } from "../lib/offlineEngine";
 import TarotCard from "./TarotCard";
+import CelticCrossBoard from "./CelticCrossBoard";
 import { makeCustomSpread } from "../lib/customSpread";
 import {getReadingPreferences} from "../lib/readingPreferences";
 import {useLocalDraft} from "../lib/useLocalDraft";
@@ -285,7 +286,10 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
                   </button>
                 )}
               </div>
-              <div className="grid grid-cols-2 items-start gap-4 sm:grid-cols-3 lg:grid-cols-5">
+              {spread.id==="celtic-cross"
+                ? <CelticCrossBoard cards={drawn} visibleCount={visibleCount}
+                    onReveal={()=>setVisibleCount(current=>Math.min(current+1,drawn.length))}/>
+                :               <div className="grid grid-cols-2 items-start gap-4 sm:grid-cols-3 lg:grid-cols-5">
                 {drawn.map((item,index) => (
                   <div key={item.position} className="min-w-0 rounded-xl border border-white/10 bg-[#211b32] p-3">
                     <div className="flex justify-center">
@@ -298,6 +302,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
                   </div>
                 ))}
               </div>
+              }
               {visibleCount === drawn.length && (
                 <div className="mx-auto mt-10 max-w-3xl rounded-2xl border border-amber-300/25 bg-gradient-to-b from-[#27203d] to-[#151224] p-6 sm:p-9">
                   <h4 className="font-serif text-2xl text-amber-100">Таны уншилтын тайлал</h4>
