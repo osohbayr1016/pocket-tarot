@@ -21,6 +21,9 @@ test("offline-first tarot: three-card spread, sequential reveal and history",asy
   await expect(page.getByRole("heading",{name:"Уншилтын түүх"})).toBeVisible();
   await page.getByRole("button",{name:"Дэлгэрэнгүй"}).first().click();
   await expect(page.getByText("E2E тэмдэглэл")).toBeVisible();
+  await page.locator('textarea[id^="history-notes-"]').fill("Edited E2E note");
+  await page.getByRole("button",{name:"Тэмдэглэл хадгалах"}).click();
+  await expect(page.getByText("Edited E2E note")).toBeVisible();
   expect(external).toEqual([]);
 });
 test("all 78 local card images are discoverable",async({page})=>{
@@ -79,4 +82,18 @@ test("PWA reloads the app shell with networking disabled after first install",as
   await page.reload({waitUntil:"domcontentloaded"});
   await expect(page.getByRole("heading",{name:"Уламжлалт таро"})).toBeVisible();
   await context.setOffline(false);
+});
+
+test("custom tarot spread uses user's card count and labeled positions",async({page})=>{
+  await page.goto("/");
+  await page.locator("#custom-card-count").selectOption("4");
+  await page.locator("#custom-position-0").fill("Зорилго");
+  await page.locator("#custom-position-1").fill("Боломж");
+  await page.getByRole("button",{name:"Миний дэлгэмлийг эхлүүлэх"}).click();
+  await expect(page.getByText("Миний 4 картын дэлгэмэл")).toBeVisible();
+  await page.getByRole("button",{name:/Хольж, хөзөр сугалах/}).click();
+  for(let i=0;i<4;i++)await page.getByRole("button",{name:/Дараагийн картыг нээх/}).click();
+  await expect(page.getByText("Таны уншилтын тайлал")).toBeVisible();
+  await expect(page.getByText(/Зорилго —/)).toBeVisible();
+  await expect(page.getByText(/Боломж —/)).toBeVisible();
 });
