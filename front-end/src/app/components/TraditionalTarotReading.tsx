@@ -111,6 +111,31 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
           AI, төлбөртэй API, сервер шаардлагагүй.
         </p>
       </header>
+      <section aria-label="Анхны уншилтын алхам" className="mx-auto mb-9 max-w-4xl rounded-2xl border border-amber-300/20 bg-white/5 px-5 py-5 sm:px-7">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="font-serif text-lg text-amber-100">Анх удаа ашиглаж байна уу?</h3>
+          <span className="text-xs text-slate-300">
+            {drawn.length>0&&visibleCount===drawn.length?"3 / 3":spread?"2 / 3":"1 / 3"} алхам
+          </span>
+        </div>
+        <ol className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+          {[
+            ["1","Асуултаа бодож, дэлгэмэл сонгох",!spread],
+            ["2","Картаа сугалж нэг нэгээр нь нээх",!!spread&&(drawn.length===0||visibleCount<drawn.length)],
+            ["3","Тайлбараа уншаад тэмдэглэл хадгалах",drawn.length>0&&visibleCount===drawn.length]
+          ].map(([number,label,active])=>(
+            <li key={String(number)} aria-current={active?"step":undefined}
+              className={"flex gap-3 rounded-xl border p-3 leading-6 "+
+                (active?"border-amber-300/50 bg-amber-300/10 text-amber-100":"border-white/10 text-slate-300")}>
+              <span aria-hidden="true" className="font-semibold text-amber-300">{number}.</span>
+              <span>{label}</span>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-4 text-xs leading-5 text-slate-400">
+          Энэ нь өөрийн нөхцөлөө эргэцүүлэх бэлгэдлийн дасгал болохоос баталгаатай ирээдүйг хэлдэггүй.
+        </p>
+      </section>
       {!spread && (
         <div className="mx-auto max-w-4xl">
           <label htmlFor="tarot-question" className="mb-3 block text-sm font-medium text-amber-100">
