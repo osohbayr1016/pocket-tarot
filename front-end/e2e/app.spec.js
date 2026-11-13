@@ -422,3 +422,23 @@ test("legacy journal migrates 85 items atomically, and later notes survive reloa
     .toHaveValue("Migration safe edit that survives reload");
   await expect(page.getByText(/1 \/ 5 хуудас/)).toBeVisible();
 });
+
+test("EN navigation, zodiac, daily, dream and guidance use English offline output",async({page})=>{
+  await page.goto("/");
+  await page.getByRole("button",{name:"Switch language to English"}).click();
+  await expect(page.getByRole("button",{name:"Astrology",exact:true})).toBeVisible();
+  await page.getByRole("button",{name:"Astrology",exact:true}).click();
+  await page.getByRole("button",{name:"Zodiac",exact:true}).click();
+  await page.locator("#horoscope-birth-date").fill("2024-02-29");
+  await page.getByRole("button",{name:"Explore this sign"}).click();
+  await expect(page.getByText(/Pisces \(Water\)/)).toBeVisible();
+  await page.getByRole("button",{name:"Daily",exact:true}).click();
+  await page.getByRole("button",{name:"Dream symbols",exact:true}).click();
+  await page.locator("#dream-text").fill("I was swimming in the ocean");
+  await page.getByRole("button",{name:"Explore symbols"}).click();
+  await expect(page.getByText(/Water: Feelings/)).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button",{name:"Astrology",exact:true})).toBeVisible();
+  await page.getByRole("button",{name:"Монгол хэл рүү шилжих"}).click();
+  await expect(page.getByRole("button",{name:"Зурхай",exact:true})).toBeVisible();
+});
