@@ -13,6 +13,7 @@ import {getReadingPreferences} from "../lib/readingPreferences";
 import {useLocalDraft} from "../lib/useLocalDraft";
 import {useLanguage} from "../lib/LanguageProvider";
 import {englishReading} from "../lib/englishTarot";
+import {emitFeedback} from "../lib/feedback";
 import {loadSavedSpreads,saveCustomSpread,deleteCustomSpread,savedToSpread,type SavedSpread} from "../lib/savedCustomSpreads";
 
 interface Props {
@@ -78,12 +79,18 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
     try {
       const cards = drawSpread(tarotCards,spread,undefined,{allowReversed:getReadingPreferences().allowReversed});
       setDrawn(cards);
+      emitFeedback("draw");
       setVisibleCount(0);
       setNotes("");
       setError(""); setSavedMessage("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Карт холих үед алдаа гарлаа.");
     }
+  };
+  const revealNext=()=>{
+    if(visibleCount>=drawn.length)return;
+    emitFeedback("flip");
+    setVisibleCount(current=>Math.min(current+1,drawn.length));
   };
   const save = async () => {
     if (!spread || !drawn.length || visibleCount !== drawn.length || !notesDraft.ready || !questionDraft.ready || savedMessage) return;
@@ -283,7 +290,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
                 <span>{visibleCount} / {drawn.length} карт нээсэн</span>
                 {visibleCount < drawn.length && (
-                  <button type="button" onClick={() => setVisibleCount((current)=>Math.min(current+1,drawn.length))}
+                  <button type="button" onClick={revealNext}
                     className="rounded-full bg-amber-300 px-6 py-3 font-medium text-[#161024] hover:bg-amber-200">
                     Дараагийн картыг нээх
                   </button>
@@ -291,14 +298,14 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
               </div>
               {spread.id==="celtic-cross"
                 ? <CelticCrossBoard cards={drawn} visibleCount={visibleCount}
-                    onReveal={()=>setVisibleCount(current=>Math.min(current+1,drawn.length))}/>
+                    onReveal={revealNext}/>
                 :               <div className="grid grid-cols-2 items-start gap-4 sm:grid-cols-3 lg:grid-cols-5">
                 {drawn.map((item,index) => (
                   <div key={item.position} className="min-w-0 rounded-xl border border-white/10 bg-[#211b32] p-3">
                     <div className="flex justify-center">
                       <TarotCard card={item.card} size="sm" isRevealed={index < visibleCount}
                         isReversed={item.isReversed} userQuestion={index < visibleCount ? undefined : ""}
-                        onClick={index === visibleCount ? () => setVisibleCount((current)=>Math.min(current+1, drawn.length)) : undefined} />
+                        onClick={index===visibleCount?revealNext:undefined} />
                     </div>
                     <p className="mt-4 text-center text-sm font-semibold text-amber-100">{item.position}. {item.positionName}</p>
                     <p className="mt-2 text-center text-xs leading-relaxed text-slate-300">{item.positionDescription}</p>
