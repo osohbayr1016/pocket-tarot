@@ -1,3 +1,4 @@
+import {reviewCard,pickStudyCard,learningStats,validateStudyProgress} from "../src/app/lib/studyProgress.ts";
 import {parseCompleteBackup,BACKUP_FORMAT} from "../src/app/lib/offlineBackup.ts";
 import {calculateReadingStats} from "../src/app/lib/readingStats.ts";
 import {normalizeReadingPreferences} from "../src/app/lib/readingPreferences.ts";
@@ -194,4 +195,46 @@ test("complete offline backup validates all journal/template/preferences before 
   assert.throws(()=>parseCompleteBackup(JSON.stringify({...valid,preferences:{cardBack:"bad"}})),/preferences/);
   assert.throws(()=>parseCompleteBackup(JSON.stringify({...valid,readings:[{}]})),/уншилт/);
   assert.throws(()=>parseCompleteBackup(JSON.stringify({...valid,spreads:[{}]})),/дэлгэмэл|бүтэц/);
+});
+
+test("spaced repetition schedules correct answers with increasing review interval",()=>{
+  const now=Date.UTC(2024,10,1);
+  let rows=reviewCard([],2,true,now);
+  assert.deepEqual([rows[0].seen,rows[0].correct,rows[0].streak,rows[0].intervalDays],[1,1,1,1]);
+  assert.equal(rows[0].dueAt,now+86400000);
+  rows=reviewCard(rows,2,true,now+86400000);
+  assert.equal(rows[0].intervalDays,3);
+  rows=reviewCard(rows,2,true,now+4*86400000);
+  assert.equal(rows[0].intervalDays,6);
+  rows=reviewCard(rows,2,false,now+5*86400000);
+  assert.deepEqual([rows[0].seen,rows[0].correct,rows[0].streak,rows[0].intervalDays],[4,3,0,0]);
+  assert.equal(rows[0].dueAt,now+5*86400000);
+  const metrics=learningStats(rows,now+5*86400000);
+  assert.deepEqual([metrics.studied,metrics.due,metrics.attempts,metrics.correct],[1,1,4,3]);
+});
+test("study picker prioritizes due cards and unseen cards without immediate repeat",()=>{
+  const now=Date.UTC(2024,10,1);
+  const progress=reviewCard([],1,false,now);
+  assert.equal(pickStudyCard([1,2,3],progress,null,()=>0,now,true),1);
+  assert.equal(pickStudyCard([1,2,3],progress,1,()=>0,now),1);
+  const notDue=reviewCard([],1,true,now);
+  assert.equal(pickStudyCard([1,2,3],notDue,null,()=>0,now),2);
+  assert.equal(pickStudyCard([1,2,3],notDue,null,()=>0,now,true),null);
+});
+test("study storage rejects invalid card IDs, repeated rows and unsafe timestamps",()=>{
+  const sample=reviewCard([],0,true,Date.UTC(2024,10,1))[0];
+  assert.equal(validateStudyProgress([sample]).length,1);
+  assert.throws(()=>validateStudyProgress([sample,sample]),/буруу|давхардсан/);
+  assert.throws(()=>validateStudyProgress([{...sample,id:78}]),/буруу|давхардсан/);
+  assert.throws(()=>validateStudyProgress([{...sample,dueAt:Infinity}]),/буруу|давхардсан/);
+});
+test("complete backup v2 preserves training progress while v1 remains compatible",()=>{
+  const sample=reviewCard([],5,true,Date.UTC(2024,10,1))[0];
+  const base={
+    format:BACKUP_FORMAT,version:2,exportedAt:"2024-11-01T00:00:00Z",
+    readings:[],spreads:[],preferences:{allowReversed:true,reduceMotion:false,cardBack:"star"},study:[sample]
+  };
+  assert.deepEqual(parseCompleteBackup(JSON.stringify(base)).study,[sample]);
+  assert.deepEqual(parseCompleteBackup(JSON.stringify({...base,version:1,study:undefined})).study,[]);
+  assert.throws(()=>parseCompleteBackup(JSON.stringify({...base,study:[{...sample,id:90}]})),/буруу/);
 });
