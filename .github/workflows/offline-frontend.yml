@@ -1,0 +1,36 @@
+name: Pocket Tarot / offline frontend
+on:
+  pull_request:
+    paths:
+      - "front-end/**"
+      - ".github/workflows/offline-frontend.yml"
+  push:
+    branches: [main]
+    paths:
+      - "front-end/**"
+      - ".github/workflows/offline-frontend.yml"
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: front-end/package-lock.json
+      - name: Install
+        working-directory: front-end
+        run: npm ci --legacy-peer-deps
+      - name: Offline engine tests
+        working-directory: front-end
+        run: npm test
+      - name: TypeScript
+        working-directory: front-end
+        run: npm run typecheck
+      - name: Build and verify 78 local artworks
+        working-directory: front-end
+        run: |
+          npm run build
+          test "$(find public/tarot/rws -maxdepth 1 -name '*.jpg' | wc -l)" -eq 78
