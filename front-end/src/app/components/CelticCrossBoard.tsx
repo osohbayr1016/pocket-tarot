@@ -1,5 +1,8 @@
 "use client";
 import type {DrawnCard} from "../lib/offlineEngine";
+import {useLanguage} from "../lib/LanguageProvider";
+import {getSpreadById} from "../data/tarotSpreads";
+import {englishSpreadPosition} from "../lib/englishSpreads";
 /**
  * Classical Celtic Cross: 1 central / 2 crossing / 3 above / 4 below /
  * 5 past left / 6 future right / 7-10 ascending staff on the right.
@@ -18,12 +21,16 @@ interface Props {
   onReveal:()=>void;
 }
 export default function CelticCrossBoard({cards,visibleCount,onReveal}:Props){
+  const {locale}=useLanguage();
+  const en=locale==="en";
+  const spread=getSpreadById("celtic-cross");
+  const details=(item:DrawnCard)=>en&&spread?englishSpreadPosition(spread,item.position):{name:item.positionName,description:item.positionDescription};
   const revealed=(position:number)=>position<=visibleCount;
-  return <section aria-label="Келтийн загалмай — 10 картын байрлал">
+  return <section aria-label={en?"Celtic Cross — ten-card layout":"Келтийн загалмай — 10 картын байрлал"}>
     <p className="mb-3 text-center text-xs leading-6 text-slate-300">
       Загалмай — зүүн талд, 7–10 картын босоо багана — баруун талд. Гар утаснаас хэвтээ гүйлгэн харж болно.
     </p>
-    <div tabIndex={0} role="region" aria-label="Келтийн загалмайн визуал байршил, хэвтээ гүйлгэх"
+    <div tabIndex={0} role="region" aria-label={en?"Scrollable Celtic Cross visual layout":"Келтийн загалмайн визуал байршил, хэвтээ гүйлгэх"}
       className="overflow-x-auto rounded-2xl border border-amber-300/25 bg-[#181329] p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200">
       <div className="relative mx-auto h-[710px] min-w-[680px] max-w-[780px]" aria-hidden="true">
         <div className="absolute left-[8%] top-[9%] h-[68%] w-[55%] rounded-full border border-amber-300/10"/>
@@ -45,17 +52,17 @@ export default function CelticCrossBoard({cards,visibleCount,onReveal}:Props){
                 <div className="flex h-full items-center justify-center font-serif text-3xl text-amber-300">✦</div>}
             </div>
             {!pos.rotate&&<span className="mt-1 block truncate text-xs font-semibold text-amber-100">
-              {item.position}. {item.positionName}
+              {item.position}. {details(item).name}
             </span>}
             {pos.rotate&&<span className="mt-2 block text-xs font-semibold text-amber-100">
-              2. Хөндлөн
+              {en?"2. Crossing":"2. Хөндлөн"}
             </span>}
-            {isNext&&<span className="mt-1 block text-[10px] text-emerald-200">Дараагийн карт</span>}
+            {isNext&&<span className="mt-1 block text-[10px] text-emerald-200">{en?"Next card":"Дараагийн карт"}</span>}
           </div>;
         })}
       </div>
     </div>
-    <h4 className="mt-7 text-center font-serif text-lg text-amber-100">Картуудын утга ба нээх дараалал</h4>
+    <h4 className="mt-7 text-center font-serif text-lg text-amber-100">{en?"Position meanings and reveal order":"Картуудын утга ба нээх дараалал"}</h4>
     <ol className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {cards.map((item,index)=>{
         const shown=index<visibleCount;
@@ -63,13 +70,13 @@ export default function CelticCrossBoard({cards,visibleCount,onReveal}:Props){
         return <li key={item.position} className={"rounded-xl border p-4 text-sm "+
           (next?"border-amber-300/60 bg-amber-300/10":"border-white/10 bg-white/5")}>
           <p className="font-semibold text-amber-100">{item.position}. {item.positionName}</p>
-          <p className="mt-1 text-xs leading-5 text-slate-300">{item.positionDescription}</p>
+          <p className="mt-1 text-xs leading-5 text-slate-300">{details(item).description}</p>
           {shown?
-            <p className="mt-2 text-slate-100">{item.card.name}{item.isReversed?" — урвуу":" — эгц"}</p>:
+            <p className="mt-2 text-slate-100">{en?item.card.englishName:item.card.name}{item.isReversed?(en?" — reversed":" — урвуу"):(en?" — upright":" — эгц")}</p>:
             <button type="button" disabled={!next} onClick={onReveal}
-              aria-label={item.position+". "+item.positionName+" картыг нээх"}
+              aria-label={item.position+". "+details(item).name+(en?" — reveal card":" картыг нээх")}
               className="mt-3 min-h-11 rounded-full border border-amber-300/40 px-4 py-2 text-xs text-amber-100 disabled:opacity-50">
-              {next?"Энэ картыг нээх":"Өмнөх картыг эхлээд нээнэ"}
+              {next?(en?"Reveal this card":"Энэ картыг нээх"):(en?"Reveal earlier cards first":"Өмнөх картыг эхлээд нээнэ")}
             </button>}
         </li>;
       })}
