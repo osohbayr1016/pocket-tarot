@@ -263,7 +263,7 @@ test("spaced-repetition quiz persists study progress and complete backup v3",asy
   await openView(page,"Таро сурах");
   await page.getByRole("button",{name:"Дасгал эхлүүлэх"}).click();
   await expect(page.getByText("Энэ ямар карт вэ?")).toBeVisible();
-  const candidates=page.locator("section .grid button");
+  const candidates=page.getByRole("group",{name:"Сонгох хариултууд"}).getByRole("button");
   await expect(candidates).toHaveCount(4);
   await candidates.first().click();
   await expect(page.getByText(/Энэ удаагийн оноо: [01] \/ 1/)).toBeVisible();
