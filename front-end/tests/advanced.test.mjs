@@ -217,7 +217,7 @@ test("study picker prioritizes due cards and unseen cards without immediate repe
   const now=Date.UTC(2024,10,1);
   const progress=reviewCard([],1,false,now);
   assert.equal(pickStudyCard([1,2,3],progress,null,()=>0,now,true),1);
-  assert.equal(pickStudyCard([1,2,3],progress,1,()=>0,now),1);
+  assert.equal(pickStudyCard([1,2,3],progress,1,()=>0,now),2);
   const notDue=reviewCard([],1,true,now);
   assert.equal(pickStudyCard([1,2,3],notDue,null,()=>0,now),2);
   assert.equal(pickStudyCard([1,2,3],notDue,null,()=>0,now,true),null);
