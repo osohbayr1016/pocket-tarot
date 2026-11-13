@@ -107,7 +107,7 @@ export default function Home() {
           </button>
           <div className="flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-xs text-emerald-200">
             <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden="true" />
-            AI / API шаардлагагүй
+            {locale==="en"?"No AI or API required":"AI / API шаардлагагүй"}
           </div>
         </div>
         <NavigationMenu section={section} onNavigate={navigate}/>
@@ -127,7 +127,7 @@ export default function Home() {
                   <TarotCardView card={tarotCards[0]} size="md" onClick={drawSingleCard}/>
                 </div>
                 <button type="button" onClick={drawSingleCard} className="w-full rounded-full bg-amber-300 px-8 py-3 font-semibold text-[#171127] hover:bg-amber-200">
-                  Санамсаргүй нэг карт сугалах
+                  {locale==="en"?"Draw one random card":"Санамсаргүй нэг карт сугалах"}
                 </button>
               </div>
             ) : <div className="mt-10"><CardReading card={selected.card} isReversed={selected.isReversed} onReset={()=>setSelected(null)}/></div>}
@@ -159,28 +159,28 @@ export default function Home() {
                 {locale==="en"?"Suit":"Бүлэг"}
                 <select id="library-suit" value={suit} onChange={event=>setSuit(event.target.value as typeof suit)}
                   className="mt-2 block w-full min-w-36 rounded-lg border border-white/20 bg-[#171127] p-3 text-slate-100">
-                  <option value="all">Бүх бүлэг</option>
-                  <option value="Wands">Саваа (Wands)</option>
-                  <option value="Cups">Хундага (Cups)</option>
-                  <option value="Swords">Сэлэм (Swords)</option>
-                  <option value="Pentacles">Зоос (Pentacles)</option>
+                  <option value="all">{locale==="en"?"All suits":"Бүх бүлэг"}</option>
+                  <option value="Wands">{locale==="en"?"Wands":"Саваа (Wands)"}</option>
+                  <option value="Cups">{locale==="en"?"Cups":"Хундага (Cups)"}</option>
+                  <option value="Swords">{locale==="en"?"Swords":"Сэлэм (Swords)"}</option>
+                  <option value="Pentacles">{locale==="en"?"Pentacles":"Зоос (Pentacles)"}</option>
                 </select>
               </label>
               <label className="flex-1 text-sm text-amber-100" htmlFor="library-element">
                 {locale==="en"?"Element":"Элемент"}
                 <select id="library-element" value={element} onChange={event=>setElement(event.target.value as typeof element)}
                   className="mt-2 block w-full min-w-36 rounded-lg border border-white/20 bg-[#171127] p-3 text-slate-100">
-                  <option value="all">Бүх элемент</option>
-                  <option value="Гал">Гал</option>
-                  <option value="Ус">Ус</option>
-                  <option value="Агаар">Агаар</option>
-                  <option value="Шороо">Шороо</option>
+                  <option value="all">{locale==="en"?"All elements":"Бүх элемент"}</option>
+                  <option value="Гал">{locale==="en"?"Fire":"Гал"}</option>
+                  <option value="Ус">{locale==="en"?"Water":"Ус"}</option>
+                  <option value="Агаар">{locale==="en"?"Air":"Агаар"}</option>
+                  <option value="Шороо">{locale==="en"?"Earth":"Шороо"}</option>
                 </select>
               </label>
               <button type="button" onClick={()=>{
                 setQuery("");setArcana("all");setSuit("all");setElement("all");
               }} className="min-h-11 rounded-full border border-amber-300/30 px-4 py-2 text-sm text-amber-100">
-                Шүүлтүүр цэвэрлэх
+                {locale==="en"?"Reset filters":"Шүүлтүүр цэвэрлэх"}
               </button>
               <p role="status" aria-live="polite" className="w-full text-xs text-slate-300">
                 {locale==="en"?"Showing":"Нийт"} {filtered.length} / 78 {locale==="en"?"cards":"карт харагдаж байна."}
@@ -199,7 +199,7 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            {filtered.length===0&&<p className="mt-10 text-center text-sm text-slate-400">Ийм нэртэй карт олдсонгүй.</p>}
+            {filtered.length===0&&<p className="mt-10 text-center text-sm text-slate-400">{locale==="en"?"No cards match these filters. Try resetting them.":"Шүүлтүүрт тохирох карт алга. Шүүлтүүрээ цэвэрлээд үзээрэй."}</p>}
             {libraryCard && <CardDetailsDialog card={libraryCard} onClose={()=>setLibraryCard(null)} />}
           </section>
         )}
@@ -217,10 +217,14 @@ export default function Home() {
       </main>
       <footer className="relative z-10 border-t border-white/10 px-4 py-8 text-center text-xs leading-6 text-slate-400">
         <p className="font-serif text-lg text-amber-200">✧ Pocket Tarot</p>
-        <p className="mt-2">Бэлгэдлийн тайлал ба өөрийгөө эргэцүүлэх орон зай. Ирээдүйг баттай таамаглахгүй.</p>
+        <p className="mt-2">{locale==="en"?"A place for symbolism and reflection, not a reliable prediction of the future.":"Бэлгэдлийн тайлал ба өөрийгөө эргэцүүлэх орон зай. Ирээдүйг баттай таамаглахгүй."}</p>
         <p className="mt-1">{locale==="en"
           ?"Original 1909 illustrations by Pamela Colman Smith. Historical scans restored by Steve P."
           :"1909 оны анхны зургууд — Pamela Colman Smith. Түүхэн сканыг Steve P. сэргээн боловсруулсан."}</p>
+        <p className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1">
+          <a href="/privacy" className="underline decoration-amber-300/50 underline-offset-4 hover:text-amber-100">{locale==="en"?"Privacy":"Нууцлал"}</a>
+          <a href="/terms" className="underline decoration-amber-300/50 underline-offset-4 hover:text-amber-100">{locale==="en"?"Terms":"Ашиглах нөхцөл"}</a>
+        </p>
         <p className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1">
           <a href="https://github.com/mixvlad/TarotCards/blob/main/SOURCES.md"
             target="_blank" rel="noopener noreferrer"

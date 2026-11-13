@@ -28,7 +28,7 @@ export default function CelticCrossBoard({cards,visibleCount,onReveal}:Props){
   const revealed=(position:number)=>position<=visibleCount;
   return <section aria-label={en?"Celtic Cross — ten-card layout":"Келтийн загалмай — 10 картын байрлал"}>
     <p className="mb-3 text-center text-xs leading-6 text-slate-300">
-      Загалмай — зүүн талд, 7–10 картын босоо багана — баруун талд. Гар утаснаас хэвтээ гүйлгэн харж болно.
+      {en?"The cross is on the left; cards 7–10 form the staff on the right. On phones, swipe horizontally to see the full layout.":"Загалмай — зүүн талд, 7–10 картын босоо багана — баруун талд. Гар утаснаас хэвтээ гүйлгэн харж болно."}
     </p>
     <div tabIndex={0} role="region" aria-label={en?"Scrollable Celtic Cross visual layout":"Келтийн загалмайн визуал байршил, хэвтээ гүйлгэх"}
       className="overflow-x-auto rounded-2xl border border-amber-300/25 bg-[#181329] p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200">
@@ -69,7 +69,7 @@ export default function CelticCrossBoard({cards,visibleCount,onReveal}:Props){
         const next=index===visibleCount;
         return <li key={item.position} className={"rounded-xl border p-4 text-sm "+
           (next?"border-amber-300/60 bg-amber-300/10":"border-white/10 bg-white/5")}>
-          <p className="font-semibold text-amber-100">{item.position}. {item.positionName}</p>
+          <p className="font-semibold text-amber-100">{item.position}. {details(item).name}</p>
           <p className="mt-1 text-xs leading-5 text-slate-300">{details(item).description}</p>
           {shown?
             <p className="mt-2 text-slate-100">{en?item.card.englishName:item.card.name}{item.isReversed?(en?" — reversed":" — урвуу"):(en?" — upright":" — эгц")}</p>:
