@@ -16,8 +16,13 @@ export default function DailyTarotCard(){
   const [message,setMessage]=useState("");
   const [error,setError]=useState("");
   useEffect(()=>{
-    const today=new Date();
-    setDate([today.getFullYear(),String(today.getMonth()+1).padStart(2,"0"),String(today.getDate()).padStart(2,"0")].join("-"));
+    // Defer the local-date snapshot until after hydration; a server date
+    // may differ from the viewer's calendar day near midnight.
+    const frame=requestAnimationFrame(()=>{
+      const today=new Date();
+      setDate([today.getFullYear(),String(today.getMonth()+1).padStart(2,"0"),String(today.getDate()).padStart(2,"0")].join("-"));
+    });
+    return ()=>cancelAnimationFrame(frame);
   },[]);
   const seed=hashDay(date);
   const card=tarotCards[seed%78];
