@@ -4,7 +4,7 @@
  */
 const VERSION = "pocket-tarot-v3";
 const SHELL = VERSION + "-shell";
-const ASSETS = VERSION + "-assets";
+const ASSETS = "pocket-tarot-art-v1";
 const SHELL_ASSETS = ["/", "/manifest.webmanifest", "/tarot/card-placeholder.svg", "/icon.svg"];
 const ASSET_LIMIT = 140;
 
@@ -28,7 +28,7 @@ self.addEventListener("install", event=>{
 self.addEventListener("activate",event=>{
   event.waitUntil((async()=>{
     const keys = await caches.keys();
-    await Promise.all(keys.filter(k=>k.startsWith("pocket-tarot-")&&!k.startsWith(VERSION))
+    await Promise.all(keys.filter(k=>k.startsWith("pocket-tarot-") && k!==SHELL && k!==ASSETS)
       .map(k=>caches.delete(k)));
     await self.clients.claim();
   })());
