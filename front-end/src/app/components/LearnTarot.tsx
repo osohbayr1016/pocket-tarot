@@ -166,7 +166,7 @@ export default function LearnTarot(){
         try{saveStudyProgress([]);setProgress([]);setQuestion(null);setAnswer(null);setScore(0);setAttempts(0);setError("");setIsReady(true);}
         catch(cause){setError(cause instanceof Error?cause.message:"Ахиц устгагдсангүй.");}
       }} className="min-h-11 rounded-full border border-red-300/30 px-4 py-2 text-sm text-red-200">
-        Ахиц арилгах
+        {(locale==="en"?"Reset progress":"Ахиц арилгах")}
       </button>
     </div>
     {!question?(
