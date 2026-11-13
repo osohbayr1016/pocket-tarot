@@ -1,5 +1,6 @@
 "use client";
 import type { ReadingTopic } from "../lib/readingIntelligence";
+import { loadReadings, addReading, clearReadings } from "../lib/readingHistory";
 
 import { useState } from "react";
 import { tarotCards } from "../data/tarotCards";
@@ -13,7 +14,6 @@ interface Props {
   onLogin?: (token: string, user: unknown) => void;
   userQuestion?: string;
 }
-const HISTORY_KEY = "pocket-tarot-offline-readings-v1";
 
 export default function TraditionalTarotReading({ onReset, userQuestion = "" }: Props) {
   const [spread, setSpread] = useState<TarotSpread | null>(null);
@@ -27,14 +27,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
   const [history, setHistory] = useState<{id:string; date:string; spread:string; question:string; reading:string}[]>([]);
   const result = interpretReading(drawn, question, topic === "auto" ? undefined : topic);
 
-  const refreshHistory = () => {
-    try {
-      const parsed: unknown = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
-      if (Array.isArray(parsed)) setHistory(parsed.slice(0, 20));
-    } catch {
-      setHistory([]);
-    }
-  };
+  const refreshHistory = () => setHistory(loadReadings().slice(0,20));
   const chooseSpread = (next: TarotSpread) => {
     setSpread(next); setDrawn([]); setVisibleCount(0); setError(""); setSavedMessage("");
     refreshHistory();
@@ -53,18 +46,15 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
   const save = () => {
     if (!spread || !drawn.length || visibleCount !== drawn.length) return;
     try {
-      const parsed: unknown = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
-      const old = Array.isArray(parsed) ? parsed : [];
-      const record = {
-        id: crypto.randomUUID(),
-        date: new Date().toISOString(),
-        spread: spread.name,
-        question: question.trim().slice(0, 500),
-        reading: result,
-        notes: notes.trim().slice(0, 2000),
-        cards: drawn.map((entry) => ({id:entry.card.id,reversed:entry.isReversed,position:entry.position})),
-      };
-      localStorage.setItem(HISTORY_KEY, JSON.stringify([record, ...old].slice(0, 30)));
+      addReading({
+        id:crypto.randomUUID(),
+        date:new Date().toISOString(),
+        spread:spread.name,
+        question:question.trim().slice(0,500),
+        reading:result,
+        notes:notes.trim().slice(0,2000),
+        cards:drawn.map(entry=>({id:entry.card.id,reversed:entry.isReversed,position:entry.position})),
+      });
       setSavedMessage("Энэ төхөөрөмж дээр уншилтыг хадгаллаа.");
       refreshHistory();
     } catch {
@@ -73,7 +63,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
   };
   const clearHistory = () => {
     try {
-      localStorage.removeItem(HISTORY_KEY);
+      clearReadings();
       setHistory([]);
       setSavedMessage("Энэ төхөөрөмж дээрх хадгалсан уншилтуудыг арилгалаа.");
     } catch {
