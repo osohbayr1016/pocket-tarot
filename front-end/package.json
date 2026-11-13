@@ -18,7 +18,8 @@
     "axios": "^1.10.0",
     "next": "15.3.5",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "astronomy-engine": "2.1.19"
   },
   "devDependencies": {
     "@babel/preset-react": "^7.27.1",
