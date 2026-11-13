@@ -7,6 +7,7 @@ import { tarotCards } from "../data/tarotCards";
 import { tarotSpreads, type TarotSpread } from "../data/tarotSpreads";
 import { drawSpread, interpretReading, type DrawnCard } from "../lib/offlineEngine";
 import TarotCard from "./TarotCard";
+import { makeCustomSpread } from "../lib/customSpread";
 
 interface Props {
   onReset: () => void;
@@ -18,6 +19,8 @@ interface Props {
 export default function TraditionalTarotReading({ onReset, userQuestion = "" }: Props) {
   const [spread, setSpread] = useState<TarotSpread | null>(null);
   const [question, setQuestion] = useState(userQuestion);
+  const [customCount,setCustomCount] = useState(3);
+  const [customLabels,setCustomLabels] = useState<string[]>([]);
   const [topic,setTopic] = useState<ReadingTopic|"auto">("auto");
   const [drawn, setDrawn] = useState<DrawnCard[]>([]);
   const [visibleCount, setVisibleCount] = useState(0);
@@ -120,6 +123,38 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
                 </span>
               </button>
             ))}
+          </div>
+          <div className="mt-8 rounded-2xl border border-amber-300/25 bg-[#20192f] p-5 sm:p-7">
+            <h3 className="font-serif text-xl text-amber-100">Өөрийн дэлгэмэл үүсгэх</h3>
+            <p className="mt-2 text-sm text-slate-300">
+              1–12 картын тоо, байрлалын нэрсээ оруул. Интернэт эсвэл AI шаардлагагүй.
+            </p>
+            <label htmlFor="custom-card-count" className="mt-5 block text-sm text-amber-100">Картын тоо</label>
+            <select id="custom-card-count" value={customCount}
+              onChange={event=>setCustomCount(Number(event.target.value))}
+              className="mt-2 rounded-lg border border-white/20 bg-[#120e1f] p-3 text-white">
+              {Array.from({length:12},(_,i)=>i+1).map(n=><option key={n} value={n}>{n} карт</option>)}
+            </select>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({length:customCount},(_,index)=>(
+                <div key={index}>
+                  <label htmlFor={"custom-position-"+index} className="mb-1 block text-xs text-amber-100">
+                    {index+1}-р байрлал (заавал биш)
+                  </label>
+                  <input id={"custom-position-"+index} maxLength={60}
+                    value={customLabels[index]||""}
+                    onChange={event=>setCustomLabels(old=>{
+                      const next=[...old];next[index]=event.target.value;return next;
+                    })}
+                    placeholder={String(index+1)+"-р карт"}
+                    className="w-full rounded-lg border border-white/20 bg-white/5 p-3 text-sm text-white focus:border-amber-300 focus:outline-none"/>
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={()=>chooseSpread(makeCustomSpread(customCount,customLabels))}
+              className="mt-6 rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200">
+              Миний дэлгэмлийг эхлүүлэх
+            </button>
           </div>
         </div>
       )}
