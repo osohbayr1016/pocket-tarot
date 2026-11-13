@@ -1,37 +1,37 @@
-# Pocket Tarot — Evidence-based audit and implementation notes
-Audit date: 2026-11-13
-Branch: `feat/offline-tarot-foundation`
-Baseline main: `da72df580a9ab7481906f308fc30b7fb6cee30a7`
+# Pocket Tarot implementation audit (2026-11-13)
 
-## Baseline findings and status
+Branch: `feat/offline-tarot-foundation`; PR [#1](https://github.com/osohbayr1016/pocket-tarot/pull/1), pending review/merge.
 
-| Severity | Finding in baseline | Resolution in this branch |
-|---|---|---|
-| P0 | Components import missing `src/app/data/tarotCards` and `tarotSpreads` | Added 78-card catalog and 5 complete spreads |
-| P0 | Tarot, horoscope, daily fortune, guidance and dream UI rely on backend AI endpoints | Replaced six user-facing flows with local deterministic logic |
-| P0 | Tracked `back-end/config.production.env` contains credential-shaped values | Removed tracked file, strengthened ignore rules, documented rotation; history remains exposed |
-| P1 | Card art missing; UI renders emojis and text in place of historic illustrations | Added 78 real RWS images, verified local filenames, reusable card UI and artwork downloader |
-| P1 | `sort(() => Math.random() - 0.5)` is biased | Implemented Web Crypto uniform random integers and Fisher–Yates; guards duplicate cards |
-| P1 | Reversed cards drawn from `Math.random()` / inconsistent behavior | Added independent 50/50 reversal for each dealt card |
-| P1 | Daily "lucky" elements are fixed lists with no user-specific calculation | Date- and birth-day-dependent deterministic symbolic values, clearly marked entertainment |
-| P1 | Legacy UI is congested, backend-dependent and inaccessible in places | Replaced with simpler responsive tabbed navigation, semantic buttons, labels, input validation, card library |
-| P1 | No engine-level verification | Added unit tests and GitHub Actions pipeline for tests/typecheck/build/78 images |
+## Audit progression
 
-## Accuracy and product boundaries
+| Priority | Original gap | Current implementation |
+| --- | --- | --- |
+| P0 | Tracked production secrets | Sensitive env file removed from branch and ignored. **Rotate real leaked credentials; old history/main still contain them until proper remediation.** |
+| P0 | Legacy AI/auth backend exposed API key hints, insecure auth patterns | Compatibility backend now returns 410 on deprecated routes; no AI/auth backend necessary for front-end |
+| P0 | Build/deployment confidence | GitHub Actions: Node/Jest/TypeScript/ESLint/production build, 78 JPG+WebP assets, Chromium E2E |
+| P1 | Unfair shuffling and AI dependency | Web Crypto Fisher-Yates, no duplicates, reversible draws and local contextual tarot interpretation |
+| P1 | 78 missing real images | Original 78 JPG + 78 compressed local WebP and validators |
+| P1 | Limited reading options | Five traditional spreads, custom bounded positions 1–12, 1-card and daily card |
+| P1 | Nonfunctional astrology beyond static zodiac | Local MIT Astronomy Engine ephemeris, ten bodies, tropical zodiac, numeric ascendant, aspects, Whole Sign houses |
+| P1 | No comprehensive journal | Saved readings/notes, deletion, validated JSON export/import, Canvas PNG, print/PDF |
+| P1 | Limited offline UX | PWA service worker and manifest, responsive nav, focus managed card library |
+| P2 | Simplistic dream guidance | Enlarged transparent rule-based symbol dictionary (not psychological diagnosis) |
+| P2 | No educational content | Major Arcana quiz and card reference |
+| P3 | Shareable output | Local PNG and print/PDF functionality |
 
-- Card images: 78 Rider–Waite–Smith cards, historically illustrated by Pamela Colman Smith.
-- Card meanings: succinct original Mongolian interpretive descriptions, not scientific claims. Tarot interpretations vary by tradition and reader; professional editorial review is recommended.
-- Zodiac: conventional tropical sun-sign calendar boundaries, not an astronomical birth chart. Year-dependent cusp precision, birth time, timezone and ephemeris are **not implemented**.
-- Dream guidance: explicitly rule-based, with a transparent no-match fallback; not an AI model.
-- No runtime Gemini/OpenAI/other model calls from redesigned frontend. Legacy `back-end/` still contains separate server endpoints, but the new frontend does not invoke them.
-- No guaranteed accuracy of predictions; no predictive validity can be asserted.
+## Engineering precision and truthfulness
 
-## Release checks
+- “Offline” means calculation requires no runtime inference API/backend. First PWA install and app updates still require network.
+- Astronomical coordinates are computed, but astrology's interpretive predictions have no scientific guarantee; only **Whole Sign** houses, not Placidus, and the user must validate historical timezone offset.
+- Some Tarot attribution choices vary by tradition. Editorial review is outstanding.
+- Journal uses browser localStorage, not encrypted cloud backup; user should export before clearing site data.
+- Traditional metadata and meaning translations need expert scrutiny for cultural nuances.
+- Historic credential exposure cannot be fixed merely by removing it from HEAD; rotation remains mandatory.
+- Old deployment scripts/documentation may reference the retired backend and must not be followed for the new frontend.
 
-1. GitHub Actions: Node 22, install, `npm test`, `npm run typecheck`, `npm run build`, assert 78 local JPG assets.
-2. Browser manual smoke checks: one-card draw, all five spreads, 10-card reveal, reversal, local saved reading, date boundary invalid inputs, 12 zodiac signs, smartphone navigation and modal keyboard behavior.
-3. Privacy: review localStorage behavior and add export/clear UI for users. Confirm no network AI requests with DevTools.
-4. Security: rotate any previously exposed database/API/JWT credentials, inspect full git history and deployment platform variables. Deleting a file from HEAD does not revoke secrets.
-5. Product: review Mongolian content and labels with a tarot practitioner; consider optional offline PWA packaging and verified ephemeris before advanced astrology claims.
+## Required manual release checks
 
-**Do not market this project as "100% correct predictions" or "100% bug-free".** Report each release gate by observed results.
+- Audit and rotate any exposed production keys; inspect old deployments.
+- Review/approve PR #1, verify preview and production deployment and ensure rollback.
+- Test Safari/iOS, Android Chrome, keyboard and screen reader, offline after warm PWA cache, low storage and private browsing.
+- Domain expert content check for all 78 cards; independent planetary fixture comparisons across tricky historical DST and high latitudes.
