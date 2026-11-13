@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   computeNatalChart, type BirthDetails, type NatalChart, TROPICAL_SIGNS,
 } from "../lib/astroChart";
+import { OFFLINE_CITIES } from "../lib/astroTimeZone";
 
 const symbols=["♈","♉","♊","♋","♌","♍","♎","♏","♐","♑","♒","♓"];
 function coords(angle:number,radius:number){
@@ -42,6 +43,7 @@ function ChartWheel({chart}:{chart:NatalChart}){
   </svg>;
 }
 export default function NatalChartPage(){
+  const [city,setCity]=useState("manual");
   const [birthDate,setBirthDate]=useState("");
   const [birthTime,setBirthTime]=useState("");
   const [offset,setOffset]=useState("");
@@ -49,13 +51,15 @@ export default function NatalChartPage(){
   const [lon,setLon]=useState("");
   const [chart,setChart]=useState<NatalChart|null>(null);
   const [error,setError]=useState("");
+  const cityPreset=OFFLINE_CITIES.find(place=>place.id===city);
   const calculate=()=>{
     try{
-      if(!birthDate||!birthTime||offset.trim()===""||lat.trim()===""||lon.trim()===""){
+      if(!birthDate||!birthTime||(!cityPreset&&offset.trim()==="")||lat.trim()===""||lon.trim()===""){
         throw new Error("Төрсөн огноо, цаг, UTC offset болон координатаа бүрэн оруулна уу.");
       }
       const birth:BirthDetails={
-        birthDate,birthTime,utcOffsetHours:Number(offset),
+        birthDate,birthTime,utcOffsetHours:cityPreset?undefined:Number(offset),
+        timeZone:cityPreset?.timeZone,
         latitude:Number(lat),longitude:Number(lon),
       };
       const result=computeNatalChart(birth);
@@ -78,13 +82,33 @@ export default function NatalChartPage(){
       <div className="h-fit rounded-2xl border border-amber-300/20 bg-[#211a34] p-6">
         <h2 className="mb-5 font-serif text-xl text-amber-100">Төрсөн мэдээлэл</h2>
         <div className="space-y-4">
+          <div>
+            <label htmlFor="natal-city" className="mb-2 block text-sm text-amber-100">
+              Төрсөн хот / цагийн бүс
+            </label>
+            <select id="natal-city" value={city} onChange={event=>{
+              const id=event.target.value;
+              setCity(id);setChart(null);
+              const chosen=OFFLINE_CITIES.find(place=>place.id===id);
+              if(chosen){setLat(String(chosen.latitude));setLon(String(chosen.longitude));setOffset("");}
+            }} className="w-full rounded-lg border border-white/20 bg-[#100e1e] p-3 text-sm text-white">
+              <option value="manual">Өөр хот — UTC offset, координатаа гараар оруулах</option>
+              {OFFLINE_CITIES.map(place=>(
+                <option key={place.id} value={place.id}>{place.label}</option>
+              ))}
+            </select>
+            {cityPreset&&<p className="mt-2 text-xs leading-5 text-slate-300">
+              {cityPreset.timeZone} · Төрсөн огнооны DST болон түүхэн цагийн бүсийг төхөөрөмжийн
+              IANA мэдээллээс тооцоолно. Төрсөн газраа, тухайн үеийн цагийг нягтлаарай.
+            </p>}
+          </div>
           {[
             {name:"Төрсөн огноо",type:"date",value:birthDate,set:setBirthDate,id:"natal-date"},
             {name:"Төрсөн цаг (24 цаг)",type:"time",value:birthTime,set:setBirthTime,id:"natal-time"},
             {name:"UTC offset (жишээ: +8, -5)",type:"number",value:offset,set:setOffset,id:"natal-offset"},
             {name:"Өргөрөг latitude",type:"number",value:lat,set:setLat,id:"natal-lat"},
             {name:"Уртраг longitude",type:"number",value:lon,set:setLon,id:"natal-lon"},
-          ].map(field=><div key={field.id}>
+          ].filter(field=>city==="manual"||field.id!=="natal-offset").map(field=><div key={field.id}>
             <label htmlFor={field.id} className="mb-2 block text-sm text-amber-100">{field.name}</label>
             <input id={field.id} type={field.type} value={field.value} onChange={e=>field.set(e.target.value)}
               step={field.id==="natal-offset"?"0.25":field.type==="number"?"any":undefined}
@@ -92,8 +116,9 @@ export default function NatalChartPage(){
           </div>)}
         </div>
         <p className="mt-5 text-xs leading-6 text-slate-400">
-          UTC offset нь төрсөн үеийн цагийн бүс болон тухайн үед байсан DST өөрчлөлтийг тусгасан байх ёстой.
-          Координат ба UTC offset-ийг апп автоматаар таахгүй. Мэдэхгүй бол баталгаатай эх сурвалжаас шалгаарай.
+          Хот сонговол координатын ойролцоо төв цэг, IANA timezone ашиглана. Хот сонгоогүй бол
+          UTC offset нь төрсөн үеийн DST өөрчлөлтийг тусгасан байх ёстой. Хуучин/тодорхойгүй
+          төрсөн цаг, хотын захын бодит координат chart-д нөлөөлж болохыг анхаараарай.
         </p>
         <button type="button" onClick={calculate}
           className="mt-5 w-full rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200">
