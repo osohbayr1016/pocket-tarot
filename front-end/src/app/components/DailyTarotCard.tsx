@@ -16,13 +16,28 @@ export default function DailyTarotCard(){
   const [message,setMessage]=useState("");
   const [error,setError]=useState("");
   useEffect(()=>{
-    // Defer the local-date snapshot until after hydration; a server date
-    // may differ from the viewer's calendar day near midnight.
-    const frame=requestAnimationFrame(()=>{
+    // A long-running tab must roll over to the next LOCAL calendar day.
+    // Using next local midnight (instead of 24h) handles DST changes.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const update=()=>{
       const today=new Date();
       setDate([today.getFullYear(),String(today.getMonth()+1).padStart(2,"0"),String(today.getDate()).padStart(2,"0")].join("-"));
-    });
-    return ()=>cancelAnimationFrame(frame);
+      const midnight=new Date(today.getFullYear(),today.getMonth(),today.getDate()+1);
+      timer=setTimeout(update,Math.max(100,midnight.getTime()-today.getTime()+100));
+    };
+    const onVisible=()=>{
+      if(document.visibilityState==="visible"){
+        if(timer)clearTimeout(timer);
+        update();
+      }
+    };
+    const frame=requestAnimationFrame(update);
+    document.addEventListener("visibilitychange",onVisible);
+    return ()=>{
+      cancelAnimationFrame(frame);
+      if(timer)clearTimeout(timer);
+      document.removeEventListener("visibilitychange",onVisible);
+    };
   },[]);
   const seed=hashDay(date);
   const card=tarotCards[seed%78];
