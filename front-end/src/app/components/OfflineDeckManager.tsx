@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { tarotCards } from "../data/tarotCards";
+import InstallGuide from "./InstallGuide";
 
 const CACHE_NAME = "pocket-tarot-art-v1";
 const images = tarotCards.map(c=>c.image);
@@ -109,5 +110,6 @@ export default function OfflineDeckManager(){
         Энэ нь таны төрсөн мэдээлэл, асуулт, тэмдэглэлийг хаашаа ч илгээхгүй.
       </p>
     </div>
+    <InstallGuide/>
   </section>;
 }
