@@ -60,11 +60,18 @@ async function migrate(db:IDBDatabase):Promise<void>{
   const legacy=loadReadings();
   const tx=db.transaction([STORE,META],"readwrite"),complete=done(tx);
   const store=tx.objectStore(STORE);
-  // Do not overwrite values that a previous interrupted migration may have saved.
+  // Queue every read before yielding. IDB readwrite transactions automatically
+  // commit when their request queue empties; awaiting one request inside this
+  // loop can produce TransactionInactiveError in Safari/Firefox.
+  // Each success handler runs while the transaction is active and can enqueue
+  // a conditional add without overwriting a more recent journal record.
   for(const reading of legacy){
-    const existing=await result(store.get(reading.id));
-    if(!existing)store.add(reading);
+    const request=store.get(reading.id);
+    request.onsuccess=()=>{
+      if(request.result===undefined)store.add(reading);
+    };
   }
+  // Flag and all conditional inserts are part of the SAME atomic transaction.
   tx.objectStore(META).put(true,"legacy-migrated");
   await complete;
 }
@@ -131,10 +138,23 @@ async function updateJournal(id:string,transform:(item:SavedReading)=>SavedReadi
   await inDb(async db=>{
     const tx=db.transaction(STORE,"readwrite"),complete=done(tx);
     const store=tx.objectStore(STORE);
-    const original=await result(store.get(id)) as SavedReading|undefined;
-    if(!original){tx.abort();throw new Error("Уншилт олдсонгүй.");}
-    store.put(sanitized(transform(original)));
-    await complete;
+    let operationError:Error|null=null;
+    const request=store.get(id);
+    request.onsuccess=()=>{
+      if(request.result===undefined){
+        operationError=new Error("Уншилт олдсонгүй.");
+        tx.abort();
+        return;
+      }
+      try{
+        store.put(sanitized(transform(request.result as SavedReading)));
+      }catch(cause){
+        operationError=cause instanceof Error?cause:new Error("Уншилтыг засаж чадсангүй.");
+        tx.abort();
+      }
+    };
+    try{await complete;}
+    catch(cause){throw operationError??cause;}
   });
 }
 export async function changeJournalNotes(id:string,notes:string):Promise<void>{
