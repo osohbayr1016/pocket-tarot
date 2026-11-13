@@ -69,6 +69,15 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
       setError("Төхөөрөмжийн хадгалах эрх эсвэл зай хүрэлцэхгүй байна.");
     }
   };
+  const clearHistory = () => {
+    try {
+      localStorage.removeItem(HISTORY_KEY);
+      setHistory([]);
+      setSavedMessage("Энэ төхөөрөмж дээрх хадгалсан уншилтуудыг арилгалаа.");
+    } catch {
+      setError("Хадгалсан уншилтыг арилгаж чадсангүй.");
+    }
+  };
   const startAgain = () => {
     setSpread(null);setDrawn([]);setVisibleCount(0);setError("");setSavedMessage("");setNotes("");
   };
@@ -153,7 +162,8 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
                   <div key={item.position} className="min-w-0 rounded-xl border border-white/10 bg-[#211b32] p-3">
                     <div className="flex justify-center">
                       <TarotCard card={item.card} size="sm" isRevealed={index < visibleCount}
-                        isReversed={item.isReversed} userQuestion={index < visibleCount ? undefined : ""} />
+                        isReversed={item.isReversed} userQuestion={index < visibleCount ? undefined : ""}
+                        onClick={index === visibleCount ? () => setVisibleCount((current)=>Math.min(current+1, drawn.length)) : undefined} />
                     </div>
                     <p className="mt-4 text-center text-sm font-semibold text-amber-100">{item.position}. {item.positionName}</p>
                     <p className="mt-2 text-center text-xs leading-relaxed text-slate-300">{item.positionDescription}</p>
@@ -194,6 +204,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
                   <p className="text-xs text-slate-400">{new Date(entry.date).toLocaleDateString("mn-MN")}</p>
                 </li>)}
               </ul>
+              <button type="button" onClick={clearHistory} className="mt-4 rounded-full border border-red-300/50 px-4 py-2 text-xs text-red-200 hover:bg-red-400/10">Энэ төхөөрөмжөөс түүхийг арилгах</button>
             </details>
           )}
         </div>
