@@ -434,13 +434,21 @@ const suitSource: Record<string, {
     ]
   }
 };
+// Traditional Golden Dawn attributions (modern outer-planet additions vary by school).
+// Sources: https://silverlotus.net/tarot/correspondences/
+// https://lunarcana.app/en/guide/astrology
+const majorMongolian = ["Аялагч","Илбэчин","Дээд санваартан","Хатан","Хаан","Их санваартан","Хосууд","Тэрэг","Хүч","Даяанч","Хувь заяаны хүрд","Шударга ёс","Дүүжлэгдсэн хүн","Үхэл","Тэнцвэр","Чөтгөр","Цамхаг","Од","Сар","Нар","Шүүлт","Ертөнц"];
+const majorElements = ["Агаар","Агаар","Ус","Шороо","Гал","Шороо","Агаар","Ус","Гал","Шороо","Гал","Агаар","Ус","Ус","Гал","Шороо","Гал","Агаар","Ус","Гал","Гал","Шороо"];
+const majorPlanets: Record<number,string> = {"0":"Уран","1":"Буд","2":"Сар","3":"Сугар","10":"Бархасбадь","12":"Далайн ван","16":"Ангараг","19":"Нар","20":"Плутон","21":"Санчир"};
+const majorSigns: Record<number,string> = {"4":"Хонь","5":"Үхэр","6":"Ихэр","7":"Мэлхий","8":"Арслан","9":"Охин","11":"Жинлүүр","13":"Хилэнц","14":"Нум","15":"Матар","17":"Хумх","18":"Загас"};
 const ranks = ["Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Page", "Knight", "Queen", "King"];
 const rankMongolian = ["Асп", "Хоёр", "Гурав", "Дөрөв", "Тав", "Зургаа", "Долоо", "Найм", "Ес", "Арав", "Хуудас", "Хүлэг", "Хатан", "Хаан"];
 export const tarotCards: TarotCard[] = [
   ...majorSource.map(([name, meaning, reversedMeaning, keywords, file], id): TarotCard => ({
-    id, name, englishName: name, emoji: "✦", description: meaning, meaning, reversedMeaning,
+    id, name:majorMongolian[id], englishName: name, emoji: "✦", description: meaning, meaning, reversedMeaning,
     future: "Энэ карт нь ирээдүйн баттай таамаглал бус, эргэцүүлэн бодох нэг өнцөг юм. " + meaning,
-    keywords: keywords.split(", "), element: "Сүнслэг", numerology: id, arcana: "major",
+    keywords: keywords.split(", "), element: majorElements[id], planet:majorPlanets[id],
+    astrologicalSign: majorSigns[id], numerology: id, arcana: "major",
     image: "/tarot/rws/" + file.replace(/\.jpg$/,".webp"),
   })),
   ...Object.entries(suitSource).flatMap(([suit, item], suitIndex) =>
