@@ -30,6 +30,17 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
   const {locale,t}=useLanguage();
   const en=locale==="en";
   const tr=(mn:string,english:string)=>en?english:mn;
+  const suggestions=en?[
+    "What deserves my attention today?",
+    "What should I understand in this relationship?",
+    "What is my next practical career step?",
+    "Where can I begin growing?",
+  ]:[
+    "Өнөөдөр юунд төвлөрөх вэ?",
+    "Энэ харилцаанд би юу ойлгох хэрэгтэй вэ?",
+    "Ажлын дараагийн зөв алхам юу вэ?",
+    "Өөрийгөө хөгжүүлэхэд юунаас эхлэх вэ?",
+  ];
   const [spread, setSpread] = useState<TarotSpread | null>(null);
   const questionDraft=useLocalDraft("traditional-question",userQuestion);
   const question=questionDraft.text;
@@ -217,7 +228,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
         <div className="mx-auto max-w-4xl">
           <div className="mb-6 rounded-2xl border border-amber-300/35 bg-gradient-to-r from-[#31213f] to-[#20182d] p-5 sm:p-7">
             <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">{tr("Хурдан эхлэх","Quick start")}</p>
-            <h3 className="font-serif text-2xl text-amber-50">{tr("3 картаар эхэл","Start with three cards")}</h3>
+            <h3 className="font-serif text-2xl text-amber-50">{tr("Уншлагаа шууд эхлүүлэх","Begin your reading")}</h3>
             <p className="mt-2 max-w-lg text-sm leading-6 text-slate-300">{tr("Асуултаа бичих эсвэл алгасаад шууд картаа сугал. Нарийн тохиргоо шаардлагагүй.","Write a question or skip it. Draw a simple spread without advanced setup.")}</p>
             <div className="mt-5 flex flex-wrap gap-3">
               <button type="button" onClick={()=>startQuickReading(1)}
@@ -237,17 +248,29 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
             id="tarot-question" value={question} onChange={(event) => setQuestion(event.target.value)}
             maxLength={500} rows={3}
             placeholder={tr("Жишээ: Энэ долоо хоногт ямар зүйлд анхаарах хэрэгтэй вэ?","Example: What should I focus on this week?")}
-            className="mb-8 w-full resize-y rounded-xl border border-amber-300/20 bg-white/5 p-4 text-base text-white placeholder:text-slate-400 focus:border-amber-300 focus:outline-none"
+            className="mb-3 w-full resize-y rounded-xl border border-amber-300/20 bg-white/5 p-4 text-base text-white placeholder:text-slate-400 focus:border-amber-300 focus:outline-none"
           />
-          <label htmlFor="tarot-topic" className="mb-3 block text-sm font-medium text-amber-100">{tr("Асуултын чиглэл","Question topic")}</label>
+          <div className="mb-5 flex flex-wrap items-center gap-2" role="group" aria-label={tr("Асуултын жишээ","Suggested reflection questions")}>
+            <span className="mr-1 text-xs text-slate-300">{tr("Санаа авах:","Need a prompt?")}</span>
+            {suggestions.map((prompt)=><button type="button" key={prompt} onClick={()=>setQuestion(prompt)}
+              className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs text-slate-200 hover:border-amber-300/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200">
+              {prompt}
+            </button>)}
+          </div>
+          <details id="reading-topic-settings" className="mb-8">
+            <summary className="min-h-11 cursor-pointer rounded-lg border border-white/15 px-4 py-3 text-sm text-amber-100">
+              {tr("Нэмэлт тохиргоо · Асуултын чиглэл","Optional · Question category")}
+            </summary>
+            <label htmlFor="tarot-topic" className="mt-4 mb-3 block text-sm font-medium text-amber-100">{tr("Асуултын чиглэл","Question topic")}</label>
           <select id="tarot-topic" value={topic} onChange={event=>setTopic(event.target.value as ReadingTopic|"auto")}
-            className="mb-8 w-full rounded-xl border border-white/20 bg-[#211a34] p-3 text-sm text-white sm:max-w-xs">
+            className="w-full rounded-xl border border-white/20 bg-[#211a34] p-3 text-sm text-white sm:max-w-xs">
             <option value="auto">{tr("Автоматаар тодорхойлох","Auto-detect")}</option>
             <option value="general">{tr("Ерөнхий","General")}</option>
             <option value="love">{tr("Хайр, харилцаа","Love & relationships")}</option>
             <option value="career">{tr("Ажил, карьер","Work & career")}</option>
             <option value="growth">{tr("Хувь хүний хөгжил","Personal growth")}</option>
           </select>
+          </details>
           <h3 className="mb-4 font-serif text-lg text-amber-100">{tr("Бусад дэлгэмэлүүд","Other spreads")}</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {tarotSpreads.map((option) => (

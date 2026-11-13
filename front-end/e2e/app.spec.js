@@ -26,6 +26,17 @@ test("unfinished tarot reading resumes after navigation and reload",async({page}
   await expect(page.getByRole("heading",{name:"Таны уншилтын тайлал"})).toBeVisible();
 });
 
+test("suggested prompts and optional question category work in quick reading",async({page})=>{
+  await page.goto("/");
+  await page.getByRole("button",{name:"Өнөөдөр юунд төвлөрөх вэ?"}).click();
+  await expect(page.locator("#tarot-question")).toHaveValue("Өнөөдөр юунд төвлөрөх вэ?");
+  await page.locator("#reading-topic-settings > summary").click();
+  await page.locator("#tarot-topic").selectOption("career");
+  await page.getByRole("button",{name:"1 карт сугалах"}).click();
+  await page.getByRole("button",{name:/Дараагийн картыг нээх/}).click();
+  await expect(page.getByText(/Та энэ шийдвэрт ямар мэдээлэл дутуу/)).toBeVisible();
+});
+
 test("one-card quick entry reveals immediately without setup",async({page})=>{
   await page.goto("/");
   await page.getByRole("button",{name:"1 карт сугалах"}).click();
