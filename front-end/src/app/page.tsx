@@ -14,6 +14,7 @@ import ReadingHistory from "./components/ReadingHistory";
 import DailyTarotCard from "./components/DailyTarotCard";
 import LearnTarot from "./components/LearnTarot";
 import NatalChartPage from "./components/NatalChartPage";
+import CardDetailsDialog from "./components/CardDetailsDialog";
 
 type Section = "reading" | "single" | "library" | "horoscope" | "daily" | "dream" | "guidance" | "history" | "daily-card" | "learn" | "natal";
 const sections: {id: Section; label: string}[] = [
@@ -139,22 +140,7 @@ export default function Home() {
               ))}
             </div>
             {filtered.length===0&&<p className="mt-10 text-center text-sm text-slate-400">Ийм нэртэй карт олдсонгүй.</p>}
-            {libraryCard && (
-              <div role="dialog" aria-modal="true" aria-label={libraryCard.name}
-                className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-4"
-                onClick={()=>setLibraryCard(null)}>
-                <div className="relative my-auto max-h-[95vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-amber-300/30 bg-[#1c172d] p-5 shadow-2xl sm:p-7"
-                  onClick={(event)=>event.stopPropagation()}>
-                  <button type="button" onClick={()=>setLibraryCard(null)} aria-label="Хаах"
-                    className="absolute right-4 top-4 z-10 rounded-full border border-white/30 bg-[#171127] px-4 py-2 text-sm text-white">Хаах</button>
-                  <div className="mx-auto max-w-52 pt-8"><TarotCardView card={libraryCard} isRevealed size="lg"/></div>
-                  <div className="mt-6 space-y-3 text-sm leading-relaxed text-slate-200">
-                    <p><strong className="text-amber-200">Эгц:</strong> {libraryCard.meaning}</p>
-                    <p><strong className="text-amber-200">Урвуу:</strong> {libraryCard.reversedMeaning}</p>
-                  </div>
-                </div>
-              </div>
-            )}
+            {libraryCard && <CardDetailsDialog card={libraryCard} onClose={()=>setLibraryCard(null)} />}
           </section>
         )}
         {section==="horoscope" && <Horoscope/>}
