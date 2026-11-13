@@ -6,6 +6,8 @@ const VERSION = "pocket-tarot-v3";
 const SHELL = VERSION + "-shell";
 const ASSETS = "pocket-tarot-art-v1";
 const SHELL_ASSETS = ["/", "/manifest.webmanifest", "/tarot/card-placeholder.svg", "/icon.svg"];
+// Filled by scripts/manifest-sw.mjs after the production build.
+const BUILD_ASSETS = [];
 const ASSET_LIMIT = 140;
 
 async function prepareShell() {
@@ -17,10 +19,13 @@ async function prepareShell() {
   const resources = [...html.matchAll(/(?:src|href)=["'](\/_next\/static\/[^"']+)["']/g)]
     .map(m=>m[1].replace(/&amp;/g,"&"))
     .filter((src,index,all)=>all.indexOf(src)===index);
-  await Promise.allSettled([
-    ...SHELL_ASSETS.slice(1).map(path=>cache.add(path)),
-    ...resources.map(path=>cache.add(path))
-  ]);
+  const required=[...new Set([...SHELL_ASSETS.slice(1),...resources,...BUILD_ASSETS])];
+  const settled=await Promise.allSettled(required.map(path=>cache.add(path)));
+  const failed=settled.filter(result=>result.status==="rejected");
+  if(failed.length){
+    // A partial cache must never replace a complete installed worker.
+    throw new Error("Incomplete PWA application shell: "+failed.length+" static resources failed");
+  }
 }
 self.addEventListener("install", event=>{
   event.waitUntil(prepareShell().then(()=>self.skipWaiting()));
