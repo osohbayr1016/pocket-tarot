@@ -346,3 +346,18 @@ test("lunar daily phases use the selected city local noon, not the viewer's time
   assert.equal(aprilNY[7].date,"2024-04-08");
   assert.ok(Math.abs(aprilNY[7].phase-aprilUB[7].phase)>1);
 });
+
+test("complete v4 backup validates bounded drafts and locale without arbitrary storage injection",()=>{
+  const base={format:BACKUP_FORMAT,version:4,exportedAt:"2024-11-01T00:00:00Z",
+    readings:[],spreads:[],preferences:{allowReversed:true,reduceMotion:false,cardBack:"star"},
+    study:[],locale:"en",drafts:[{key:"pocket-tarot-draft-v1:daily-2024-11-01",text:"Personal note"}]};
+  const parsed=parseCompleteBackup(JSON.stringify(base));
+  assert.equal(parsed.version,4);
+  assert.equal(parsed.locale,"en");
+  assert.deepEqual(parsed.drafts,base.drafts);
+  assert.throws(()=>parseCompleteBackup(JSON.stringify({...base,locale:"xx"})),/хэлний/);
+  assert.throws(()=>parseCompleteBackup(JSON.stringify({...base,drafts:[{key:"JWT_SECRET",text:"unsafe"}]})),/Draft/);
+  assert.throws(()=>parseCompleteBackup(JSON.stringify({...base,drafts:[...base.drafts,...base.drafts]})),/Draft/);
+  assert.throws(()=>parseCompleteBackup(JSON.stringify({...base,drafts:[{...base.drafts[0],text:"x".repeat(4001)}]})),/Draft/);
+  assert.equal(parseCompleteBackup(JSON.stringify({...base,version:3,drafts:undefined,locale:undefined})).version,3);
+});
