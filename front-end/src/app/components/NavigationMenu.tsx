@@ -1,4 +1,5 @@
 "use client";
+import {useState} from "react";
 export type Section = "reading"|"single"|"library"|"learn"|"horoscope"|"natal"|"daily"|"daily-card"|"dream"|"guidance"|"history"|"offline";
 export const NAV_GROUPS: readonly {id:string;label:string;views:readonly {id:Section;label:string}[]}[]=[
   {id:"tarot",label:"Таро",views:[
@@ -24,13 +25,17 @@ export function groupForSection(section:Section){
 export default function NavigationMenu({section,onNavigate}:{
   section:Section;onNavigate:(next:Section)=>void;
 }){
-  const active=groupForSection(section);
+  // Switching a category only reveals its submenu. It does not create a
+  // phantom browser-history entry for the category's first view.
+  const [previewGroup,setPreviewGroup]=useState<string|null>(null);
+  const selectedGroup=groupForSection(section);
+  const active=NAV_GROUPS.find(group=>group.id===previewGroup)||selectedGroup;
   return <nav aria-label="Үндсэн цэс" className="mx-auto max-w-7xl px-4 sm:px-8">
     <div className="flex flex-wrap gap-2 border-b border-white/10 pb-3" aria-label="Үндсэн ангиллууд">
       {NAV_GROUPS.map(group=>(
         <button type="button" key={group.id}
-          aria-current={group.id===active.id?"page":undefined}
-          aria-pressed={group.id===active.id} onClick={()=>onNavigate(group.views[0].id)}
+          aria-current={group.id===selectedGroup.id?"page":undefined}
+          aria-pressed={group.id===active.id} onClick={()=>setPreviewGroup(group.id)}
           className={"min-h-11 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 "+
             (group.id===active.id?"bg-amber-300 text-[#171127]":"border border-white/15 text-slate-200 hover:border-amber-300/50 hover:text-amber-200")}>
           {group.label}
@@ -40,7 +45,7 @@ export default function NavigationMenu({section,onNavigate}:{
     <div className="flex flex-wrap gap-2 py-3" aria-label={active.label+" хэсгүүд"}>
       {active.views.map(view=>(
         <button type="button" key={view.id} aria-current={section===view.id?"page":undefined}
-          aria-pressed={section===view.id} onClick={()=>onNavigate(view.id)}
+          aria-pressed={section===view.id} onClick={()=>{setPreviewGroup(null);onNavigate(view.id);}}
           className={"min-h-11 rounded-xl border px-4 py-2.5 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 "+
             (section===view.id?"border-amber-300/60 bg-amber-300/10 text-amber-100":"border-white/10 text-slate-200 hover:border-amber-300/50 hover:text-amber-100")}>
           {view.label}
