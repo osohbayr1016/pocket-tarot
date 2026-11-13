@@ -6,6 +6,8 @@ import {saveJournalReading} from "../lib/journalDb";
 import TarotCard from "./TarotCard";
 import {getReadingPreferences} from "../lib/readingPreferences";
 import {useLocalDraft} from "../lib/useLocalDraft";
+import {useLanguage} from "../lib/LanguageProvider";
+import {englishReading} from "../lib/englishTarot";
 
 function hashDay(text:string):number{
   let hash=2166136261;
@@ -13,6 +15,7 @@ function hashDay(text:string):number{
   return hash>>>0;
 }
 export default function DailyTarotCard(){
+  const {locale,t}=useLanguage();
   const [date,setDate]=useState("");
   const draft=useLocalDraft(date?"daily-"+date:"");
   const [allowReversed,setAllowReversed]=useState(true);
@@ -47,7 +50,7 @@ export default function DailyTarotCard(){
   const seed=hashDay(date);
   const card=tarotCards[seed%78];
   const isReversed=allowReversed && (seed>>>8)%2===0;
-  const reading=card?interpretReading([{
+  const reading=card?(locale==="en"?englishReading:interpretReading)([{
     card,position:1,isReversed,positionName:"Өдрийн бэлгэдэл",
     positionDescription:"Өдөрт нэг удаа эргэцүүлэх сэдэв",
   }]):"";
@@ -69,7 +72,7 @@ export default function DailyTarotCard(){
   if(!date)return <div className="p-10 text-center text-slate-300">Өдрийн картыг бэлдэж байна...</div>;
   return <section className="mx-auto max-w-3xl px-3 pb-16 text-center">
     <p className="text-xs uppercase tracking-[0.3em] text-amber-300">Daily card journal</p>
-    <h1 className="mt-3 font-serif text-4xl text-amber-50">Өнөөдрийн карт</h1>
+    <h1 className="mt-3 font-serif text-4xl text-amber-50">{t("Өнөөдрийн карт")}</h1>
     <p className="mt-4 text-sm text-slate-300">{date} · Тухайн өдөр тогтмол нэг карт харагдана.</p>
     <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-amber-300/20 bg-[#211a34] p-6">
       <TarotCard card={card} isRevealed isReversed={isReversed} size="lg"/>
