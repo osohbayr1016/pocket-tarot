@@ -1,7 +1,7 @@
 const {test,expect} = require("@playwright/test");
 const groupFor={
   "Таро дэлгэмэл":"Таро","Нэг карт":"Таро","78 карт":"Таро","Таро сурах":"Таро",
-  "Орд":"Зурхай","Төрсөн үеийн тэнгэр":"Зурхай",
+  "Орд":"Зурхай","Төрсөн үеийн тэнгэр":"Зурхай","Сарны календарь":"Зурхай",
   "Өдрийн карт":"Өдөр тутам","Өдрийн санаа":"Өдөр тутам","Зүүд":"Өдөр тутам","Удирдамж":"Өдөр тутам",
   "Миний түүх":"Тэмдэглэл","Offline карт":"Офлайн","Хувийн тохиргоо":"Офлайн",
 };
@@ -276,4 +276,22 @@ test("spaced-repetition quiz persists study progress and complete backup v2",asy
   const backup=JSON.parse(buffer);
   expect(backup.version).toBe(2);
   expect(backup.study).toHaveLength(1);
+});
+
+test("offline lunar calendar renders a month and changes months without API calls",async({page})=>{
+  const api=[];
+  page.on("request",request=>{if(request.url().includes("/api/"))api.push(request.url());});
+  await page.goto("/");
+  await openView(page,"Сарны календарь");
+  await expect(page).toHaveURL(/view=moon/);
+  await expect(page.getByRole("heading",{name:"Сарны фазын календарь"})).toBeVisible();
+  const dates=page.locator('div[aria-label="Сарны фазын өдрийн календарь"] button');
+  expect(await dates.count()).toBeGreaterThanOrEqual(28);
+  const firstMonth=await page.locator("h2").first().innerText();
+  await page.getByRole("button",{name:"Дараагийн сар"}).click();
+  const secondMonth=await page.locator("h2").first().innerText();
+  expect(secondMonth).not.toBe(firstMonth);
+  await dates.first().click();
+  await expect(page.getByText(/Ойролцоох гэрэлтэлт:/)).toBeVisible();
+  expect(api).toEqual([]);
 });
