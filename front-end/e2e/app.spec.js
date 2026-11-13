@@ -252,7 +252,7 @@ test("complete offline backup can export and restore settings without network ca
   await expect(page.locator("#back-style")).toHaveValue("moon");
 });
 
-test("spaced-repetition quiz persists study progress and complete backup v2",async({page})=>{
+test("spaced-repetition quiz persists study progress and complete backup v3",async({page})=>{
   await page.goto("/");
   await openView(page,"Таро сурах");
   await page.getByRole("button",{name:"Дасгал эхлүүлэх"}).click();
@@ -274,7 +274,7 @@ test("spaced-repetition quiz persists study progress and complete backup v2",asy
   const file=await download.path();
   const buffer=require("node:fs").readFileSync(file,"utf8");
   const backup=JSON.parse(buffer);
-  expect(backup.version).toBe(2);
+  expect(backup.version).toBe(3);
   expect(backup.study).toHaveLength(1);
 });
 
@@ -327,4 +327,51 @@ test("keyboard-only skip link and library dialog restore focus on Escape",async(
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(firstCard).toBeFocused();
+});
+
+test("Celtic Cross has a spatial crossing and 10 accessible numbered cards",async({page})=>{
+  await page.goto("/");
+  await page.getByRole("button",{name:/Келтийн загалмай/}).click();
+  await page.getByRole("button",{name:/Хольж, хөзөр сугалах/}).click();
+  await expect(page.getByRole("region",{name:/Келтийн загалмайн визуал байршил/})).toBeVisible();
+  await expect(page.getByRole("listitem").filter({has:page.getByText(/10\. Нийт чиглэл/)})).toHaveCount(1);
+  for(let i=0;i<10;i++)
+    await page.getByRole("button",{name:/Дараагийн картыг нээх/}).click();
+  await expect(page.getByRole("heading",{name:"Таны уншилтын тайлал"})).toBeVisible();
+});
+test("IndexedDB journal supports more than 100 readings with pagination and export",async({page})=>{
+  await page.goto("/");
+  await openView(page,"Миний түүх");
+  const readings=Array.from({length:105},(_,i)=>({
+    id:"large-"+String(i).padStart(3,"0"),
+    date:new Date(Date.UTC(2024,10,1,12,i%60)).toISOString(),
+    spread:"Archive test",question:"Archive test #"+i,
+    reading:"Local archive without backend",notes:"Record "+i,
+    cards:[{id:i%78,reversed:false,position:1}]
+  }));
+  const payload={format:"pocket-tarot-readings",version:2,readings};
+  await page.locator('input[aria-label="JSON уншилт импортлох"]').setInputFiles({
+    name:"journal-v2.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(payload))
+  });
+  await expect(page.getByText("105 уншилт импортлогдлоо.")).toBeVisible();
+  await expect(page.getByText(/1 \/ 6 хуудас/)).toBeVisible();
+  await page.getByRole("button",{name:"Дараах"}).click();
+  await expect(page.getByText(/2 \/ 6 хуудас/)).toBeVisible();
+  const downloadEvent=page.waitForEvent("download");
+  await page.getByRole("button",{name:"JSON export"}).click();
+  const downloaded=await downloadEvent;
+  const backup=JSON.parse(require("node:fs").readFileSync(await downloaded.path(),"utf8"));
+  expect(backup.readings).toHaveLength(105);
+  expect(backup.version).toBe(2);
+});
+test("daily journal note draft survives leaving the section",async({page})=>{
+  await page.goto("/");
+  await openView(page,"Өдрийн карт");
+  const notes=page.locator("#daily-notes");
+  await notes.fill("Unique draft memory 2026");
+  await openView(page,"Орд");
+  await openView(page,"Өдрийн карт");
+  await expect(page.locator("#daily-notes")).toHaveValue("Unique draft memory 2026");
+  const keys=await page.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith("pocket-tarot-draft-v1:daily-")));
+  expect(keys).toHaveLength(1);
 });
