@@ -40,3 +40,42 @@ export function closestLunation(rows:readonly MoonDay[],target:0|180):MoonDay|nu
     return delta(a.phase)-delta(b.phase);
   })[0];
 }
+
+export interface ExactMoonEvent{
+  type:"new"|"full";
+  label:string;
+  utc:string;
+  local:string;
+}
+/** True astronomical phase instants; day grid remains a midday approximation. */
+export function getExactMoonEvents(year:number,month:number,timeZone:string):ExactMoonEvent[]{
+  if(!Number.isInteger(year)||year<1900||year>2100||
+     !Number.isInteger(month)||month<1||month>12)
+    throw new Error("Сарны календарийн огноо буруу байна.");
+  const formatter=new Intl.DateTimeFormat("mn-MN",{
+    timeZone,year:"numeric",month:"2-digit",day:"2-digit",
+    hour:"2-digit",minute:"2-digit",hour12:false
+  });
+  const start=Date.UTC(year,month-1,1)-2*86400000;
+  const end=Date.UTC(year,month,1)+2*86400000;
+  const events:ExactMoonEvent[]=[];
+  for(const [type,angle,label] of [["new",0,"Шинэ сар"],["full",180,"Бүтэн сар"]] as const){
+    let next=new Date(start);
+    for(let attempts=0;attempts<3;attempts++){
+      const result=Astronomy.SearchMoonPhase(angle,next,46);
+      if(!result)break;
+      const date=result.date;
+      if(date.getTime()>end)break;
+      const parts=new Intl.DateTimeFormat("en-US",{
+        timeZone,year:"numeric",month:"numeric",day:"numeric"
+      }).formatToParts(date);
+      const localYear=Number(parts.find(p=>p.type==="year")?.value);
+      const localMonth=Number(parts.find(p=>p.type==="month")?.value);
+      if(localYear===year&&localMonth===month){
+        events.push({type,label,utc:date.toISOString(),local:formatter.format(date)});
+      }
+      next=new Date(date.getTime()+86400000);
+    }
+  }
+  return events.sort((a,b)=>a.utc.localeCompare(b.utc));
+}
