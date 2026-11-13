@@ -7,11 +7,13 @@
  * Whole Sign houses are used; Placidus is not calculated or claimed.
  */
 import * as Astronomy from "astronomy-engine";
+import { resolveLocalTime } from "./astroTimeZone.ts";
 
 export interface BirthDetails {
   birthDate:string;
   birthTime:string;
-  utcOffsetHours:number;
+  utcOffsetHours?:number;
+  timeZone?:string;
   latitude:number;
   longitude:number;
 }
@@ -69,7 +71,15 @@ export function parseBirthUTC(input:BirthDetails):Date {
   const parts=/^([01]\d|2[0-3]):([0-5]\d)$/.exec(input.birthTime);
   if(!parts)throw new Error("Төрсөн цаг HH:mm форматтай байна.");
   const {utcOffsetHours, latitude, longitude}=input;
-  if(!Number.isFinite(utcOffsetHours)||utcOffsetHours < -12||utcOffsetHours>14 ||
+  if(input.timeZone){
+    if(!Number.isFinite(latitude)||latitude < -89.99||latitude>89.99||
+       !Number.isFinite(longitude)||longitude < -180||longitude>180){
+      throw new Error("Өргөрөг (-89.99...89.99), уртраг (-180...180) шалгана уу.");
+    }
+    return resolveLocalTime(input.birthDate,input.birthTime,input.timeZone);
+  }
+
+  if(utcOffsetHours===undefined || !Number.isFinite(utcOffsetHours)||utcOffsetHours < -12||utcOffsetHours>14 ||
      Math.round(utcOffsetHours*4)!==utcOffsetHours*4){
     throw new Error("Төрсөн үеийн UTC offset -12 ... +14, 15 минутын алхамтай байна.");
   }
