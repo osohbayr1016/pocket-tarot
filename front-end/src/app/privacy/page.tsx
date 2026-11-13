@@ -1,4 +1,5 @@
 import type {Metadata} from "next";
+import Link from "next/link";
 export const metadata:Metadata={
  title:"Нууцлал / Privacy — Pocket Tarot",
  description:"Pocket Tarot-ийн local storage, privacy болон өгөгдөл хадгалах талаарх мэдээлэл.",
@@ -6,7 +7,7 @@ export const metadata:Metadata={
 export default function PrivacyPage(){
  return <main className="min-h-screen bg-[#100e1e] px-4 py-12 text-[#f6f1e9]">
   <article className="mx-auto max-w-3xl space-y-6 leading-7">
-   <a href="/" className="text-amber-200 underline underline-offset-4">← Pocket Tarot</a>
+   <Link href="/" className="text-amber-200 underline underline-offset-4">← Pocket Tarot</Link>
    <h1 className="font-serif text-4xl text-amber-100">Нууцлал / Privacy</h1>
    <p className="text-sm text-slate-300">Шинэчилсэн: 2026-11-13 · Updated: 13 November 2026</p>
    <section><h2 className="font-serif text-2xl text-amber-100">Таны мэдээлэл хаана хадгалагдах вэ?</h2>

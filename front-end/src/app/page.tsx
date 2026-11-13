@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { tarotCards, type TarotCard } from "./data/tarotCards";
 import { secureRandomInt } from "./lib/offlineEngine";
 import {getReadingPreferences} from "./lib/readingPreferences";
@@ -222,8 +223,8 @@ export default function Home() {
           ?"Original 1909 illustrations by Pamela Colman Smith. Historical scans restored by Steve P."
           :"1909 оны анхны зургууд — Pamela Colman Smith. Түүхэн сканыг Steve P. сэргээн боловсруулсан."}</p>
         <p className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1">
-          <a href="/privacy" className="underline decoration-amber-300/50 underline-offset-4 hover:text-amber-100">{locale==="en"?"Privacy":"Нууцлал"}</a>
-          <a href="/terms" className="underline decoration-amber-300/50 underline-offset-4 hover:text-amber-100">{locale==="en"?"Terms":"Ашиглах нөхцөл"}</a>
+          <Link href="/privacy" className="underline decoration-amber-300/50 underline-offset-4 hover:text-amber-100">{locale==="en"?"Privacy":"Нууцлал"}</Link>
+          <Link href="/terms" className="underline decoration-amber-300/50 underline-offset-4 hover:text-amber-100">{locale==="en"?"Terms":"Ашиглах нөхцөл"}</Link>
         </p>
         <p className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1">
           <a href="https://github.com/mixvlad/TarotCards/blob/main/SOURCES.md"
