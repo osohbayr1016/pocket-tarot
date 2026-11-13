@@ -306,7 +306,7 @@ test("tarot library filters all 56 minors by suit and shows educational details"
   await expect(page.locator("main button img[alt]")).toHaveCount(14);
   await page.locator("main button").filter({has:page.locator("img[alt]")}).first().click();
   await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(page.getByRole("term",{name:"Элемент"})).toBeVisible();
+  await expect(page.getByRole("dialog").locator("dt").filter({hasText:"Элемент"})).toBeVisible();
   await page.getByRole("button",{name:"Хаах"}).click();
   await page.getByRole("button",{name:"Шүүлтүүр цэвэрлэх"}).click();
   await expect(page.locator("main button img[alt]")).toHaveCount(78);
