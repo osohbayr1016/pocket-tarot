@@ -44,7 +44,7 @@ export default function TarotCard({
     );
   }
   return (
-    <figure className={widthClass + " mx-auto text-left"}>
+    <figure className={widthClass + " tarot-reveal-enter mx-auto text-left"}>
       <div className="relative aspect-[2/3] overflow-hidden rounded-xl border-2 border-amber-400/60 bg-[#f5e6c4] shadow-[0_16px_45px_rgba(0,0,0,0.35)]">
         <img
           src={imageError ? "/tarot/card-placeholder.svg" : card.image}
