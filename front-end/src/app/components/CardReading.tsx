@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { TarotCard as TarotCardType } from "../data/tarotCards";
 import { interpretReading, type DrawnCard } from "../lib/offlineEngine";
 import TarotCard from "./TarotCard";
+import { addReading } from "../lib/readingHistory";
 
 interface Props {
   card: TarotCardType;
@@ -25,14 +26,11 @@ export default function CardReading({card,isReversed=false,onReset,userQuestion=
   const reading = interpretReading(drawn,userQuestion);
   const save = () => {
     try {
-      const key = "pocket-tarot-offline-readings-v1";
-      const previous: unknown = JSON.parse(localStorage.getItem(key)||"[]");
-      const records = Array.isArray(previous) ? previous : [];
-      localStorage.setItem(key,JSON.stringify([{
-        id:crypto.randomUUID(), date:new Date().toISOString(),
-        spread:"Нэг карт", question:userQuestion.trim().slice(0,500),
-        reading, notes:notes.trim().slice(0,2000),cards:[{id:card.id,reversed:isReversed,position:1}],
-      },...records].slice(0,30)));
+      addReading({
+        id:crypto.randomUUID(),date:new Date().toISOString(),
+        spread:"Нэг карт",question:userQuestion.trim().slice(0,500),
+        reading,notes:notes.trim().slice(0,2000),cards:[{id:card.id,reversed:isReversed,position:1}],
+      });
       setMessage("Уншилтыг зөвхөн энэ төхөөрөмж дээр хадгаллаа.");
       setError("");
     } catch {
