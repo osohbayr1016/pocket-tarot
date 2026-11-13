@@ -8,15 +8,29 @@ import {getReadingPreferences} from "./lib/readingPreferences";
 import {useLanguage} from "./lib/LanguageProvider";
 import {emitFeedback} from "./lib/feedback";
 import TarotCardView from "./components/TarotCard";
-import CardReading from "./components/CardReading";
+
 import TraditionalTarotReading from "./components/TraditionalTarotReading";
-import Horoscope from "./components/Horoscope";
-import DailyFortune from "./components/DailyFortune";
-import DreamInterpretation from "./components/DreamInterpretation";
-import LifeGuidance from "./components/LifeGuidance";
-import ReadingHistory from "./components/ReadingHistory";
-import DailyTarotCard from "./components/DailyTarotCard";
-import LearnTarot from "./components/LearnTarot";
+
+
+
+
+
+
+
+// Load secondary experiences on demand. The PWA build precaches all emitted
+// JS chunks so first offline visits to these sections still work after install.
+const loadingView=()=> <p role="status" className="py-12 text-center text-amber-100">Хэсгийг ачаалж байна...</p>;
+const CardReading=dynamic(()=>import("./components/CardReading"),{ssr:false,loading:loadingView});
+const Horoscope=dynamic(()=>import("./components/Horoscope"),{ssr:false,loading:loadingView});
+const DailyFortune=dynamic(()=>import("./components/DailyFortune"),{ssr:false,loading:loadingView});
+const DreamInterpretation=dynamic(()=>import("./components/DreamInterpretation"),{ssr:false,loading:loadingView});
+const LifeGuidance=dynamic(()=>import("./components/LifeGuidance"),{ssr:false,loading:loadingView});
+const ReadingHistory=dynamic(()=>import("./components/ReadingHistory"),{ssr:false,loading:loadingView});
+const DailyTarotCard=dynamic(()=>import("./components/DailyTarotCard"),{ssr:false,loading:loadingView});
+const LearnTarot=dynamic(()=>import("./components/LearnTarot"),{ssr:false,loading:loadingView});
+const OfflineDeckManager=dynamic(()=>import("./components/OfflineDeckManager"),{ssr:false,loading:loadingView});
+const PreferencesPanel=dynamic(()=>import("./components/PreferencesPanel"),{ssr:false,loading:loadingView});
+const CardDetailsDialog=dynamic(()=>import("./components/CardDetailsDialog"),{ssr:false,loading:loadingView});
 const MoonCalendar = dynamic(() => import("./components/MoonCalendar"), {
   ssr: false,
   loading: () => <p role="status" className="py-12 text-center text-amber-100">Сарны календарь ачаалж байна...</p>,
@@ -25,9 +39,9 @@ const NatalChartPage = dynamic(() => import("./components/NatalChartPage"), {
   ssr: false,
   loading: () => <p role="status" className="py-12 text-center text-amber-100">Тэнгэрийн зураг ачаалж байна...</p>,
 });
-import CardDetailsDialog from "./components/CardDetailsDialog";
-import OfflineDeckManager from "./components/OfflineDeckManager";
-import PreferencesPanel from "./components/PreferencesPanel";
+
+
+
 import NavigationMenu, {isSection, type Section} from "./components/NavigationMenu";
 
 export default function Home() {
