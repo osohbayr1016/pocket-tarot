@@ -31,4 +31,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "security(deps): remove Axios and upgrade to patched Next.js 16.4.6"
-          git push
+          git fetch origin feat/offline-tarot-foundation
+          git rebase origin/feat/offline-tarot-foundation
+          git push origin HEAD:feat/offline-tarot-foundation
