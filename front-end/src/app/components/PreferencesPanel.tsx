@@ -94,6 +94,28 @@ export default function PreferencesPanel(){
           onChange={event=>update({...prefs,reduceMotion:event.target.checked})}
           className="h-5 w-5 accent-amber-300"/>
       </label>
+      <div className="border-t border-white/10 pt-5">
+        <label htmlFor="visual-theme" className="text-sm font-semibold text-amber-100">Харагдах өнгөний theme</label>
+        <select id="visual-theme" value={prefs.theme}
+          onChange={event=>update({...prefs,theme:event.target.value as ReadingPreferences["theme"]})}
+          className="mt-3 block w-full rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-white">
+          <option value="royal">Royal amethyst</option>
+          <option value="ocean">Deep ocean</option>
+          <option value="midnight">Midnight black</option>
+        </select>
+      </div>
+      <label className="flex items-center justify-between gap-4 border-t border-white/10 pt-5 text-sm text-amber-100">
+        <span>Зөөлөн vibration (гар утас)</span>
+        <input type="checkbox" checked={prefs.haptics}
+          onChange={event=>update({...prefs,haptics:event.target.checked})}
+          className="h-5 w-5 accent-amber-300"/>
+      </label>
+      <label className="flex items-center justify-between gap-4 border-t border-white/10 pt-5 text-sm text-amber-100">
+        <span>UI click sound (default: унтраалттай)</span>
+        <input type="checkbox" checked={prefs.sound}
+          onChange={event=>update({...prefs,sound:event.target.checked})}
+          className="h-5 w-5 accent-amber-300"/>
+      </label>
       {message&&<p role="status" className="text-sm text-emerald-200">{message}</p>}
       {error&&<p role="alert" className="text-sm text-red-300">{error}</p>}
     </div>
