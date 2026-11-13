@@ -1,3 +1,4 @@
+import {normalizeReadingPreferences} from "../src/app/lib/readingPreferences.ts";
 import {convertLegacyReadings} from "../src/app/lib/legacyMigration.ts";
 import {parseSavedSpreads,savedToSpread} from "../src/app/lib/savedCustomSpreads.ts";
 import { OFFLINE_CITIES, resolveLocalTime } from "../src/app/lib/astroTimeZone.ts";
@@ -156,4 +157,14 @@ test("legacy account export conversion preserves only explicit local fields",()=
   assert.equal(migrated[0].favorite,true);
   assert.throws(()=>convertLegacyReadings({readings:[{id:"a",cardId:999,readingDate:"2024-05-02"}]}),/ID/);
   assert.throws(()=>convertLegacyReadings({readings:[{id:"b",cardId:1}]}),/огноо/);
+});
+
+test("upright-only preference never draws reversed cards",()=>{
+  const spread=tarotSpreads.find(item=>item.cardCount===5);
+  assert.ok(spread);
+  const drawn=drawSpread(tarotCards,spread,()=>0,{allowReversed:false});
+  assert.equal(drawn.length,5);
+  assert.ok(drawn.every(card=>!card.isReversed));
+  assert.equal(normalizeReadingPreferences({allowReversed:false,cardBack:"moon"}).allowReversed,false);
+  assert.equal(normalizeReadingPreferences({cardBack:"other"}).cardBack,"star");
 });
