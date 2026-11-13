@@ -10,8 +10,11 @@ import Horoscope from "./components/Horoscope";
 import DailyFortune from "./components/DailyFortune";
 import DreamInterpretation from "./components/DreamInterpretation";
 import LifeGuidance from "./components/LifeGuidance";
+import ReadingHistory from "./components/ReadingHistory";
+import DailyTarotCard from "./components/DailyTarotCard";
+import LearnTarot from "./components/LearnTarot";
 
-type Section = "reading" | "single" | "library" | "horoscope" | "daily" | "dream" | "guidance";
+type Section = "reading" | "single" | "library" | "horoscope" | "daily" | "dream" | "guidance" | "history" | "daily-card" | "learn";
 const sections: {id: Section; label: string}[] = [
   {id:"reading",label:"Таро дэлгэмэл"},
   {id:"single",label:"Нэг карт"},
@@ -20,6 +23,9 @@ const sections: {id: Section; label: string}[] = [
   {id:"daily",label:"Өдрийн санаа"},
   {id:"dream",label:"Зүүд"},
   {id:"guidance",label:"Удирдамж"},
+  {id:"daily-card",label:"Өдрийн карт"},
+  {id:"history",label:"Миний түүх"},
+  {id:"learn",label:"Таро сурах"},
 ];
 
 export default function Home() {
@@ -153,6 +159,9 @@ export default function Home() {
         {section==="daily" && <DailyFortune/>}
         {section==="dream" && <DreamInterpretation/>}
         {section==="guidance" && <LifeGuidance/>}
+        {section==="history" && <ReadingHistory/>}
+        {section==="daily-card" && <DailyTarotCard/>}
+        {section==="learn" && <LearnTarot/>}
       </main>
       <footer className="relative z-10 border-t border-white/10 px-4 py-8 text-center text-xs leading-6 text-slate-400">
         <p className="font-serif text-lg text-amber-200">✧ Pocket Tarot</p>
