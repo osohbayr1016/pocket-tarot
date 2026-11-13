@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useState} from "react";
 import {closestLunation,getMoonMonth} from "../lib/lunarCalendar";
 
-const PHASE_ICONS=["●","◔","◐","◕","○","◕","◑","◔"];
+const PHASE_ICONS=["○","◔","◐","◕","●","◕","◑","◔"];
 const WEEKDAYS=["Да","Мя","Лх","Пү","Ба","Бя","Ня"];
 function isoToday(now:Date){
   return [now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
