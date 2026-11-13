@@ -1,6 +1,6 @@
 # Pocket Tarot — Release checklist
 
-Updated: 2026-11-13 (security, journal v3, academy, astronomy, i18n and premium waves). Target branch: `feat/offline-tarot-foundation`.
+Updated: 2026-11-13 (bilingual frontend, IndexedDB migration reliability and complete backup v4). Target branch: `feat/offline-tarot-foundation`.
 
 **Do not describe this release as “100% bug-free”, “100% accurate forecasts”, or “professionally verified astrology.”** These cannot be established by a CI run.
 
@@ -38,7 +38,7 @@ Updated: 2026-11-13 (security, journal v3, academy, astronomy, i18n and premium 
 - [x] Rule-based contextual interpretation including card pairs, suit/rank patterns and reflection prompts
 - [x] Offline reading preferences: upright-only, card back, reduced motion
 - [x] IndexedDB journal with idempotent legacy localStorage migration, 20-record pagination, up to 5000 records, tags/moods/favorites/search/statistics and deletion
-- [x] Encrypted portable complete backup v3 (AES-GCM + PBKDF2), backward-compatible v1/v2 import and validated recovery/rollback
+- [x] Encrypted portable complete backup v4 (AES-GCM + PBKDF2), including validated unsaved drafts and locale, backward-compatible v1–v3 import and rollback
 - [x] Date-keyed autosaved notes for daily and single-card readings, plus unsaved-note confirmation in traditional spread flow
 - [x] User-supplied legacy JSON converter and opt-in import (device only); NO connection to old account database
 - [ ] Owner must confirm authenticated legacy user export from live service and test user-specific data migration; see issue #5
@@ -47,15 +47,17 @@ Updated: 2026-11-13 (security, journal v3, academy, astronomy, i18n and premium 
 - [x] Local ephemeris, ascendant, natal/transit aspects and retrograde positions, Whole Sign houses, IANA timezone city presets and DST ambiguity/gap checks
 - [x] Computed exact astronomical new/full Moon moments with UTC/local clock displays (independent verification still required)
 - [ ] Manual iPhone Safari, Android Chrome and screen-reader checks (small screens, landscape, notch, safe areas); Playwright desktop Firefox/WebKit is not a substitute
-- [ ] Keyboard accessibility audit including focus trap, Esc close, keyboard-only draw and screen reader announcements
-- [ ] Real-world slow/offline test: clear/warm caches, update service worker, image fallback and optional compressed card bundle
+- [x] Automated keyboard skip-link, Escape, modal focus restoration and basic desktop/mobile browser journeys
+- [ ] Manual assistive-technology screen-reader audit, focus trap and announcements on physical devices
+- [x] User-initiated PWA update check, optional persistent storage request and compressed artwork caching
+- [ ] Real-world slow/offline test: clear/warm caches, update service worker, image fallback and storage eviction
 - [ ] Verify historical timezone/DST correctness and astrology numerical outputs against independent professional ephemeris tools for multiple cities/dates
 - [ ] 78-card Mongolian editorial review with qualified Tarot/domain reader
 - [ ] Product privacy review: local notes storage may be visible to other users of shared device
 
 ## P2/P3 optional polish
 
-- [x] Seven-stage Tarot curriculum with 78-card spaced repetition, review schedule, answer stats and hidden printed labels; included in backup v3
+- [x] Seven-stage Tarot curriculum with 78-card spaced repetition, review schedule, answer stats and hidden printed labels; included in backup v4
 - [x] Offline astronomical month-by-month Moon phase calendar and phase/illumination fixtures
 - [x] Suit/element/keyword filters and expanded traditional card library metadata
 - [x] Major Arcana teaching quiz
@@ -63,9 +65,11 @@ Updated: 2026-11-13 (security, journal v3, academy, astronomy, i18n and premium 
 - [x] Browser-side shareable PNG reading export
 - [x] Add exact astronomical new/full Moon event timestamps separately from daily noon calendar; verify 2024 eclipse timing fixtures
 - [ ] Broader independent ephemeris/timezone review and editorial checks for moon phase labels
-- [ ] Run cross-browser mobile keyboard, screen reader and assisted-testing review for study progress, full backup and modal
+- [x] Add Pixel 7 and iPhone WebKit emulated touch journeys for installation help, mobile navigation and saved drafts
+- [ ] Run physical mobile screen-reader and assisted-testing review for study progress, v4 backup and modal
 - [x] Add opt-in MN/EN menu, all 78 English upright/reversed Tarot descriptions, core card and reading text
-- [ ] **PARTIAL:** Translate remaining journal, astrology, dream, daily and onboarding text; independent native-language editorial review
+- [x] Translate primary journal, backup/settings, natal/transit, moon, dream, daily, Celtic Cross, custom spread and Academy UI to English
+- [ ] Audit every secondary error/help string for complete English coverage and obtain independent native-language editorial review
 - [x] Spatial Celtic Cross and accessible 10-card position list; seven Tarot lessons and progress bars
 - [ ] Additional niche spread layouts and deep symbolism tutorials
 - [x] Reduced-motion card reveal animation, three premium dark themes, opt-in synthetic UI sounds and vibration
