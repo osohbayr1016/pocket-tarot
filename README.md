@@ -1,22 +1,22 @@
 # Pocket Tarot — Offline-first Tarot & Astrology
 
-A Mongolian-language, browser-side Tarot reading and reflection application. Its core reading and astronomical computations do not require Gemini, OpenAI, or paid APIs. Tarot and astrology are cultural traditions, **not scientifically validated prediction systems**.
+A bilingual (Mongolian/English), browser-side Tarot reading and reflection application. Its core reading and astronomical computations do not require Gemini, OpenAI, or paid APIs. Tarot and astrology are cultural traditions, **not scientifically validated prediction systems**.
 
 ## What works in this feature branch
 
-- **78 Rider–Waite–Smith cards** — 22 Major Arcana and 56 Minor Arcana, with upright and reversed Mongolian interpretations and locally stored historical artwork (JPEG and optimized WebP).
+- **78 Rider–Waite–Smith cards** — 22 Major Arcana and 56 Minor Arcana, with upright and reversed Mongolian and English interpretations and locally stored historical artwork (JPEG and optimized WebP).
 - **Tarot spreads** — traditional 1/3/5/6/10-card spreads, plus a user-configurable **1–12-card custom spread** with labeled positions.
 - **Secure local draws** — unbiased Fisher–Yates shuffle using Web Crypto, without card duplication, with independent reversal choice.
 - **Contextual, auditable reading engine** — transparent topic detection (general, love, career, growth), card-position interpretation, broad patterns across multiple cards and reflection prompts. It does **not** infer facts about a person's future or use a language model.
 - **Zodiac overview** — conventional tropical sun-sign dates with Gregorian date validation.
 - **Natal chart calculator** — browser-local ephemeris via Astronomy Engine: geocentric tropical positions of 10 bodies, ascendant, Whole Sign houses, moon phase, and simple aspects. Accurate **historical UTC offset, birth time and location must be supplied**; no time-zone guesswork. See accuracy limits below.
 - **Daily tarot, symbolic daily reflection, dream dictionary and guided journaling** — local rules and deterministic date-dependent prompts, not professional advice or AI diagnoses.
-- **Reading journal** — device-only localStorage, search/favorites/stats, view/clear/delete, edit notes, validated JSON/legacy imports, print/PDF and shareable PNG. Whole-device backup v2 includes journal, custom spreads, preferences and study progress, and can restore v1 backups.
+- **Reading journal** — IndexedDB archive with idempotent localStorage migration, pagination, private autosaved drafts, tags, moods, favorites/search, JSON and user-owned legacy imports, print/PDF and privacy-first shareable Story/Square PNG. Encrypted portable **backup v4** includes all journal records, drafts, language, custom spreads, preferences and 78-card study progress; v1–v3 imports remain supported.
 - **Learn Tarot** — offline spaced-repetition quiz across all 78 cards with daily due reviews, per-card progress, answer tracking and a masked card title to prevent giving away the answer. Training progress is backed up locally.
-- **Lunar calendar** — astronomical Sun–Moon phase-angle computation, 8 phase labels and approximate illumination for each day of the selected month; no external API.
+- **Lunar calendar** — astronomy-based eight phases and illumination at local noon in the selected city/time zone, plus exact new/full Moon UTC and local events; no external API.
 - **Advanced card library** — search Mongolian/English names and keywords, filter by suit, arcana and element, and inspect traditional correspondences.
 - **PWA** — install metadata, versioned service worker, built JavaScript chunk precache (including lazy natal/lunar screens) and an optional 78-image offline pack. Incomplete cache/first visits still require connectivity.
-- **Privacy** — main application does not transmit questions, birth data or reading records to a backend.
+- **Privacy** — main application does not transmit questions, birth data or reading records to a backend. Downloaded backups can be AES-256-GCM passphrase encrypted, but browser storage itself is not encrypted at rest.
 
 ## Run
 
@@ -43,7 +43,7 @@ The Playwright runner and Chromium must be installed separately; GitHub Actions 
 
 ## Offline implementation
 
-Artwork is kept in `front-end/public/tarot/rws/`. Runtime requests stay same-origin, with no generative-model API calls. The service worker caches the website shell and card assets on demand. If you clear browser data or never open a particular image while online, that image may be unavailable while offline. Browser storage may be deleted by the user or browser; export important notes as JSON.
+Artwork is kept in `front-end/public/tarot/rws/`. Runtime requests stay same-origin, with no generative-model API calls. The service worker caches the website shell and card assets on demand. A user-controlled persistent-storage request and update check are available where browsers support them. If you clear browser data or never open a particular image while online, that image may be unavailable while offline. Browser storage may be deleted by the user or browser; export important notes as JSON.
 
 ## Historical artwork
 
@@ -57,7 +57,7 @@ The Rider–Waite–Smith deck (1909) is illustrated by Pamela Colman Smith. Sou
 - Card meanings are authored Mongolian interpretive text; a qualified domain reviewer has not approved all cards.
 - Astrology and Tarot do not have demonstrated scientific predictive reliability.
 - Dream interpretation is rule/keyword based. Neither the app nor its content is medical, legal, mental-health or financial advice.
-- Private data is unencrypted in localStorage. Avoid entering secrets, use export/clear controls and note that imported JSON is validated and capped.
+- Private data is not encrypted at rest in IndexedDB/localStorage. Avoid entering secrets; use encrypted v4 export, and note imported JSON has strict limits and schema checks.
 
 ## Security / deprecated backend
 
@@ -65,7 +65,7 @@ The old `back-end/` routes are intentionally **not required by the frontend**; c
 
 ## Production checklist
 
-See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for tests still required before merging to `main` and deploying.
+See [RELEASE_RUNBOOK.md](RELEASE_RUNBOOK.md) for release/rollback steps, [ARTWORK_PROVENANCE.md](ARTWORK_PROVENANCE.md) for image rights checks, and [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for tests still required before merging to `main` and deploying.
 
 ## Project map
 
@@ -74,8 +74,9 @@ See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for tests still required before
 - `front-end/src/app/lib/astroChart.ts` — offline ephemeris and natal chart calculations
 - `front-end/src/app/lib/lunarCalendar.ts` — astronomical lunar phases by day
 - `front-end/src/app/lib/studyProgress.ts` — spaced-repetition learning engine and local progress
-- `front-end/src/app/lib/offlineBackup.ts` — portable validated complete backup (v1 and v2 input)
-- `front-end/src/app/lib/readingHistory.ts` — validated private journal and import/export
+- `front-end/src/app/lib/offlineBackup.ts` — portable validated complete backup v4 (v1–v3 imports)
+- `front-end/src/app/lib/journalDb.ts` — transactional IndexedDB private journal, migration, pagination and JSON archive
+- `front-end/src/app/lib/readingHistory.ts` — validation and legacy localStorage journal compatibility
 - `front-end/src/app/lib/customSpread.ts` — bounded custom spreads
 - `front-end/src/app/components/` — UI experiences
 - `front-end/public/sw.js` — service worker
