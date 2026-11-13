@@ -18,8 +18,9 @@ export default function InstallGuide(){
     window.addEventListener("appinstalled",onInstalled);
     const isStandalone=window.matchMedia?.("(display-mode: standalone)").matches
       ||(navigator as Navigator&{standalone?:boolean}).standalone===true;
-    if(isStandalone)setInstalled(true);
+    const frame=requestAnimationFrame(()=>{if(isStandalone)setInstalled(true);});
     return ()=>{
+      cancelAnimationFrame(frame);
       window.removeEventListener("beforeinstallprompt",onPrompt);
       window.removeEventListener("appinstalled",onInstalled);
     };
