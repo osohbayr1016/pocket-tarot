@@ -3,6 +3,7 @@
  * Calculated by Astronomy Engine from the Sun-Moon ecliptic angle.
  */
 import * as Astronomy from "astronomy-engine";
+import {resolveLocalTime} from "./astroTimeZone.ts";
 const LABELS=["Шинэ сар","Өсөх хавирган","Эхний хагас","Өсөх дүүрэх",
   "Бүтэн сар","Хорогдох дүүрэн","Сүүлийн хагас","Хорогдох хавирган"] as const;
 export interface MoonDay {
@@ -20,7 +21,7 @@ export function moonSnapshot(date:Date):Pick<MoonDay,"phase"|"illumination"|"pha
   const phaseIndex=Math.floor(((phase+22.5)%360)/45);
   return {phase:+phase.toFixed(3),illumination,phaseIndex,phaseName:LABELS[phaseIndex]};
 }
-export function getMoonMonth(year:number,month:number):MoonDay[]{
+export function getMoonMonth(year:number,month:number,timeZone?:string):MoonDay[]{
   if(!Number.isInteger(year)||year<1900||year>2100||
      !Number.isInteger(month)||month<1||month>12)
     throw new Error("1900–2100 оны зөв сар сонгоно уу.");
@@ -28,8 +29,10 @@ export function getMoonMonth(year:number,month:number):MoonDay[]{
   return Array.from({length:days},(_,i)=>{
     const day=i+1;
     // Local noon gives a stable day-level phase indication across DST shifts.
-    const snapshot=moonSnapshot(new Date(year,month-1,day,12,0,0));
-    return {date:[year,String(month).padStart(2,"0"),String(day).padStart(2,"0")].join("-"),
+    const date=[year,String(month).padStart(2,"0"),String(day).padStart(2,"0")].join("-");
+    const instant=timeZone?resolveLocalTime(date,"12:00",timeZone):new Date(year,month-1,day,12,0,0);
+    const snapshot=moonSnapshot(instant);
+    return {date,
       day,...snapshot};
   });
 }
@@ -48,11 +51,11 @@ export interface ExactMoonEvent{
   local:string;
 }
 /** True astronomical phase instants; day grid remains a midday approximation. */
-export function getExactMoonEvents(year:number,month:number,timeZone:string):ExactMoonEvent[]{
+export function getExactMoonEvents(year:number,month:number,timeZone:string,locale="mn-MN"):ExactMoonEvent[]{
   if(!Number.isInteger(year)||year<1900||year>2100||
      !Number.isInteger(month)||month<1||month>12)
     throw new Error("Сарны календарийн огноо буруу байна.");
-  const formatter=new Intl.DateTimeFormat("mn-MN",{
+  const formatter=new Intl.DateTimeFormat(locale,{
     timeZone,year:"numeric",month:"2-digit",day:"2-digit",
     hour:"2-digit",minute:"2-digit",hour12:false
   });
