@@ -40,12 +40,19 @@ export default function LearnTarot(){
   const dueInPool=progress.filter(p=>poolIds.includes(p.id)&&p.dueAt<=now).length;
   useEffect(()=>{
     const frame=requestAnimationFrame(()=>{
-      try{setProgress(loadStudyProgress());}
-      catch(cause){setError(cause instanceof Error?cause.message:"Сургалтын ахицын санг уншиж чадсангүй.");}
+      try{
+        setProgress(loadStudyProgress());
+        setIsReady(true);
+      }catch(cause){
+        setError(cause instanceof Error?cause.message:"Сургалтын ахицын санг уншиж чадсангүй.");
+        setIsReady(false);
+      }
       setNow(Date.now());
-      setIsReady(true);
     });
-    return()=>cancelAnimationFrame(frame);
+    const onVisible=()=>{if(document.visibilityState==="visible")setNow(Date.now());};
+    document.addEventListener("visibilitychange",onVisible);
+    const refresh=setInterval(()=>setNow(Date.now()),60_000);
+    return()=>{cancelAnimationFrame(frame);clearInterval(refresh);document.removeEventListener("visibilitychange",onVisible);};
   },[]);
   const begin=()=>{
     try{
@@ -104,7 +111,7 @@ export default function LearnTarot(){
       </label>
       <button type="button" onClick={()=>{
         if(!window.confirm("78 картын сургалтын ахицыг энэ төхөөрөмжөөс устгах уу?"))return;
-        try{saveStudyProgress([]);setProgress([]);setQuestion(null);setAnswer(null);setScore(0);setAttempts(0);setError("");}
+        try{saveStudyProgress([]);setProgress([]);setQuestion(null);setAnswer(null);setScore(0);setAttempts(0);setError("");setIsReady(true);}
         catch(cause){setError(cause instanceof Error?cause.message:"Ахиц устгагдсангүй.");}
       }} className="min-h-11 rounded-full border border-red-300/30 px-4 py-2 text-sm text-red-200">
         Ахиц арилгах
@@ -120,8 +127,13 @@ export default function LearnTarot(){
       </div>
     ):(
       <div className="rounded-2xl border border-amber-300/20 bg-[#211a34] p-6 sm:p-9">
-        {card&&<img src={card.image} alt="Таах таро картын зураг" width={220} height={368}
-          className="mx-auto aspect-[2/3] h-auto max-h-80 w-auto rounded-lg border border-amber-300/40 object-contain"/>}
+        {card&&<div className="relative mx-auto aspect-[2/3] w-52 overflow-hidden rounded-lg border border-amber-300/40 bg-[#181226]">
+          <img src={card.image} alt="Таах таро картын зураг" width={220} height={368}
+            className="h-full w-full object-cover"/>
+          {answer===null&&<div aria-hidden="true" className="absolute inset-x-0 bottom-0 flex h-[15%] items-center justify-center border-t border-amber-300/30 bg-[#181226]">
+            <span className="font-serif text-xs tracking-widest text-amber-200">POCKET TAROT</span>
+          </div>}
+        </div>}
         <p className="my-6 text-center font-serif text-xl text-amber-100">Энэ ямар карт вэ?</p>
         <div className="grid gap-3 sm:grid-cols-2">
           {question.options.map(id=>{
