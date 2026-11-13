@@ -1,8 +1,8 @@
 # Pocket Tarot — Offline-first Tarot & Astrology
 
-A bilingual (Mongolian/English), browser-side Tarot reading and reflection application. Its core reading and astronomical computations do not require Gemini, OpenAI, or paid APIs. Tarot and astrology are cultural traditions, **not scientifically validated prediction systems**.
+A bilingual (Mongolian/English), browser-side Tarot reading and reflection application. The v2 code has been merged into `main`; production promotion still requires the owner-controlled checks in [RELEASE_STATUS.md](RELEASE_STATUS.md). Its core reading and astronomical computations do not require Gemini, OpenAI, or paid APIs. Tarot and astrology are cultural traditions, **not scientifically validated prediction systems**.
 
-## What works in this feature branch
+## Implemented in main (Pocket Tarot v2)
 
 - **78 Rider–Waite–Smith cards** — 22 Major Arcana and 56 Minor Arcana, with upright and reversed Mongolian and English interpretations and locally stored historical artwork (JPEG and optimized WebP).
 - **Tarot spreads** — traditional 1/3/5/6/10-card spreads, plus a user-configurable **1–12-card custom spread** with labeled positions.

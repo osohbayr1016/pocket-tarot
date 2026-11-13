@@ -1,0 +1,66 @@
+name: Pocket Tarot / production promotion gate
+on:
+  workflow_dispatch:
+    inputs:
+      preview_url:
+        description: "Owner-approved HTTPS preview origin (no path/query)"
+        required: true
+        type: string
+      credential_rotation_confirmed:
+        description: "Owner verified old database, JWT, OAuth and API credentials are revoked/rotated"
+        required: true
+        type: boolean
+        default: false
+      legacy_migration_confirmed:
+        description: "Owner confirmed legacy accounts/data migrated or no affected legacy users"
+        required: true
+        type: boolean
+        default: false
+      physical_qa_confirmed:
+        description: "Owner verified iPhone Safari, Android Chrome and accessibility checks"
+        required: true
+        type: boolean
+        default: false
+      editorial_rights_confirmed:
+        description: "Owner approved card meanings, astronomy claims and commercial art rights"
+        required: true
+        type: boolean
+        default: false
+      rollback_ready:
+        description: "Owner recorded previous deployment and completed rollback rehearsal"
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  approved-preview-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Require explicit owner release sign-offs
+        env:
+          CREDS_OK: ${{ inputs.credential_rotation_confirmed }}
+          MIGRATION_OK: ${{ inputs.legacy_migration_confirmed }}
+          MOBILE_OK: ${{ inputs.physical_qa_confirmed }}
+          EDITORIAL_OK: ${{ inputs.editorial_rights_confirmed }}
+          ROLLBACK_OK: ${{ inputs.rollback_ready }}
+        run: |
+          for key in CREDS_OK MIGRATION_OK MOBILE_OK EDITORIAL_OK ROLLBACK_OK; do
+            if [ "${!key}" != "true" ]; then
+              echo "Release gate BLOCKED: owner sign-off ${key} is not confirmed."
+              exit 1
+            fi
+          done
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Read-only approved preview smoke
+        env:
+          PREVIEW_URL: ${{ inputs.preview_url }}
+        run: node scripts/smoke-public-release.mjs "$PREVIEW_URL"
+      - name: State limitation
+        run: |
+          echo "Preview smoke + owner self-attestations passed."
+          echo "This workflow does not deploy, and does not independently prove legal rights or physical QA."

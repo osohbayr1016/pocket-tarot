@@ -22,6 +22,10 @@ if(!address){
   const checks=[
     {path:"/",type:"text/html",status:[200]},
     {path:"/manifest.webmanifest",type:"application/manifest+json",status:[200]},
+    {path:"/privacy",type:"text/html",status:[200]},
+    {path:"/terms",type:"text/html",status:[200]},
+    {path:"/robots.txt",type:"text/plain",status:[200]},
+    {path:"/icon.svg",type:"image/svg+xml",status:[200]},
     {path:"/sw.js",type:"javascript",status:[200]},
     {path:"/tarot/card-placeholder.svg",type:"image/svg+xml",status:[200]},
     {path:"/tarot/rws/00_Fool.jpg",type:"image/jpeg",status:[200]},
