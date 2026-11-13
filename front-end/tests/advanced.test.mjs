@@ -1,5 +1,5 @@
 import {encryptBackup,decryptBackup,isEncryptedBackup} from "../src/app/lib/encryptedBackup.ts";
-import {moonSnapshot,getMoonMonth,closestLunation} from "../src/app/lib/lunarCalendar.ts";
+import {moonSnapshot,getMoonMonth,closestLunation,getExactMoonEvents} from "../src/app/lib/lunarCalendar.ts";
 import {reviewCard,pickStudyCard,learningStats,validateStudyProgress} from "../src/app/lib/studyProgress.ts";
 import {parseCompleteBackup,BACKUP_FORMAT} from "../src/app/lib/offlineBackup.ts";
 import {calculateReadingStats} from "../src/app/lib/readingStats.ts";
@@ -272,4 +272,16 @@ test("AES-GCM backup encrypts and decrypts without exposing plaintext",async()=>
   assert.equal(decoded.notes,"private journal");
   await assert.rejects(decryptBackup(encrypted,"incorrect password"),/Нууц үг/);
   await assert.rejects(encryptBackup(original,"short"),/12/);
+});
+
+test("exact new/full Moon timestamps agree with eclipse reference dates",()=>{
+  const april=getExactMoonEvents(2024,4,"Asia/Ulaanbaatar");
+  const solar=april.find(event=>event.type==="new");
+  assert.ok(solar);
+  assert.ok(Math.abs(Date.parse(solar.utc)-Date.parse("2024-04-08T18:21:00Z"))<20*60_000);
+  const march=getExactMoonEvents(2024,3,"America/New_York");
+  const lunar=march.find(event=>event.type==="full");
+  assert.ok(lunar);
+  assert.ok(Math.abs(Date.parse(lunar.utc)-Date.parse("2024-03-25T07:00:00Z"))<20*60_000);
+  assert.ok(lunar.local.length>5);
 });
