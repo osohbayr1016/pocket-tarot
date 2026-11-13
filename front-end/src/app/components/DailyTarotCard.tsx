@@ -76,7 +76,7 @@ export default function DailyTarotCard(){
     <h1 className="mt-3 font-serif text-4xl text-amber-50">{t("Өнөөдрийн карт")}</h1>
     <p className="mt-4 text-sm text-slate-300">{date} · {en?"One consistent card for this calendar day.":"Тухайн өдөр тогтмол нэг карт харагдана."}</p>
     <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-amber-300/20 bg-[#211a34] p-6">
-      <TarotCard card={card} isRevealed isReversed={isReversed} size="lg"/>
+      <TarotCard card={card} isRevealed isReversed={isReversed} size="lg" showMeaning={false}/>
       <pre className="mt-6 whitespace-pre-wrap text-left font-sans text-sm leading-7 text-slate-200">{reading}</pre>
       <label htmlFor="daily-notes" className="mt-6 block text-left text-sm font-semibold text-amber-100">{en?"Daily notes":"Өдрийн тэмдэглэл"}</label>
       <textarea id="daily-notes" value={draft.text} disabled={!draft.ready} onChange={event=>draft.setText(event.target.value)}

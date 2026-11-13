@@ -13,6 +13,14 @@ async function openView(page,name){
 }
 
 
+test("one-card quick entry reveals immediately without setup",async({page})=>{
+  await page.goto("/");
+  await page.getByRole("button",{name:"1 карт сугалах"}).click();
+  await page.getByRole("button",{name:/Дараагийн картыг нээх/}).click();
+  await expect(page.getByRole("heading",{name:"Таны уншилтын тайлал"})).toBeVisible();
+  await expect(page.getByRole("button",{name:"Story зураг татах"})).toBeVisible();
+});
+
 test("quick three-card entry and privacy-first Story export",async({page})=>{
   await page.goto("/");
   await expect(page.locator("#custom-spread-builder")).not.toHaveAttribute("open");

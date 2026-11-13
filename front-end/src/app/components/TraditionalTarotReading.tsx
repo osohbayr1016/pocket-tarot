@@ -80,9 +80,9 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
     setSpread(next); setDrawn([]); setVisibleCount(0); setError(""); setSavedMessage(""); setNotes("");
     refreshHistory();
   };
-  const startQuickReading = () => {
+  const startQuickReading = (count:1|3 = 3) => {
     if (!confirmDiscard()) return;
-    const quick=tarotSpreads.find(option=>option.cardCount===3)??tarotSpreads[0];
+    const quick=tarotSpreads.find(option=>option.cardCount===count)??tarotSpreads[0];
     try {
       const cards=drawSpread(tarotCards,quick,undefined,{allowReversed:getReadingPreferences().allowReversed});
       setSpread(quick);setDrawn(cards);setVisibleCount(0);setNotes("");
@@ -215,10 +215,16 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
             <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">{tr("Хурдан эхлэх","Quick start")}</p>
             <h3 className="font-serif text-2xl text-amber-50">{tr("3 картаар эхэл","Start with three cards")}</h3>
             <p className="mt-2 max-w-lg text-sm leading-6 text-slate-300">{tr("Асуултаа бичих эсвэл алгасаад шууд картаа сугал. Нарийн тохиргоо шаардлагагүй.","Write a question or skip it. Draw a simple spread without advanced setup.")}</p>
-            <button type="button" onClick={startQuickReading}
-              className="mt-5 min-h-12 w-full rounded-full bg-amber-300 px-6 py-3 font-semibold text-[#171127] hover:bg-amber-200 sm:w-auto">
-              {tr("3 карт сугалах","Draw three cards")}
-            </button>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button type="button" onClick={()=>startQuickReading(1)}
+                className="min-h-12 flex-1 rounded-full border border-amber-300/50 px-5 py-3 font-semibold text-amber-100 hover:bg-amber-300/10 sm:flex-none">
+                {tr("1 карт сугалах","Draw one card")}
+              </button>
+              <button type="button" onClick={()=>startQuickReading(3)}
+                className="min-h-12 flex-1 rounded-full bg-amber-300 px-6 py-3 font-semibold text-[#171127] hover:bg-amber-200 sm:flex-none">
+                {tr("3 карт сугалах","Draw three cards")}
+              </button>
+            </div>
           </div>
           <h3 className="mb-4 font-serif text-lg text-amber-100">{tr("Бусад дэлгэмэлүүд","Other spreads")}</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -334,7 +340,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
           ) : (
             <>
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
-                <span>{visibleCount} / {drawn.length} {tr("карт нээсэн","cards revealed")}</span>
+                <span role="status" aria-live="polite">{visibleCount} / {drawn.length} {tr("карт нээсэн","cards revealed")}</span>
                 {visibleCount < drawn.length && (
                   <button type="button" onClick={revealNext}
                     className="rounded-full bg-amber-300 px-6 py-3 font-medium text-[#161024] hover:bg-amber-200">
@@ -349,7 +355,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
                 {drawn.map((item,index) => (
                   <div key={item.position} className="min-w-0 rounded-xl border border-white/10 bg-[#211b32] p-3">
                     <div className="flex justify-center">
-                      <TarotCard card={item.card} size="sm" isRevealed={index < visibleCount}
+                      <TarotCard card={item.card} size="sm" showMeaning={false} isRevealed={index < visibleCount}
                         isReversed={item.isReversed} userQuestion={index < visibleCount ? undefined : ""}
                         onClick={index===visibleCount?revealNext:undefined} />
                     </div>

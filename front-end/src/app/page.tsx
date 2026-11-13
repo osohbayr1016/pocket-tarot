@@ -91,6 +91,7 @@ export default function Home() {
     setSection(next);
     setLibraryCard(null);
     setError("");
+    window.requestAnimationFrame(()=>document.getElementById("main-content")?.focus());
   };
   return (
     <div className="pocket-shell min-h-screen bg-[#100e1e] text-[#f6f1e9]">
@@ -208,7 +209,7 @@ export default function Home() {
         {section==="daily" && <DailyFortune/>}
         {section==="dream" && <DreamInterpretation/>}
         {section==="guidance" && <LifeGuidance/>}
-        {section==="history" && <ReadingHistory/>}
+        {section==="history" && <ReadingHistory onOpenBackup={()=>navigate("settings")}/>}
         {section==="daily-card" && <DailyTarotCard/>}
         {section==="learn" && <LearnTarot/>}
         {section==="offline" && <OfflineDeckManager/>}

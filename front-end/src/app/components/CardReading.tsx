@@ -53,7 +53,7 @@ export default function CardReading({card,isReversed=false,onReset,userQuestion=
   return (
     <section className="mx-auto max-w-3xl rounded-2xl border border-amber-300/20 bg-[#1d182f] p-5 text-center sm:p-9">
       <p className="mb-4 text-xs uppercase tracking-[0.3em] text-amber-300">{en?"Single-card reading":"Нэг картын уншилт"}</p>
-      <TarotCard card={card} isRevealed size="lg" isReversed={isReversed}/>
+      <TarotCard card={card} isRevealed size="lg" showMeaning={false} isReversed={isReversed}/>
       <h2 className="mt-8 font-serif text-2xl text-amber-100">{en?"Reflection":"Эргэцүүлэх тайлал"}</h2>
       <pre className="mt-4 whitespace-pre-wrap break-words text-left font-sans text-sm leading-7 text-slate-200">{reading}</pre>
       <label htmlFor="single-card-notes" className="mt-7 block text-left text-sm font-semibold text-amber-100">{en?"Private notes":"Хувийн тэмдэглэл"}</label>

@@ -12,12 +12,13 @@ interface TarotCardProps {
   userQuestion?: string;
   isReversed?: boolean;
   size?: "sm" | "md" | "lg";
+  showMeaning?: boolean;
 }
 const sizes = {sm: "w-32 sm:w-36", md: "w-40 sm:w-44", lg: "w-52 sm:w-60"};
 
 export default function TarotCard({
   card, isRevealed = false, onClick, userQuestion,
-  isReversed = false, size = "lg",
+  isReversed = false, size = "lg", showMeaning = true,
 }: TarotCardProps) {
   const {locale}=useLanguage();
   const [failedImage, setFailedImage] = useState<string | null>(null);
@@ -64,9 +65,9 @@ export default function TarotCard({
       <figcaption className="pt-3">
         <h3 className="text-center text-sm font-semibold leading-snug text-amber-100">{locale==="en"?card.englishName:card.name}</h3>
         {userQuestion && <p className="mt-1 text-center text-xs text-slate-300">{userQuestion}</p>}
-        <p className="mt-2 text-sm leading-relaxed text-slate-200">
+        {showMeaning&&<p className="mt-2 text-sm leading-relaxed text-slate-200">
           {locale==="en"?englishCardMeaning(card,isReversed):isReversed ? card.reversedMeaning : card.meaning}
-        </p>
+        </p>}
       </figcaption>
     </figure>
   );

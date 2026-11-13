@@ -20,7 +20,7 @@ function saveAsFile(content:string,name:string,mime:string){
   a.href=url;a.download=name;a.click();
   setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
-export default function ReadingHistory(){
+export default function ReadingHistory({onOpenBackup}:{onOpenBackup?:()=>void}){
   const {locale}=useLanguage();
   const en=locale==="en";
   const tr=(mn:string,english:string)=>en?english:mn;
@@ -123,6 +123,13 @@ export default function ReadingHistory(){
           </div>
         ))}
       </div>}
+      <div className="mb-5 rounded-2xl border border-amber-300/25 bg-[#211a34] p-5">
+        <h2 className="font-serif text-xl text-amber-100">{tr("Өгөгдлөө аюулгүй хадгалаарай","Protect your readings")}</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-300">{tr("Доорх JSON экспорт шифрлэгдээгүй. Хувийн тэмдэглэлээ өөр төхөөрөмжид зөөх бол нууц үгтэй бүрэн backup ашиглаарай.","The JSON export below is unencrypted. For private notes or moving to another device, use a password-protected complete backup.")}</p>
+        {onOpenBackup&&<button type="button" onClick={onOpenBackup} className="mt-4 min-h-11 rounded-full bg-amber-300 px-5 py-2 text-sm font-semibold text-[#171127]">
+          {tr("Нууц үгтэй backup үүсгэх","Create encrypted backup")}
+        </button>}
+      </div>
       <div className="mb-8 flex flex-wrap justify-center gap-3">
         <button type="button" onClick={()=>{
           void (async()=>{
