@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { tarotCards } from "../data/tarotCards";
 import { interpretReading } from "../lib/offlineEngine";
-import { addReading } from "../lib/readingHistory";
+import {saveJournalReading} from "../lib/journalDb";
 import TarotCard from "./TarotCard";
 import {getReadingPreferences} from "../lib/readingPreferences";
 import {useLocalDraft} from "../lib/useLocalDraft";
@@ -51,10 +51,10 @@ export default function DailyTarotCard(){
     card,position:1,isReversed,positionName:"Өдрийн бэлгэдэл",
     positionDescription:"Өдөрт нэг удаа эргэцүүлэх сэдэв",
   }]):"";
-  const save=()=>{
+  const save=async()=>{
     if(!date||!draft.ready)return;
     try{
-      addReading({
+      await saveJournalReading({
         id:"daily-"+date,date:new Date().toISOString(),spread:"Өдрийн карт",
         question:"Өнөөдөр юунд анхаарах вэ?",reading,notes:draft.text.slice(0,2000),
         cards:[{id:card.id,reversed:isReversed,position:1}],
