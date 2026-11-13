@@ -31,7 +31,7 @@ export default function Horoscope() {
       </header>
       <div className="rounded-2xl border border-amber-300/20 bg-[#201b33] p-5 sm:p-8">
         <label htmlFor="horoscope-birth-date" className="block text-sm font-medium text-amber-100">
-          Төрсөн огноо (огноо оруулбал ордыг автоматаар олно)
+          {en?"Birth date (automatically finds your sign)":"Төрсөн огноо (огноо оруулбал ордыг автоматаар олно)"}
         </label>
         <input id="horoscope-birth-date" type="date" value={birthDate}
           onChange={(event)=>{setBirthDate(event.target.value);setText("");setError("");}}
@@ -51,7 +51,7 @@ export default function Horoscope() {
           ))}
         </div>
         <button type="button" onClick={calculate} className="mt-7 w-full rounded-full bg-amber-300 px-6 py-3 font-semibold text-[#171127] hover:bg-amber-200">
-          Ордны тайлбар харах
+          {en?"Explore this sign":"Ордны тайлбар харах"}
         </button>
         {error && <p role="alert" className="mt-4 text-sm text-red-300">{error}</p>}
         {text && <pre className="mt-7 whitespace-pre-wrap rounded-xl border border-amber-300/15 bg-white/5 p-5 font-sans text-sm leading-7 text-slate-100">{text}</pre>}

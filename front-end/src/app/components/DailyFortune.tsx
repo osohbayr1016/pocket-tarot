@@ -37,7 +37,7 @@ export default function DailyFortune() {
           </select>
         </div>
         <button type="button" onClick={calculate} className="mt-6 w-full rounded-full bg-amber-300 px-6 py-3 font-semibold text-[#171127] hover:bg-amber-200">
-          Өнөөдрийн санаа
+          {en?"Explore today's theme":"Өнөөдрийн санаа"}
         </button>
         {error&&<p role="alert" className="mt-4 text-sm text-red-300">{error}</p>}
         {result&&(

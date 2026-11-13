@@ -61,7 +61,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
       setError("");
     }catch(cause){setError(cause instanceof Error?cause.message:"Дэлгэмлийг хадгалж чадсангүй.");}
   };
-  const result = locale==="en"?englishReading(drawn,question):interpretReading(drawn, question, topic === "auto" ? undefined : topic);
+  const result = locale==="en"?englishReading(drawn,question,topic === "auto" ? undefined : topic):interpretReading(drawn, question, topic === "auto" ? undefined : topic);
 
   const refreshHistory = async () => {
     try{setHistory((await listJournal()).slice(0,20));}
@@ -76,6 +76,17 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
     if(!confirmDiscard())return;
     setSpread(next); setDrawn([]); setVisibleCount(0); setError(""); setSavedMessage(""); setNotes("");
     refreshHistory();
+  };
+  const startQuickReading = () => {
+    if (!confirmDiscard()) return;
+    const quick=tarotSpreads.find(option=>option.cardCount===3)??tarotSpreads[0];
+    try {
+      const cards=drawSpread(tarotCards,quick,undefined,{allowReversed:getReadingPreferences().allowReversed});
+      setSpread(quick);setDrawn(cards);setVisibleCount(0);setNotes("");
+      setError("");setSavedMessage("");emitFeedback("draw");
+    } catch(cause) {
+      setError(cause instanceof Error?cause.message:tr("Карт сугалж чадсангүй.","Could not draw cards."));
+    }
   };
   const makeReading = () => {
     if (!spread || !confirmDiscard()) return;
@@ -182,6 +193,16 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
             <option value="career">{tr("Ажил, карьер","Work & career")}</option>
             <option value="growth">{tr("Хувь хүний хөгжил","Personal growth")}</option>
           </select>
+          <div className="mb-6 rounded-2xl border border-amber-300/35 bg-gradient-to-r from-[#31213f] to-[#20182d] p-5 sm:p-7">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">{tr("Хурдан эхлэх","Quick start")}</p>
+            <h3 className="font-serif text-2xl text-amber-50">{tr("3 картаар эхэл","Start with three cards")}</h3>
+            <p className="mt-2 max-w-lg text-sm leading-6 text-slate-300">{tr("Асуултаа бичих эсвэл алгасаад шууд картаа сугал. Нарийн тохиргоо шаардлагагүй.","Write a question or skip it. Draw a simple spread without advanced setup.")}</p>
+            <button type="button" onClick={startQuickReading}
+              className="mt-5 min-h-12 w-full rounded-full bg-amber-300 px-6 py-3 font-semibold text-[#171127] hover:bg-amber-200 sm:w-auto">
+              {tr("3 карт сугалах","Draw three cards")}
+            </button>
+          </div>
+          <h3 className="mb-4 font-serif text-lg text-amber-100">{tr("Бусад дэлгэмэлүүд","Other spreads")}</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {tarotSpreads.map((option) => (
               <button type="button" key={option.id} onClick={() => chooseSpread(option)}

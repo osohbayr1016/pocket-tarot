@@ -72,7 +72,7 @@ export default function DailyTarotCard(){
   };
   if(!date)return <div className="p-10 text-center text-slate-300">{en?"Preparing your daily card...":"Өдрийн картыг бэлдэж байна..."}</div>;
   return <section className="mx-auto max-w-3xl px-3 pb-16 text-center">
-    <p className="text-xs uppercase tracking-[0.3em] text-amber-300">Daily card journal</p>
+    <p className="text-xs uppercase tracking-[0.3em] text-amber-300">{en?"Daily card journal":"Өдрийн картын тэмдэглэл"}</p>
     <h1 className="mt-3 font-serif text-4xl text-amber-50">{t("Өнөөдрийн карт")}</h1>
     <p className="mt-4 text-sm text-slate-300">{date} · {en?"One consistent card for this calendar day.":"Тухайн өдөр тогтмол нэг карт харагдана."}</p>
     <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-amber-300/20 bg-[#211a34] p-6">
@@ -84,7 +84,7 @@ export default function DailyTarotCard(){
         className="mt-2 w-full rounded-lg border border-white/20 bg-white/5 p-3 text-sm text-white placeholder:text-slate-400"/>
       <p className="mt-2 text-left text-xs text-slate-400">{en?"Your draft saves locally as you type and stays separate for each day.":"Тэмдэглэл бичих бүрд энэ төхөөрөмж дээр түр хадгалагдана. Өөр өдөр солигдоход тэмдэглэл холилдохгүй."}</p>
       <button type="button" disabled={!draft.ready} onClick={save} className="mt-4 rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200">
-        Өдрийн тэмдэглэл хадгалах
+        {en?"Save daily reflection":"Өдрийн тэмдэглэл хадгалах"}
       </button>
       {message&&<p role="status" className="mt-4 text-sm text-emerald-200">{message}</p>}
       {draft.error&&<p role="alert" className="mt-3 text-sm text-red-300">{draft.error}</p>}

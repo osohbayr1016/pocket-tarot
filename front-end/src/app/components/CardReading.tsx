@@ -63,10 +63,10 @@ export default function CardReading({card,isReversed=false,onReset,userQuestion=
       <p className="mt-2 text-left text-xs text-slate-400">{en?"Your notes are automatically saved as a local draft.":"Таны бичсэн тэмдэглэл төхөөрөмж дээр автоматаар түр хадгалагдана."}</p>
       <div className="mt-5 flex flex-wrap justify-center gap-3">
         <button onClick={save} disabled={!draft.ready||saved} type="button" className="rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200">
-          Хадгалах
+          {en?"Save reading":"Хадгалах"}
         </button>
         <button onClick={reset} type="button" className="rounded-full border border-white/30 px-6 py-3 text-sm text-white hover:border-amber-300">
-          Өөр карт сонгох
+          {en?"Draw another card":"Өөр карт сонгох"}
         </button>
       </div>
       {message && <p role="status" className="mt-4 text-sm text-emerald-200">{message}</p>}
