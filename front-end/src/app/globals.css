@@ -36,3 +36,19 @@ button:disabled { cursor: not-allowed; opacity: .65; }
   body, main, section { color: #111 !important; background: #fff !important; }
   pre, p { white-space: pre-wrap; color: #111 !important; }
 }
+
+
+/* Per-device preferences; accessibility respects OS settings automatically. */
+.back-icon-moon { display:none; }
+html[data-card-back="moon"] .back-icon-moon { display:inline; }
+html[data-card-back="moon"] .back-icon-star { display:none; }
+html[data-card-back="moon"] .tarot-card-back {
+  background: radial-gradient(circle at 50% 40%, #35305c 0%, #1d2547 36%, #11182d 100%);
+}
+html[data-reduce-motion="true"] *,
+html[data-reduce-motion="true"] *::before,
+html[data-reduce-motion="true"] *::after {
+  animation-duration: .01ms !important;
+  transition-duration: .01ms !important;
+  scroll-behavior: auto !important;
+}
