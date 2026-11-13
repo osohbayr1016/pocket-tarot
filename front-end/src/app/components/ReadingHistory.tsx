@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import {HISTORY_KEY,type SavedReading} from "../lib/readingHistory";
+import {HISTORY_KEY,type SavedReading,type ReadingMood} from "../lib/readingHistory";
 import {
   listJournal,deleteJournalReading,clearJournal,exportJournalJSON,
-  importJournalJSON,importJournal,changeJournalNotes,changeJournalFavorite,
+  importJournalJSON,importJournal,changeJournalNotes,changeJournalFavorite,changeJournalMetadata,
   JOURNAL_PAGE_SIZE
 } from "../lib/journalDb";
 import { tarotCards } from "../data/tarotCards";
@@ -24,6 +24,8 @@ export default function ReadingHistory(){
   const [search,setSearch]=useState("");
   const [favoritesOnly,setFavoritesOnly]=useState(false);
   const [draftNotes,setDraftNotes]=useState("");
+  const [draftTags,setDraftTags]=useState("");
+  const [draftMood,setDraftMood]=useState<ReadingMood>("neutral");
   const [page,setPage]=useState(1);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
@@ -88,7 +90,7 @@ export default function ReadingHistory(){
       const card=tarotCards.find(c=>c.id===entry.id);
       return card?[card.name,card.englishName]:[];
     }).join(" ");
-    return [item.spread,item.question,item.notes,cardNames,item.date]
+    return [item.spread,item.question,item.notes,cardNames,item.date,item.mood||"",...(item.tags||[])]
       .join(" ").toLocaleLowerCase().includes(searched);
   });
   const pages=Math.max(1,Math.ceil(visible.length/JOURNAL_PAGE_SIZE));
@@ -186,6 +188,9 @@ export default function ReadingHistory(){
                 <h2 className="font-serif text-xl text-amber-100">{item.spread || "Таро уншилт"}</h2>
                 <p className="mt-1 text-xs text-slate-400">{new Date(item.date).toLocaleString("mn-MN")}</p>
                 {item.question&&<p className="mt-3 text-sm text-slate-200">{item.question}</p>}
+                {!!item.tags?.length&&<div className="mt-3 flex flex-wrap gap-2">{item.tags.map(tag=>
+                  <span key={tag} className="rounded-full bg-amber-300/10 px-3 py-1 text-xs text-amber-100">#{tag}</span>
+                )}</div>}
               </div>
               <div className="flex flex-wrap gap-2">
                 <button type="button" aria-pressed={Boolean(item.favorite)}
@@ -198,7 +203,7 @@ export default function ReadingHistory(){
                   })()} className="rounded-full border border-amber-300/30 px-4 py-2 text-sm text-amber-100">
                   {item.favorite?"★":"☆"}
                 </button>
-                <button type="button" aria-expanded={selected===item.id} onClick={()=>{ const next=selected===item.id?null:item.id;setSelected(next);setDraftNotes(next?item.notes:""); }}
+                <button type="button" aria-expanded={selected===item.id} onClick={()=>{ const next=selected===item.id?null:item.id;setSelected(next);setDraftNotes(next?item.notes:"");setDraftTags(next?(item.tags||[]).join(", "):"");setDraftMood(next?item.mood||"neutral":"neutral"); }}
                   className="rounded-full border border-amber-300/40 px-4 py-2 text-sm text-amber-100 hover:border-amber-300">
                   {selected===item.id?"Хураах":"Дэлгэрэнгүй"}
                 </button>
@@ -242,6 +247,36 @@ export default function ReadingHistory(){
                     }
                   })()} className="mt-2 rounded-full border border-amber-300/40 px-5 py-2 text-sm text-amber-100 hover:border-amber-300">
                     Тэмдэглэл хадгалах
+                  </button>
+                </div>
+                <div className="mt-5 grid gap-3 border-t border-white/10 pt-5 sm:grid-cols-2">
+                  <label htmlFor={"journal-tags-"+active.id} className="text-sm text-amber-100">
+                    Тэмдэглэгээ (таслалаар салгана, 6 хүртэл)
+                    <input id={"journal-tags-"+active.id} value={draftTags}
+                      onChange={event=>setDraftTags(event.target.value)} maxLength={210}
+                      placeholder="хайр, зорилго, шинэ эхлэл..."
+                      className="mt-2 w-full rounded-lg border border-white/20 bg-white/5 p-3 text-sm text-white"/>
+                  </label>
+                  <label htmlFor={"journal-mood-"+active.id} className="text-sm text-amber-100">
+                    Уншилтын дараах мэдрэмж
+                    <select id={"journal-mood-"+active.id} value={draftMood}
+                      onChange={event=>setDraftMood(event.target.value as ReadingMood)}
+                      className="mt-2 w-full rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-white">
+                      <option value="neutral">Төвийг сахисан</option>
+                      <option value="calm">Тайван</option>
+                      <option value="hopeful">Итгэлтэй</option>
+                      <option value="uncertain">Эргэлзээтэй</option>
+                      <option value="anxious">Санаа зовсон</option>
+                    </select>
+                  </label>
+                  <button type="button" onClick={()=>void (async()=>{
+                    try{
+                      const tags=[...new Set(draftTags.split(",").map(v=>v.trim()).filter(Boolean))];
+                      await changeJournalMetadata(active.id,tags,draftMood);
+                      setItems(await listJournal());setError("");setMessage("Мэдрэмж болон тэмдэглэгээ хадгалагдлаа.");
+                    }catch(cause){setError(cause instanceof Error?cause.message:"Мэдрэмж хадгалагдсангүй.");}
+                  })()} className="w-fit rounded-full border border-amber-300/40 px-5 py-3 text-sm text-amber-100">
+                    Ангилал хадгалах
                   </button>
                 </div>
                 <div className="mt-5 flex flex-wrap gap-2">
