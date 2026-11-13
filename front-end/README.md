@@ -1,123 +1,57 @@
-# 🔮 Mystical Tarot Website
+# Pocket Tarot — offline Tarot, astronomy and reflective journaling
 
-A beautiful, interactive tarot card reading website built with Next.js, TypeScript, and Tailwind CSS. Experience the ancient wisdom of tarot cards with stunning animations and mystical design.
+The current frontend is an **offline-first Next.js 16 + React 19** application. Main Tarot calculations, learning, reading history and astronomical calculations run on the user's device; no backend, login, generative AI, paid API or cloud account is needed.
 
-## ✨ Features
+## Experiences
 
-- **22 Major Arcana Cards**: Complete set of traditional tarot cards with authentic meanings
-- **Random Card Selection**: Mystical card shuffling and selection process
-- **Detailed Readings**: Comprehensive interpretations including card meaning, future predictions, and key insights
-- **Beautiful UI**: Mystical design with purple gradients, animations, and mystical elements
-- **Responsive Design**: Works perfectly on desktop, tablet, and mobile devices
-- **Print Functionality**: Save your readings as PDF or print them
-- **Smooth Animations**: Floating elements, card reveals, and mystical effects
+- **78-card historical deck**: 22 Major + 56 Minor RWS illustrations, upright/reversed Mongolian symbolic readings and local English interpretive texts.
+- **Tarot spreads**: classic 1, 3, 5, 6 and 10-card spreads, visual Celtic Cross, custom 1–12 card spreads, question topics and local reading synthesis.
+- **Tarot Academy**: seven self-paced modules, all 78 cards, spaced repetition, review reminders and saved progress.
+- **Private journal**: IndexedDB archival storage, legacy localStorage migration, 20-record pages, search, tags, moods, favorites, full export/import, print/PDF, PNG, privacy-first Instagram story/square exports.
+- **Offline astronomy**: 10-body tropical natal chart, Whole Sign houses, simple aspects, transit comparisons, IANA city time zones and calendar with computed new/full Moon instants.
+- **Reflection**: optional daily card, deterministic daily themes, dream-symbol keywords (Mongolian + selected Latin Mongolian), reflection prompts.
+- **Privacy and personalization**: encrypted portable **v4** JSON backups (AES-256-GCM; passphrase not stored, includes private drafts and locale; reads v1–v3), optional feedback sounds/haptics, reduced-motion support, themes, bilingual MN/EN primary screens and PWA installation guidance.
 
-## 🎴 How It Works
+Tarot and astrology **do not scientifically predict events**. Astro coordinate calculations are astronomical geometry, not an assurance about a person's life.
 
-1. **Focus Your Mind**: Clear your thoughts and focus on what you want to know about your future
-2. **Choose Your Card**: Click the "Select Your Card" button to randomly draw a card from the deck
-3. **Receive Your Reading**: Discover the meaning, future prediction, and key insights for your chosen card
+## Start
 
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- npm or yarn
-
-### Installation
-
-1. Clone the repository:
+Requirements: Node.js 22+, npm and internet for the *first* artwork sync.
 
 ```bash
-git clone <repository-url>
-cd tarrots-website/front-end
-```
-
-2. Install dependencies:
-
-```bash
-npm install
-```
-
-3. Run the development server:
-
-```bash
+npm ci --legacy-peer-deps
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-### Build for Production
+Then open `http://localhost:3000`. To build and test:
 
 ```bash
+npm test
+npm run test:legacy
+npm run lint
+npm run typecheck
 npm run build
-npm start
+npx playwright test
 ```
 
-## 🎨 Design Features
+The GitHub Actions workflows also validate legacy API lockdown and scan tracked source/doc files for obvious plaintext credentials. Playwright's browsers must be installed separately for local E2E.
 
-- **Mystical Background**: Animated floating orbs and mystical gradients
-- **Card Animations**: Smooth card reveals with hover effects
-- **Responsive Layout**: Beautiful design that adapts to all screen sizes
-- **Custom Animations**: Floating, glowing, and sparkle effects
-- **Print Styles**: Optimized for saving readings as PDF
+## Private data
 
-## 📱 Technologies Used
+User reading history is primarily saved in IndexedDB; old localStorage journal records are copied via one atomic, idempotent migration transaction without deleting originals. Learning progress and preferences remain in localStorage. These stores are **not encrypted at rest**. Export encrypted portable backups and keep the passphrase safe. Browser cleanup or storage eviction can destroy local data, so export regularly.
 
-- **Next.js 15**: React framework with App Router
-- **TypeScript**: Type-safe development
-- **Tailwind CSS**: Utility-first CSS framework
-- **React Hooks**: State management and effects
-- **Custom CSS**: Mystical animations and effects
+An encrypted backup cannot be restored without its passphrase. Plaintext JSON export is still optionally available for older workflows. Neither backup workflow uses a server.
 
-## 🎴 Tarot Cards Included
+## Historical artwork
 
-The website features all 22 Major Arcana cards:
+The 78 RWS images came from [mixvlad/TarotCards](https://github.com/mixvlad/TarotCards/tree/main/tarot/rider-waite/720px), sourced from original 1909 Pamela Colman Smith illustrations, via restored scans credited to Steve P. Distribution rights and third-party scan/restoration terms still require commercial review for the target jurisdiction. See [../ARTWORK_PROVENANCE.md](../ARTWORK_PROVENANCE.md).
 
-- The Fool (New beginnings)
-- The Magician (Manifestation)
-- The High Priestess (Intuition)
-- The Empress (Abundance)
-- The Emperor (Authority)
-- The Hierophant (Tradition)
-- The Lovers (Love & Harmony)
-- The Chariot (Victory)
-- Strength (Inner Courage)
-- The Hermit (Introspection)
-- Wheel of Fortune (Luck & Cycles)
-- Justice (Fairness & Truth)
-- The Hanged Man (Surrender)
-- Death (Transformation)
-- Temperance (Balance)
-- The Devil (Temptation)
-- The Tower (Sudden Change)
-- The Star (Hope & Faith)
-- The Moon (Illusion)
-- The Sun (Joy & Success)
-- Judgement (Awakening)
-- The World (Completion)
+## Current limitations
 
-## 🎯 Future Enhancements
+- MN/EN translations cover primary Tarot, Academy, daily, dream, journal, settings, PWA and astrology screens. Some rarely reached error, help and legacy-content strings can remain Mongolian; native-language editorial review is pending.
+- Ephemeris and historical local time must be independently checked, especially unusual DST histories. Only Whole Sign houses are implemented.
+- RWS art/licensing, translations, and spiritual interpretations have not received full external domain/legal review.
+- Automated Chromium/Firefox/WebKit and mobile emulator runs do not replace real iPhone/Android Safari/Chrome, screen reader, low-memory, service worker upgrade or offline eviction QA.
+- Main-to-production rollout and credential rotation are owner-controlled and must not be assumed completed.
 
-- [ ] Minor Arcana cards (56 additional cards)
-- [ ] Multiple card spreads (3-card, Celtic Cross, etc.)
-- [ ] User accounts to save reading history
-- [ ] Social sharing of readings
-- [ ] Dark/Light theme toggle
-- [ ] Audio effects and background music
-- [ ] Mobile app version
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
-## 🙏 Acknowledgments
-
-- Traditional tarot card meanings and interpretations
-- Mystical design inspiration from ancient wisdom traditions
-- Next.js and Tailwind CSS communities for excellent documentation
-
----
-
-**✨ May the cards reveal your true path ✨**
+See [../RELEASE_CHECKLIST.md](../RELEASE_CHECKLIST.md), [../SECURITY.md](../SECURITY.md) and [../README.md](../README.md).

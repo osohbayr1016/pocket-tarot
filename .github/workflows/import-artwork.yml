@@ -1,0 +1,35 @@
+name: Import RWS public-domain artwork
+on:
+  push:
+    branches: [feat/offline-tarot-foundation]
+    paths:
+      - ".github/workflows/import-artwork.yml"
+      - "front-end/scripts/download-rws.mjs"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Download and validate 78 historical scans
+        working-directory: front-end
+        run: npm run assets:sync
+      - name: Commit historical artwork to feature branch
+        run: |
+          git add front-end/public/tarot/rws/*.jpg
+          if git diff --cached --quiet; then
+            echo "All card art already present"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "assets: include 78 Rider-Waite-Smith historical card images"
+          git push

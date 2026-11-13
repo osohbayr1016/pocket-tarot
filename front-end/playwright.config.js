@@ -1,0 +1,28 @@
+const { defineConfig, devices } = require("@playwright/test");
+
+module.exports = defineConfig({
+  testDir: "./e2e",
+  timeout: 45_000,
+  expect: {timeout: 12_000},
+  retries: process.env.CI ? 1 : 0,
+  workers: process.env.CI ? 2 : undefined,
+  reporter: process.env.CI ? [["github"],["html",{open:"never"}]] : "list",
+  use: {
+    baseURL:"http://127.0.0.1:3000",
+    trace:"retain-on-failure",
+    screenshot:"only-on-failure",
+  },
+  projects: [
+    {name:"chromium",use:{...devices["Desktop Chrome"]},testIgnore:"**/mobile.spec.js"},
+    {name:"firefox",use:{...devices["Desktop Firefox"]},testIgnore:"**/mobile.spec.js"},
+    {name:"webkit",use:{...devices["Desktop Safari"]},testIgnore:"**/mobile.spec.js"},
+    {name:"android-mobile",use:{...devices["Pixel 7"]},testMatch:"**/mobile.spec.js"},
+    {name:"ios-mobile",use:{...devices["iPhone 13"]},testMatch:"**/mobile.spec.js"}
+  ],
+  webServer: {
+    command:"npm run start -- -p 3000",
+    url:"http://127.0.0.1:3000",
+    timeout:90_000,
+    reuseExistingServer:!process.env.CI,
+  }
+});

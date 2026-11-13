@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { TarotCard as TarotCardType } from "../data/tarotCards";
+import {useLanguage} from "../lib/LanguageProvider";
+import {englishCardMeaning} from "../lib/englishTarot";
+import type { TarotCard as TarotCardType } from "../data/tarotCards";
 
 interface TarotCardProps {
   card: TarotCardType;
@@ -9,126 +11,64 @@ interface TarotCardProps {
   onClick?: () => void;
   userQuestion?: string;
   isReversed?: boolean;
+  size?: "sm" | "md" | "lg";
+  showMeaning?: boolean;
 }
+const sizes = {sm: "w-32 sm:w-36", md: "w-40 sm:w-44", lg: "w-52 sm:w-60"};
 
 export default function TarotCard({
-  card,
-  isRevealed = false,
-  onClick,
-  userQuestion,
-  isReversed = false,
+  card, isRevealed = false, onClick, userQuestion,
+  isReversed = false, size = "lg", showMeaning = true,
 }: TarotCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
-
+  const {locale}=useLanguage();
+  const [failedImage, setFailedImage] = useState<string | null>(null);
+  const imageError = failedImage === card.image;
+  const widthClass = sizes[size];
   if (!isRevealed) {
     return (
-      <div
-        className="relative w-64 h-96 cursor-pointer transform transition-all duration-500 hover:scale-105"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+      <button
+        type="button"
         onClick={onClick}
+        aria-label={locale==="en"?"Reveal Tarot card":"Таро карт илчлэх"}
+        className={widthClass + " tarot-card-back relative aspect-[2/3] rounded-xl overflow-hidden border border-amber-300/50 bg-[#17112c] shadow-[0_16px_36px_rgba(0,0,0,0.3)] transition-transform duration-300 hover:-translate-y-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200"}
       >
-        {/* Card back */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-indigo-700 to-purple-800 rounded-lg shadow-2xl border-2 border-purple-400/30 transform transition-transform duration-300 hover:rotate-2">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent rounded-lg"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-6xl mb-4 animate-pulse">🔮</div>
-              <div className="text-2xl font-semibold text-purple-100">
-                Pocket Tarot
-              </div>
-              <div className="text-sm text-purple-200 mt-2">
-                Илчлэхийн тулд дар
-              </div>
-            </div>
+        <div className="absolute inset-2 rounded-lg border border-amber-500/60" />
+        <div className="absolute inset-4 rounded-md border border-amber-500/30" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-amber-100">
+          <div className="text-6xl font-serif" aria-hidden="true">
+            <span className="back-icon-star">✦</span><span className="back-icon-moon">☾</span>
           </div>
-          {/* Mystical symbols */}
-          <div className="absolute top-4 left-4 text-purple-300 text-lg">
-            ✨
-          </div>
-          <div className="absolute top-4 right-4 text-purple-300 text-lg">
-            ⭐
-          </div>
-          <div className="absolute bottom-4 left-4 text-purple-300 text-lg">
-            🌙
-          </div>
-          <div className="absolute bottom-4 right-4 text-purple-300 text-lg">
-            🔮
-          </div>
+          <span className="mt-3 tracking-[0.3em] text-[10px] uppercase">Pocket Tarot</span>
+          <span className="mt-2 text-[11px] opacity-70">{locale==="en"?"Reveal":"Илчлэх"}</span>
         </div>
-      </div>
+      </button>
     );
   }
-
   return (
-    <div
-      className="relative w-64 h-96 transform transition-all duration-700 hover:scale-105"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Card front */}
-      <div
-        className={`absolute inset-0 bg-gradient-to-br from-amber-100 via-yellow-100 to-orange-100 rounded-lg shadow-2xl border-2 border-amber-400/50 transform transition-transform duration-300 hover:rotate-1 ${
-          isReversed ? "rotate-180" : ""
-        }`}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-400/10 to-transparent rounded-lg"></div>
-
-        {/* Card header */}
-        <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-purple-600 to-indigo-700 rounded-t-lg flex items-center justify-center">
-          <h3 className="text-white font-bold text-lg">{card.name}</h3>
-        </div>
-
-        {/* Card content */}
-        <div className="absolute top-16 left-0 right-0 bottom-0 p-4 flex flex-col items-center justify-center">
-          {/* Emoji */}
-          <div className="text-3xl mb-2 animate-bounce">{card.emoji}</div>
-
-          {/* User Question */}
-          {userQuestion && (
-            <div className="text-center mb-3">
-              <h4 className="text-purple-700 font-bold text-sm mb-1">
-                ❓ Таны Асуулт ❓
-              </h4>
-              <p className="text-gray-600 text-xs leading-tight font-medium">
-                "{userQuestion}"
-              </p>
-            </div>
-          )}
-
-          {/* Card Meaning */}
-          <div className="text-center">
-            <h4 className="text-purple-700 font-extrabold text-base mb-2">
-              ✨ Картын Хариулт ✨
-            </h4>
-            <p className="text-gray-700 text-sm leading-relaxed font-semibold">
-              {isReversed && card.reversedMeaning
-                ? card.reversedMeaning
-                : card.meaning}
-            </p>
-            {isReversed && (
-              <div className="mt-2 text-xs text-red-600 font-bold">
-                🔄 Урвуу карт
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Mystical border elements */}
-        <div className="absolute top-2 left-2 text-purple-500 text-sm">✨</div>
-        <div className="absolute top-2 right-2 text-purple-500 text-sm">⭐</div>
-        <div className="absolute bottom-2 left-2 text-purple-500 text-sm">
-          🌙
-        </div>
-        <div className="absolute bottom-2 right-2 text-purple-500 text-sm">
-          🔮
-        </div>
+    <figure className={widthClass + " tarot-reveal-enter mx-auto text-left"}>
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl border-2 border-amber-400/60 bg-[#f5e6c4] shadow-[0_16px_45px_rgba(0,0,0,0.35)]">
+        <img
+          src={imageError ? "/tarot/card-placeholder.svg" : card.image}
+          alt={card.englishName + (isReversed ? (locale==="en"?" — reversed":" — урвуу") : "")}
+          width={480}
+          height={800}
+          loading="lazy"
+          onError={() => setFailedImage(card.image)}
+          className={"h-full w-full object-cover transition-transform duration-700 " + (isReversed ? "rotate-180" : "")}
+        />
+        {isReversed && (
+          <span className="absolute right-2 top-2 rounded bg-[#16132b]/85 px-2 py-1 text-[11px] font-medium text-amber-100">
+            {locale==="en"?"Reversed":"Урвуу"}
+          </span>
+        )}
       </div>
-
-      {/* Glow effect on hover */}
-      {isHovered && (
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-lg blur-sm animate-pulse"></div>
-      )}
-    </div>
+      <figcaption className="pt-3">
+        <h3 className="text-center text-sm font-semibold leading-snug text-amber-100">{locale==="en"?card.englishName:card.name}</h3>
+        {userQuestion && <p className="mt-1 text-center text-xs text-slate-300">{userQuestion}</p>}
+        {showMeaning&&<p className="mt-2 text-sm leading-relaxed text-slate-200">
+          {locale==="en"?englishCardMeaning(card,isReversed):isReversed ? card.reversedMeaning : card.meaning}
+        </p>}
+      </figcaption>
+    </figure>
   );
 }

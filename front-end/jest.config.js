@@ -1,9 +1,13 @@
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "jsdom",
+  testPathIgnorePatterns: ["<rootDir>/e2e/"],
   transform: {
-    "^.+\\.(ts|tsx|js|jsx)$": "babel-jest",
+    "^.+\\.(ts|tsx)$": ["ts-jest", {
+      tsconfig: { jsx: "react-jsx", module: "commonjs", esModuleInterop: true },
+      isolatedModules: true,
+    }],
   },
-  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js", "@testing-library/jest-dom"],
 };

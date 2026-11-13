@@ -1,0 +1,31 @@
+name: Optimize 78 Tarot artwork assets
+on:
+  push:
+    branches: [feat/offline-tarot-foundation]
+    paths:
+      - ".github/workflows/optimize-artwork.yml"
+      - "front-end/scripts/optimize_art.py"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Pillow
+        run: python -m pip install "Pillow==11.3.0"
+      - name: Compress local artwork
+        run: python front-end/scripts/optimize_art.py
+      - name: Commit WebP files
+        run: |
+          git add front-end/public/tarot/rws/*.webp
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "assets: add optimized WebP versions of 78 tarot cards"
+          git push
