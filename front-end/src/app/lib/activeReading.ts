@@ -26,10 +26,10 @@ export function parseActiveReading(text:string):ActiveReading|null{
       ||typeof p.name!=="string"||p.name.length>100
       ||typeof p.description!=="string"||p.description.length>300))return null;
     if(raw.cards.length!==0&&raw.cards.length!==spread.cardCount)return null;
-    const seen=new Set<string>();
+    const seen=new Set<number>();
     const drawn:DrawnCard[]=[];
     for(const [index,item] of raw.cards.entries()){
-      if(!item||typeof item.id!=="string"||typeof item.reversed!=="boolean"||item.position!==index+1)return null;
+      if(!item||!Number.isInteger(item.id)||typeof item.reversed!=="boolean"||item.position!==index+1)return null;
       if(seen.has(item.id))return null;
       seen.add(item.id);
       const card=tarotCards.find(c=>c.id===item.id);
