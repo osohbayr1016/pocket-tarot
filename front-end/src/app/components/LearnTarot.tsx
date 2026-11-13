@@ -4,6 +4,7 @@ import { tarotCards } from "../data/tarotCards";
 import { secureRandomInt } from "../lib/offlineEngine";
 import {loadStudyProgress,saveStudyProgress,reviewCard,learningStats,pickStudyCard,type CardProgress} from "../lib/studyProgress";
 import {TAROT_LESSONS,lessonMetrics} from "../lib/tarotCurriculum";
+import {emitFeedback} from "../lib/feedback";
 
 type Question = {id:number; options:number[]};
 type QuizPool = "major" | "minor" | "all";
@@ -69,6 +70,7 @@ export default function LearnTarot(){
   const choose=(value:number)=>{
     if(answer!==null||!question)return;
     setAnswer(value);setAttempts(current=>current+1);
+    emitFeedback(value===question.id?"correct":"flip");
     if(value===question.id)setScore(current=>current+1);
     try{
       const next=reviewCard(progress,question.id,value===question.id);
