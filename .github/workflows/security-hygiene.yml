@@ -1,0 +1,36 @@
+name: Pocket Tarot / credential & legacy API safety
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  secret-hygiene:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Scan tracked source and docs (never print secret values)
+        run: node scripts/scan-repository-secrets.mjs
+      - name: Syntax check deprecated API server
+        run: node --check back-end/server.js
+  legacy-api-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: back-end/package-lock.json
+      - name: Install legacy compatibility server dependencies
+        working-directory: back-end
+        run: npm ci --legacy-peer-deps
+      - name: Verify health and disabled account/AI endpoints
+        working-directory: back-end
+        run: npm test -- --runInBand
