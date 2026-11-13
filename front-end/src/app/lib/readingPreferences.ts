@@ -3,9 +3,12 @@ export interface ReadingPreferences {
   allowReversed:boolean;
   reduceMotion:boolean;
   cardBack:"star"|"moon";
+  theme:"royal"|"ocean"|"midnight";
+  haptics:boolean;
+  sound:boolean;
 }
 export const defaultReadingPreferences:ReadingPreferences={
-  allowReversed:true,reduceMotion:false,cardBack:"star"
+  allowReversed:true,reduceMotion:false,cardBack:"star",theme:"royal",haptics:false,sound:false
 };
 export function normalizeReadingPreferences(value:unknown):ReadingPreferences{
   if(!value||typeof value!=="object"||Array.isArray(value))return {...defaultReadingPreferences};
@@ -13,7 +16,10 @@ export function normalizeReadingPreferences(value:unknown):ReadingPreferences{
   return {
     allowReversed:typeof raw.allowReversed==="boolean"?raw.allowReversed:true,
     reduceMotion:typeof raw.reduceMotion==="boolean"?raw.reduceMotion:false,
-    cardBack:raw.cardBack==="moon"?"moon":"star"
+    cardBack:raw.cardBack==="moon"?"moon":"star",
+    theme:raw.theme==="ocean"?"ocean":raw.theme==="midnight"?"midnight":"royal",
+    haptics:raw.haptics===true,
+    sound:raw.sound===true
   };
 }
 export function getReadingPreferences():ReadingPreferences{
@@ -24,6 +30,7 @@ export function applyReadingPreferences(prefs:ReadingPreferences){
   if(typeof document==="undefined")return;
   document.documentElement.dataset.reduceMotion=String(prefs.reduceMotion);
   document.documentElement.dataset.cardBack=prefs.cardBack;
+  document.documentElement.dataset.theme=prefs.theme;
 }
 export function saveReadingPreferences(prefs:ReadingPreferences):ReadingPreferences{
   const normalized=normalizeReadingPreferences(prefs);
