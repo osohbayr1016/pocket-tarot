@@ -1,3 +1,4 @@
+import {calculateReadingStats} from "../src/app/lib/readingStats.ts";
 import {normalizeReadingPreferences} from "../src/app/lib/readingPreferences.ts";
 import {convertLegacyReadings} from "../src/app/lib/legacyMigration.ts";
 import {parseSavedSpreads,savedToSpread} from "../src/app/lib/savedCustomSpreads.ts";
@@ -167,4 +168,17 @@ test("upright-only preference never draws reversed cards",()=>{
   assert.ok(drawn.every(card=>!card.isReversed));
   assert.equal(normalizeReadingPreferences({allowReversed:false,cardBack:"moon"}).allowReversed,false);
   assert.equal(normalizeReadingPreferences({cardBack:"other"}).cardBack,"star");
+});
+
+test("reading statistics stay local and handle favorites and repeated cards",()=>{
+  const now=new Date("2024-11-15T00:00:00Z");
+  const rows=[
+    {id:"1",date:"2024-11-13T00:00:00Z",favorite:true,spread:"",reading:"",question:"",notes:"",
+      cards:[{id:0,reversed:false,position:1},{id:1,reversed:false,position:2}]},
+    {id:"2",date:"2024-07-01T00:00:00Z",favorite:false,spread:"",reading:"",question:"",notes:"",
+      cards:[{id:0,reversed:true,position:1}]}
+  ];
+  const stats=calculateReadingStats(rows,now);
+  assert.deepEqual([stats.total,stats.favorites,stats.distinctCards,stats.topCardId,stats.topCardDraws,stats.last30Days],
+    [2,1,2,0,2,1]);
 });
