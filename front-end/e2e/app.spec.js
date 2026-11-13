@@ -512,3 +512,17 @@ test("v4 complete backup restores unsaved drafts and language without external A
   await expect(page.locator("#daily-notes")).toHaveValue("Private offline draft to rescue");
   expect(api).toEqual([]);
 });
+
+test("privacy settings can clear only unsaved drafts without erasing saved journal",async({page})=>{
+  await page.goto("/");
+  await openView(page,"Өдрийн карт");
+  await page.locator("#daily-notes").fill("Discarded private draft");
+  await openView(page,"Хувийн тохиргоо");
+  page.on("dialog",dialog=>void dialog.accept());
+  await page.getByRole("button",{name:"Түр тэмдэглэлүүд арилгах"}).click();
+  await expect(page.getByText(/1 түр тэмдэглэл ариллаа/)).toBeVisible();
+  const count=await page.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith("pocket-tarot-draft-v1:")).length);
+  expect(count).toBe(0);
+  await openView(page,"Өдрийн карт");
+  await expect(page.locator("#daily-notes")).toHaveValue("");
+});
