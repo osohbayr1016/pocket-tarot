@@ -9,7 +9,7 @@ test("interprets a common symbol locally without calling an API", () => {
     target: { value: "Ус, далай харсан зүүд" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Бэлгэдлийг тайлбарлах" }));
-  expect(screen.getByText(/Ус нь зарим уламжлалд/)).toBeInTheDocument();
+  expect(screen.getByText(/Ус: мэдрэмж/)).toBeInTheDocument();
   expect(request).not.toHaveBeenCalled();
   request.mockRestore();
 });
