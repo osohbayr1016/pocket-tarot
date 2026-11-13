@@ -1,3 +1,4 @@
+import {moonSnapshot,getMoonMonth,closestLunation} from "../src/app/lib/lunarCalendar.ts";
 import {reviewCard,pickStudyCard,learningStats,validateStudyProgress} from "../src/app/lib/studyProgress.ts";
 import {parseCompleteBackup,BACKUP_FORMAT} from "../src/app/lib/offlineBackup.ts";
 import {calculateReadingStats} from "../src/app/lib/readingStats.ts";
@@ -237,4 +238,26 @@ test("complete backup v2 preserves training progress while v1 remains compatible
   assert.deepEqual(parseCompleteBackup(JSON.stringify(base)).study,[sample]);
   assert.deepEqual(parseCompleteBackup(JSON.stringify({...base,version:1,study:undefined})).study,[]);
   assert.throws(()=>parseCompleteBackup(JSON.stringify({...base,study:[{...sample,id:90}]})),/буруу/);
+});
+
+test("offline lunar ephemeris matches 2024 known new and full moon times",()=>{
+  const newMoon=moonSnapshot(new Date("2024-04-08T18:00:00Z"));
+  const angleToNew=Math.min(newMoon.phase,360-newMoon.phase);
+  assert.ok(angleToNew<10,"April 2024 solar eclipse must be near new moon");
+  assert.ok(newMoon.illumination<=2);
+  const full=moonSnapshot(new Date("2024-03-25T07:00:00Z"));
+  assert.ok(Math.abs(full.phase-180)<10,"March 2024 lunar eclipse must be near full moon");
+  assert.ok(full.illumination>=98);
+});
+test("lunar calendar returns every valid day and bounded illumination",()=>{
+  assert.equal(getMoonMonth(2024,2).length,29);
+  assert.equal(getMoonMonth(2025,2).length,28);
+  assert.equal(getMoonMonth(2024,4).length,30);
+  const rows=getMoonMonth(2024,4);
+  assert.equal(rows[0].date,"2024-04-01");
+  assert.equal(rows[29].date,"2024-04-30");
+  assert.ok(rows.every(day=>day.illumination>=0&&day.illumination<=100&&day.phase>=0&&day.phase<360));
+  const nearest=closestLunation(rows,0);
+  assert.ok(nearest?.day>=6&&nearest?.day<=10);
+  assert.throws(()=>getMoonMonth(2025,13),/1900/);
 });
