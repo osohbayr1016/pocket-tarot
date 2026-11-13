@@ -1,6 +1,6 @@
 "use client";
 import type { ReadingTopic } from "../lib/readingIntelligence";
-import { loadReadings, addReading, clearReadings } from "../lib/readingHistory";
+import {listJournal,saveJournalReading,clearJournal} from "../lib/journalDb";
 
 import { useEffect, useState } from "react";
 import { tarotCards } from "../data/tarotCards";
@@ -56,8 +56,8 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
   };
   const result = interpretReading(drawn, question, topic === "auto" ? undefined : topic);
 
-  const refreshHistory = () => {
-    try{setHistory(loadReadings().slice(0,20));}
+  const refreshHistory = async () => {
+    try{setHistory((await listJournal()).slice(0,20));}
     catch(cause){setError(cause instanceof Error?cause.message:"Уншилтын түүхийг уншиж чадсангүй.");}
   };
   const confirmDiscard=()=>{
@@ -82,10 +82,10 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
       setError(cause instanceof Error ? cause.message : "Карт холих үед алдаа гарлаа.");
     }
   };
-  const save = () => {
+  const save = async () => {
     if (!spread || !drawn.length || visibleCount !== drawn.length || !notesDraft.ready || !questionDraft.ready || savedMessage) return;
     try {
-      addReading({
+      await saveJournalReading({
         id:crypto.randomUUID(),
         date:new Date().toISOString(),
         spread:spread.name,
@@ -101,10 +101,10 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
       setError("Төхөөрөмжийн хадгалах эрх эсвэл зай хүрэлцэхгүй байна.");
     }
   };
-  const clearHistory = () => {
+  const clearHistory = async () => {
     if(!window.confirm("БҮХ хадгалсан уншилтаа энэ төхөөрөмжөөс бүрмөсөн устгах уу? Эхлээд JSON backup хийхийг зөвлөе."))return;
     try {
-      clearReadings();
+      await clearJournal();
       setHistory([]);
       setSavedMessage("Энэ төхөөрөмж дээрх хадгалсан уншилтуудыг арилгалаа.");
     } catch {
