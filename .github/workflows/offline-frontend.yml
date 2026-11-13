@@ -29,6 +29,9 @@ jobs:
       - name: React UI smoke tests
         working-directory: front-end
         run: npm run test:legacy
+      - name: ESLint
+        working-directory: front-end
+        run: npm run lint
       - name: TypeScript
         working-directory: front-end
         run: npm run typecheck
