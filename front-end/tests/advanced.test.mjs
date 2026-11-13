@@ -1,3 +1,4 @@
+import {englishHoroscope,englishDailyFortune,englishLifeGuidance,englishDreamReflection} from "../src/app/lib/englishReflections.ts";
 import {calculateTransits} from "../src/app/lib/astroTransits.ts";
 import {englishCardMeaning,englishReading} from "../src/app/lib/englishTarot.ts";
 import {TAROT_LESSONS,lessonMetrics} from "../src/app/lib/tarotCurriculum.ts";
@@ -325,4 +326,23 @@ test("Latin Mongolian dream aliases expand symbols without remote translation",(
   assert.match(expanded,/усанд/);
   assert.match(expanded,/живж/);
   assert.match(expanded,/нисэх/);
+});
+
+test("English offline reflections remain validated and independent of remote API",()=>{
+  assert.match(englishHoroscope("pisces","2024-02-29"),/Pisces \(Water\)/);
+  const daily=englishDailyFortune(2,29,new Date("2024-06-01T12:00:00Z"));
+  assert.match(daily.fortune,/daily reflection/);
+  assert.ok(daily.luckyColors.every(color=>!/[А-Яа-яӨөҮү]/.test(color)));
+  assert.match(englishLifeGuidance("2000-01-01","Starting a new job","Grow","Limited time","How?"),/Step 3/);
+  assert.match(englishDreamReflection("I was swimming in the ocean"),/Water/);
+  assert.match(englishDreamReflection("Bi usand jivj baisan"),/Water/);
+  assert.throws(()=>englishHoroscope("nonsense"),/зөв|Choose/);
+});
+test("lunar daily phases use the selected city local noon, not the viewer's timezone",()=>{
+  const aprilNY=getMoonMonth(2024,4,"America/New_York");
+  const aprilUB=getMoonMonth(2024,4,"Asia/Ulaanbaatar");
+  assert.equal(aprilNY.length,30);
+  assert.equal(aprilUB.length,30);
+  assert.equal(aprilNY[7].date,"2024-04-08");
+  assert.ok(Math.abs(aprilNY[7].phase-aprilUB[7].phase)>1);
 });
