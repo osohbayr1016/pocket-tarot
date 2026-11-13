@@ -117,8 +117,9 @@ export async function restoreCompleteBackupV3(content:string):Promise<CompleteBa
   }catch(cause){
     for(let i=0;i<keys.length;i++){
       try{
-        if(previous[i]===null)localStorage.removeItem(keys[i]);
-        else localStorage.setItem(keys[i],previous[i]);
+        const value=previous[i];
+        if(value==null)localStorage.removeItem(keys[i]);
+        else localStorage.setItem(keys[i],value);
       }catch{/* Storage errors may also prevent rollback. */}
     }
     try{await replaceJournal(previousJournal);}
