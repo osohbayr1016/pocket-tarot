@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="800" viewBox="0 0 480 800" role="img" aria-labelledby="t d">
+<title id="t">Pocket Tarot — зураг бэлэн биш</title><desc id="d">Таро хөзрийн зураг оруулах хүртэл харагдах чимэглэл</desc>
+<defs><radialGradient id="g"><stop stop-color="#312649"/><stop offset="1" stop-color="#100e22"/></radialGradient></defs>
+<rect width="480" height="800" fill="url(#g)"/><rect x="22" y="22" width="436" height="756" rx="8" fill="none" stroke="#c3a46b" stroke-width="3"/>
+<rect x="38" y="38" width="404" height="724" rx="8" fill="none" stroke="#9c855e" stroke-width="1"/>
+<circle cx="240" cy="385" r="125" fill="none" stroke="#c3a46b" stroke-width="2"/>
+<circle cx="240" cy="385" r="98" fill="none" stroke="#c3a46b" stroke-opacity=".4"/>
+<path d="M240 245L258 365L375 385L258 405L240 525L222 405L105 385L222 365Z" fill="#c3a46b"/>
+<text x="240" y="652" fill="#f0dab1" font-family="Georgia,serif" font-size="32" letter-spacing="7" text-anchor="middle">POCKET TAROT</text>
+</svg>
