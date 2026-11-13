@@ -1,55 +1,14 @@
-"use client";
+import Link from "next/link";
 
-import { useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-
-function AuthCallbackContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const token = searchParams.get("token");
-    const success = searchParams.get("success");
-    const error = searchParams.get("error");
-
-    if (success === "true" && token) {
-      // Store the token
-      localStorage.setItem("tarot_token", token);
-
-      // Redirect to home page
-      router.push("/");
-    } else {
-      // Handle error
-      console.error("Authentication failed:", error);
-      router.push("/?auth_error=true");
-    }
-  }, [searchParams, router]);
-
+export default function LegacyAuthenticationClosed() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-black text-white flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto mb-4"></div>
-        <h2 className="text-2xl font-bold mb-2">Нэвтэрч байна...</h2>
-        <p className="text-purple-200">Уучлаарай, түр хүлээнэ үү</p>
-      </div>
-    </div>
-  );
-}
-
-export default function AuthCallback() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-black text-white flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto mb-4"></div>
-            <h2 className="text-2xl font-bold mb-2">Уншиж байна...</h2>
-            <p className="text-purple-200">Уучлаарай, түр хүлээнэ үү</p>
-          </div>
-        </div>
-      }
-    >
-      <AuthCallbackContent />
-    </Suspense>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-[#100e1e] px-5 text-center text-amber-100">
+      <h1 className="font-serif text-3xl">Хуучин нэвтрэх систем хаагдсан</h1>
+      <p className="mt-4 max-w-md text-sm leading-7 text-slate-300">
+        Pocket Tarot-ийн шинэ хувилбар бүртгэл, token эсвэл backend шаардлагагүй.
+        Уншилт болон тэмдэглэл таны төхөөрөмж дээр хадгалагдана.
+      </p>
+      <Link href="/" className="mt-7 rounded-full bg-amber-300 px-6 py-3 font-semibold text-[#171127]">Нүүр хуудас</Link>
+    </main>
   );
 }
