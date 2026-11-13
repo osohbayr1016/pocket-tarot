@@ -209,14 +209,57 @@ const DREAM_SYMBOLS: readonly [RegExp,string][] = [
   [/усанд жив|живж|живсэн/iu,"Живэх: хэт ачаалалтай мэдрэмж; өнөөдрийн тайван байдлыг эргэцүүл"],
   [/үхэл|үхэж|нас бар|оршуул|авс/iu,"Төгсгөл/үхлийн дүрслэл: шууд зөгнөл биш; өөрчлөлт ба алдагдлын тухай мэдрэмж"],
 ];
+/**
+ * Transparent Latin-Mongolian keyword aliases. This is not machine
+ * translation or mental health interpretation; unmatched text stays intact.
+ */
+const LATIN_DREAM_ALIASES:[RegExp,string][]=[
+  [/\b(us|usand|dalai|gol|nuur|nurr)\b/i,"усанд"],
+  [/\b(jiv|jivj|jiveh|jivsen)\b/i,"живж"],
+  [/\b(gal|shatah|dool|tuimer|tuitmer)\b/i,"гал"],
+  [/\b(nis|niseh|nisj|nislee|tenger|tengert)\b/i,"нисэх тэнгэр"],
+  [/\b(ger|gertee|baishin|oroo|barilga|bair)\b/i,"гэртээ"],
+  [/\b(mashin|avtobus|zam|taxi|joloo|jolood)\b/i,"машин зам"],
+  [/\b(hooson|hooj|hoogdoj|zugta|zugtaaj|guij)\b/i,"хөөж зугтаах"],
+  [/\b(unah|unaj|undruus|ondor|ondoroos|haltrah)\b/i,"унаж өндрөөс"],
+  [/\b(shud|soyo|shudee|am)\b/i,"шүд"],
+  [/\b(mogoi|mogoy|melhii|horhoi)\b/i,"могой"],
+  [/\b(nohoi|nohoihoo|golog|nohoitoi)\b/i,"нохой"],
+  [/\b(muur|muurtei|zulzaga)\b/i,"муур"],
+  [/\b(shuvuu|burged|shuwuu)\b/i,"шувуу"],
+  [/\b(mori|mor|aduu|moritoi)\b/i,"морь"],
+  [/\b(uul|uuland|had|haysaa)\b/i,"ууланд"],
+  [/\b(mod|oi|oimod|navch)\b/i,"ой мод"],
+  [/\b(mongo|mung|munguu|zoos|alt)\b/i,"мөнгө"],
+  [/\b(surguuli|shalgalт|shalgalt|hicheel|bagsh|angi)\b/i,"шалгалт сургууль"],
+  [/\b(ajil|ajild|darga|office|offis)\b/i,"ажил"],
+  [/\b(huuhed|huuhd|nyalh|nyarai|ohin)\b/i,"хүүхэд"],
+  [/\b(hurim|hairs|hair|gerlelt)\b/i,"хурим"],
+  [/\b(utas|mess|message|zalga|duudlaga)\b/i,"утас"],
+  [/\b(haalga|tulhuur|tsonh|tsonh)\b/i,"хаалга түлхүүр"],
+  [/\b(toli|tolind|toliin)\b/i,"толь"],
+  [/\b(haranhui|haranhui|shunu|shono)\b/i,"харанхуй"],
+  [/\b(gerel|nar|nartai|narni)\b/i,"гэрэл"],
+  [/\b(sar|sartai|od|odod)\b/i,"сартай"],
+  [/\b(tsas|mus|musu|huiten|huiten)\b/i,"цас хүйтэн"],
+  [/\b(boroo|shuurga|ayanga)\b/i,"бороо"],
+  [/\b(uhel|uheh|uhsen|nasbar|orshuul)\b/i,"үхэл"]
+];
+export function expandLatinDreamSymbols(text:string):string{
+  const hits=LATIN_DREAM_ALIASES.filter(([pattern])=>pattern.test(text))
+    .map(([,replacement])=>replacement);
+  return text+" "+hits.join(" ");
+}
 export function interpretDreamLocal(dream:string):string {
   const cleaned=dream.trim().slice(0,3000);
   if(!cleaned)throw new Error("Зүүдээ бичнэ үү.");
-  const matches=DREAM_SYMBOLS.filter(([pattern])=>pattern.test(cleaned)).slice(0,8)
+  const expanded=expandLatinDreamSymbols(cleaned);
+  const matches=DREAM_SYMBOLS.filter(([pattern])=>pattern.test(expanded)).slice(0,8)
     .map(([,meaning])=>"• "+meaning);
   return [
     "Зүүдний бэлгэдлийн тэмдэглэл",
     matches.length?matches.join("\n"):"Тодорхой бэлгэдэл илрээгүй. Зүүдэн дэх хамгийн хүчтэй мэдрэмжээ тэмдэглээрэй.",
+    matches.length<2?"Тайлбарын итгэлцүүр хязгаарлагдмал: бэлгэдэл нь олон утгатай, тухайн хүний туршлагаас хамаарна.":"Эдгээр нь түлхүүр үгсийн ерөнхий тайлбар бөгөөд хувь хүний бодит нөхцөлийг автоматаар ойлгохгүй.",
     "Эргэцүүлэх асуултууд:\n• Энэ зүүд ямар мэдрэмж төрүүлсэн бэ?\n• Сүүлийн өдрийн ямар үйл явдалтай төстэй байж болох вэ?\n• Ямар жижиг өөрчлөлт танд хэрэгтэй байна вэ?",
     "Эдгээр нь соёлын олон янзын бэлгэдлийн санал бөгөөд шинжлэх ухааны зөгнөл, онош биш."
   ].join("\n\n");
