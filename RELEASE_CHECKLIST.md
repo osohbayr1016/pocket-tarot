@@ -14,7 +14,7 @@ Updated: 2026-11-13 (second implementation wave). Target branch: `feat/offline-t
 - [x] React UI smoke tests
 - [x] TypeScript and production build checks
 - [x] Linting checks
-- [x] Chromium Playwright journeys including date, cards, history and offline reload on passing CI commits
+- [x] Playwright Chromium/Firefox/WebKit projects including desktop journeys, local-time astrology, study progress, journal backup, lunar calendar and offline reload on passing commits
 - [ ] **LATEST HEAD** must pass security/unit/lint/build and Chromium/Firefox/WebKit checks after the last commit. Earlier green runs do not authorize a merge.
 
 ## P0 security and operations
@@ -47,9 +47,14 @@ Updated: 2026-11-13 (second implementation wave). Target branch: `feat/offline-t
 
 ## P2/P3 optional polish
 
+- [x] Spaced repetition learning across 78 cards, local daily review schedule, answer stats, hidden card labels and backup v2 (reads v1 imports)
+- [x] Offline astronomical month-by-month Moon phase calendar and phase/illumination fixtures
+- [x] Suit/element/keyword filters and expanded traditional card library metadata
 - [x] Major Arcana teaching quiz
 - [x] Daily single-card journal
 - [x] Browser-side shareable PNG reading export
+- [ ] Review Moon phase labels and compare additional independent reference fixtures; daily noon calendar isn't exact new/full moon timestamp
+- [ ] Run cross-browser mobile keyboard, screen reader and assisted-testing review for study progress, full backup and modal
 - [ ] Full English localization and review (not just translated navigation)
 - [ ] Additional tarot spread layouts, detailed symbolism guide and tutorial walkthroughs
 - [ ] Animation, touch feedback and theme controls with reduced-motion preference respected
