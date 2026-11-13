@@ -25,7 +25,8 @@ const SIGNS:Record<string,[string,string,string]>={
 };
 export function englishZodiacName(id:string):string{return SIGNS[id]?.[0]||id;}
 export function englishHoroscope(signId:string,birthDate=""):string{
- getHoroscopeLocal(signId,birthDate);
+ try{getHoroscopeLocal(signId,birthDate);}
+ catch{throw new Error("Choose a valid zodiac sign and birth date.");}
  const sign=SIGNS[signId];
  if(!sign)throw new Error("Choose a valid zodiac sign.");
  return `${sign[0]} (${sign[1]})
@@ -63,7 +64,8 @@ Use ${tuple[2]} as a prompt for a short journal entry. This is symbolic play, no
  };
 }
 export function englishLifeGuidance(birthDate:string,situation:string,goals="",challenges="",questions=""):string{
- getLifeGuidanceLocal(birthDate,situation,goals,challenges,questions);
+ try{getLifeGuidanceLocal(birthDate,situation,goals,challenges,questions);}
+ catch{throw new Error("Provide a valid birth date and describe your current situation.");}
  const sign=zodiacFromISODate(birthDate);
  return [
  "Personal reflection guide",
@@ -112,7 +114,8 @@ const dreamSymbols:{pattern:RegExp;label:string;idea:string}[]=[
  {pattern:/бороо|rain|storm/i,label:"Rain",idea:"Release, change and emotional processing"}
 ];
 export function englishDreamReflection(raw:string):string{
- interpretDreamLocal(raw);
+ try{interpretDreamLocal(raw);}
+ catch{throw new Error("Describe a dream to explore its symbols.");}
  const source=expandLatinDreamSymbols(raw.trim().slice(0,3000));
  const matches=dreamSymbols.filter(({pattern})=>pattern.test(source)).slice(0,8);
  return [
