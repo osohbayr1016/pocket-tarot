@@ -13,9 +13,11 @@ module.exports = defineConfig({
     screenshot:"only-on-failure",
   },
   projects: [
-    {name:"chromium",use:{...devices["Desktop Chrome"]}},
-    {name:"firefox",use:{...devices["Desktop Firefox"]}},
-    {name:"webkit",use:{...devices["Desktop Safari"]}}
+    {name:"chromium",use:{...devices["Desktop Chrome"]},testIgnore:"**/mobile.spec.js"},
+    {name:"firefox",use:{...devices["Desktop Firefox"]},testIgnore:"**/mobile.spec.js"},
+    {name:"webkit",use:{...devices["Desktop Safari"]},testIgnore:"**/mobile.spec.js"},
+    {name:"android-mobile",use:{...devices["Pixel 7"]},testMatch:"**/mobile.spec.js"},
+    {name:"ios-mobile",use:{...devices["iPhone 13"]},testMatch:"**/mobile.spec.js"}
   ],
   webServer: {
     command:"npm run start -- -p 3000",
