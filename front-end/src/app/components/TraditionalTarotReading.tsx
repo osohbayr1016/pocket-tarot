@@ -30,9 +30,12 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
   const [history, setHistory] = useState<{id:string; date:string; spread:string; question:string; reading:string}[]>([]);
   const result = interpretReading(drawn, question, topic === "auto" ? undefined : topic);
 
-  const refreshHistory = () => setHistory(loadReadings().slice(0,20));
+  const refreshHistory = () => {
+    try{setHistory(loadReadings().slice(0,20));}
+    catch(cause){setError(cause instanceof Error?cause.message:"Уншилтын түүхийг уншиж чадсангүй.");}
+  };
   const chooseSpread = (next: TarotSpread) => {
-    setSpread(next); setDrawn([]); setVisibleCount(0); setError(""); setSavedMessage("");
+    setSpread(next); setDrawn([]); setVisibleCount(0); setError(""); setSavedMessage(""); setNotes("");
     refreshHistory();
   };
   const makeReading = () => {
@@ -41,6 +44,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
       const cards = drawSpread(tarotCards, spread);
       setDrawn(cards);
       setVisibleCount(0);
+      setNotes("");
       setError(""); setSavedMessage("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Карт холих үед алдаа гарлаа.");
@@ -65,6 +69,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
     }
   };
   const clearHistory = () => {
+    if(!window.confirm("БҮХ хадгалсан уншилтаа энэ төхөөрөмжөөс бүрмөсөн устгах уу? Эхлээд JSON backup хийхийг зөвлөе."))return;
     try {
       clearReadings();
       setHistory([]);
