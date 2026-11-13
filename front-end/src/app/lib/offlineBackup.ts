@@ -8,7 +8,7 @@ import {PREFS_KEY,getReadingPreferences,normalizeReadingPreferences,
   applyReadingPreferences,type ReadingPreferences} from "./readingPreferences.ts";
 
 import {STUDY_KEY,loadStudyProgress,validateStudyProgress,type CardProgress} from "./studyProgress.ts";
-import {listJournal,replaceJournal,JOURNAL_SAFE_LIMIT} from "./journalDb";
+import {listJournal,replaceJournal,JOURNAL_SAFE_LIMIT} from "./journalDb.ts";
 export const BACKUP_FORMAT="pocket-tarot-complete-backup";
 export interface CompleteBackup {
   format:typeof BACKUP_FORMAT;
