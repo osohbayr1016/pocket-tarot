@@ -1,32 +1,30 @@
 {
   "name": "pocket-tarot",
   "version": "1.0.0",
-  "description": "Pocket Tarot - Mystical Tarot Reading Website",
+  "description": "Offline-first Tarot, reflection journal and local astronomical tools",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd back-end && npm run dev",
-    "dev:frontend": "cd front-end && npm run dev",
-    "build": "npm run build:frontend",
-    "build:frontend": "cd front-end && npm run build",
-    "build:backend": "cd back-end && npm run build",
-    "start": "cd back-end && npm start",
-    "start:frontend": "cd front-end && npm start",
-    "install:all": "npm install && cd front-end && npm install && cd ../back-end && npm install",
-    "deploy:prepare": "npm run install:all && npm run build",
-    "deploy:vercel": "cd front-end && vercel --prod",
-    "deploy:backend": "cd back-end && npm run deploy"
+    "dev": "npm --prefix front-end run dev",
+    "build": "npm --prefix front-end run build",
+    "start": "npm --prefix front-end run start",
+    "test": "npm --prefix front-end run test",
+    "test:ui": "npm --prefix front-end run test:legacy",
+    "lint": "npm --prefix front-end run lint",
+    "typecheck": "npm --prefix front-end run typecheck",
+    "install:frontend": "npm --prefix front-end ci --legacy-peer-deps",
+    "deploy:prepare": "npm run install:frontend && npm run build",
+    "deploy:backend": "node -e \"console.error('Retired legacy backend must not be deployed. See RELEASE_RUNBOOK.md');process.exitCode=2\"",
+    "legacy:health": "npm --prefix back-end run start"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
   "keywords": [
     "tarot",
-    "fortune-telling",
-    "mystical",
+    "journal",
+    "offline",
     "nextjs",
-    "express",
-    "mongodb"
+    "astronomy"
   ],
   "author": "Pocket Tarot Team",
   "license": "MIT"
