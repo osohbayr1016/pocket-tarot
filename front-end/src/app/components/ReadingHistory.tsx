@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import {
-  loadReadings, deleteReading, clearReadings, exportReadings, importReadings,
+  loadReadings, deleteReading, clearReadings, exportReadings, importReadings, updateReadingNotes,
   type SavedReading
 } from "../lib/readingHistory";
 import { tarotCards } from "../data/tarotCards";
@@ -17,6 +17,7 @@ function saveAsFile(content:string,name:string,mime:string){
 export default function ReadingHistory(){
   const [items,setItems]=useState<SavedReading[]>([]);
   const [selected,setSelected]=useState<string|null>(null);
+  const [draftNotes,setDraftNotes]=useState("");
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
   const fileRef=useRef<HTMLInputElement>(null);
@@ -84,7 +85,7 @@ export default function ReadingHistory(){
                 {item.question&&<p className="mt-3 text-sm text-slate-200">{item.question}</p>}
               </div>
               <div className="flex flex-wrap gap-2">
-                <button type="button" aria-expanded={selected===item.id} onClick={()=>setSelected(selected===item.id?null:item.id)}
+                <button type="button" aria-expanded={selected===item.id} onClick={()=>{ const next=selected===item.id?null:item.id;setSelected(next);setDraftNotes(next?item.notes:""); }}
                   className="rounded-full border border-amber-300/40 px-4 py-2 text-sm text-amber-100 hover:border-amber-300">
                   {selected===item.id?"Хураах":"Дэлгэрэнгүй"}
                 </button>
@@ -113,6 +114,23 @@ export default function ReadingHistory(){
                 {active.notes&&<div className="mt-5 border-l-2 border-amber-300/60 pl-4 text-sm text-slate-300">
                   <h3 className="mb-1 font-semibold text-amber-100">Таны тэмдэглэл</h3>{active.notes}
                 </div>}
+                <div className="mt-5">
+                  <label htmlFor={"history-notes-"+active.id} className="mb-2 block text-sm font-semibold text-amber-100">Тэмдэглэл засах</label>
+                  <textarea id={"history-notes-"+active.id} maxLength={2000}
+                    value={draftNotes} onChange={event=>setDraftNotes(event.target.value)} rows={3}
+                    placeholder="Энэ уншилтын тухай хувийн тэмдэглэлээ бич..."
+                    className="w-full rounded-lg border border-white/20 bg-white/5 p-3 text-sm text-white placeholder:text-slate-400 focus:border-amber-300 focus:outline-none"/>
+                  <button type="button" onClick={()=>{
+                    try {
+                      setItems(updateReadingNotes(active.id,draftNotes));
+                      setError("");setMessage("Тэмдэглэл хадгалагдлаа.");
+                    }catch(cause){
+                      setError(cause instanceof Error?cause.message:"Тэмдэглэлийг хадгалж чадсангүй.");
+                    }
+                  }} className="mt-2 rounded-full border border-amber-300/40 px-5 py-2 text-sm text-amber-100 hover:border-amber-300">
+                    Тэмдэглэл хадгалах
+                  </button>
+                </div>
                 <div className="mt-5 flex flex-wrap gap-2">
                   <button type="button"
                     onClick={()=>void exportReadingPng(active,tarotCards).then(
