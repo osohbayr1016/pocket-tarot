@@ -19,8 +19,9 @@ const NatalChartPage = dynamic(() => import("./components/NatalChartPage"), {
   loading: () => <p role="status" className="py-12 text-center text-amber-100">Тэнгэрийн зураг ачаалж байна...</p>,
 });
 import CardDetailsDialog from "./components/CardDetailsDialog";
+import OfflineDeckManager from "./components/OfflineDeckManager";
 
-type Section = "reading" | "single" | "library" | "horoscope" | "daily" | "dream" | "guidance" | "history" | "daily-card" | "learn" | "natal";
+type Section = "reading" | "single" | "library" | "horoscope" | "daily" | "dream" | "guidance" | "history" | "daily-card" | "learn" | "natal" | "offline";
 const sections: {id: Section; label: string}[] = [
   {id:"reading",label:"Таро дэлгэмэл"},
   {id:"single",label:"Нэг карт"},
@@ -33,6 +34,7 @@ const sections: {id: Section; label: string}[] = [
   {id:"daily-card",label:"Өдрийн карт"},
   {id:"history",label:"Миний түүх"},
   {id:"learn",label:"Таро сурах"},
+  {id:"offline",label:"Offline карт"},
 ];
 
 export default function Home() {
@@ -155,6 +157,7 @@ export default function Home() {
         {section==="history" && <ReadingHistory/>}
         {section==="daily-card" && <DailyTarotCard/>}
         {section==="learn" && <LearnTarot/>}
+        {section==="offline" && <OfflineDeckManager/>}
       </main>
       <footer className="relative z-10 border-t border-white/10 px-4 py-8 text-center text-xs leading-6 text-slate-400">
         <p className="font-serif text-lg text-amber-200">✧ Pocket Tarot</p>
