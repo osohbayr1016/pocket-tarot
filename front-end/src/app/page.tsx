@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { tarotCards, type TarotCard } from "./data/tarotCards";
 import { secureRandomInt } from "./lib/offlineEngine";
@@ -20,22 +20,7 @@ const NatalChartPage = dynamic(() => import("./components/NatalChartPage"), {
 });
 import CardDetailsDialog from "./components/CardDetailsDialog";
 import OfflineDeckManager from "./components/OfflineDeckManager";
-
-type Section = "reading" | "single" | "library" | "horoscope" | "daily" | "dream" | "guidance" | "history" | "daily-card" | "learn" | "natal" | "offline";
-const sections: {id: Section; label: string}[] = [
-  {id:"reading",label:"Таро дэлгэмэл"},
-  {id:"single",label:"Нэг карт"},
-  {id:"library",label:"78 карт"},
-  {id:"horoscope",label:"Орд"},
-  {id:"natal",label:"Төрсөн үеийн тэнгэр"},
-  {id:"daily",label:"Өдрийн санаа"},
-  {id:"dream",label:"Зүүд"},
-  {id:"guidance",label:"Удирдамж"},
-  {id:"daily-card",label:"Өдрийн карт"},
-  {id:"history",label:"Миний түүх"},
-  {id:"learn",label:"Таро сурах"},
-  {id:"offline",label:"Offline карт"},
-];
+import NavigationMenu, {isSection, type Section} from "./components/NavigationMenu";
 
 export default function Home() {
   const [section,setSection] = useState<Section>("reading");
@@ -44,6 +29,17 @@ export default function Home() {
   const [query,setQuery] = useState("");
   const [arcana,setArcana] = useState<"all"|"major"|"minor">("all");
   const [libraryCard,setLibraryCard] = useState<TarotCard|null>(null);
+  useEffect(()=>{
+    // Hydration-safe deep-link initialization; back/forward also restore sections.
+    const readUrl=()=>{
+      const candidate=new URLSearchParams(window.location.search).get("view");
+      setSection(isSection(candidate)?candidate:"reading");
+      setLibraryCard(null);
+    };
+    const frame=requestAnimationFrame(readUrl);
+    window.addEventListener("popstate",readUrl);
+    return()=>{cancelAnimationFrame(frame);window.removeEventListener("popstate",readUrl);};
+  },[]);
   const filtered = useMemo(()=>tarotCards.filter((card)=>(
     (arcana === "all" || card.arcana === arcana) &&
     (card.name + " " + card.englishName).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
@@ -59,11 +55,18 @@ export default function Home() {
     }
   };
   const navigate = (next: Section) => {
+    const current=new URL(window.location.href);
+    if(current.searchParams.get("view")!==next){
+      current.searchParams.set("view",next);
+      window.history.pushState({view:next},"",current.pathname+current.search+current.hash);
+    }
     setSection(next);
+    setLibraryCard(null);
     setError("");
   };
   return (
     <div className="min-h-screen bg-[#100e1e] text-[#f6f1e9]">
+      <a href="#main-content" className="sr-only rounded-lg bg-amber-300 p-3 font-semibold text-[#171127] focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50">Үндсэн агуулга руу очих</a>
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[580px] bg-[radial-gradient(ellipse_at_50%_0%,rgba(110,75,126,0.26),transparent_65%)]" />
       <header className="relative z-10 border-b border-white/10">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-8">
@@ -78,19 +81,9 @@ export default function Home() {
             AI / API шаардлагагүй
           </div>
         </div>
-        <nav aria-label="Үндсэн цэс" className="mx-auto max-w-7xl px-4 sm:px-8">
-          <div className="flex gap-2 overflow-x-auto pb-3">
-            {sections.map((item)=>(
-              <button type="button" key={item.id} aria-pressed={section===item.id} onClick={()=>navigate(item.id)}
-                className={"shrink-0 rounded-full px-4 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 " +
-                  (section===item.id ? "bg-amber-300 font-semibold text-[#171127]" : "border border-white/10 text-slate-200 hover:border-amber-300/50 hover:text-amber-200")}>
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </nav>
+        <NavigationMenu section={section} onNavigate={navigate}/>
       </header>
-      <main className="relative z-10 mx-auto max-w-7xl px-3 py-12 sm:px-6">
+      <main id="main-content" tabIndex={-1} className="relative z-10 mx-auto max-w-7xl px-3 py-12 sm:px-6">
         {section==="reading" && <TraditionalTarotReading key="reading" onReset={()=>navigate("single")}/>}
         {section==="single" && (
           <section className="mx-auto max-w-4xl text-center">
