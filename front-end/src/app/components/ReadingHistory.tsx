@@ -7,6 +7,7 @@ import {
 import { tarotCards } from "../data/tarotCards";
 import { exportReadingPng } from "../lib/exportReadingPng";
 import { convertLegacyReadings } from "../lib/legacyMigration";
+import { calculateReadingStats } from "../lib/readingStats";
 
 function saveAsFile(content:string,name:string,mime:string){
   const blob=new Blob([content],{type:mime});
@@ -68,6 +69,8 @@ export default function ReadingHistory(){
     if(legacyRef.current)legacyRef.current.value="";
   };
   const active=items.find(item=>item.id===selected);
+  const stats=calculateReadingStats(items);
+  const mostSeen=tarotCards.find(card=>card.id===stats.topCardId);
   const searched=search.trim().toLocaleLowerCase();
   const visible=items.filter(item=>{
     if(favoritesOnly&&!item.favorite)return false;
@@ -90,6 +93,19 @@ export default function ReadingHistory(){
           Хуучин account import-д өөрийн account-аас эрхтэйгээр татсан JSON хэрэгтэй; апп хуучин сервертэй холбогдохгүй.
         </p>
       </header>
+      {items.length>0&&<div aria-label="Уншилтын хувийн статистик" className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          ["Нийт уншилт",String(stats.total)],
+          ["Дуртай уншилт",String(stats.favorites)],
+          ["Өөр карт",String(stats.distinctCards)],
+          ["Их давтагдсан",mostSeen?mostSeen.name+" ("+stats.topCardDraws+")":"—"]
+        ].map(([label,value])=>(
+          <div key={label} className="rounded-xl border border-white/10 bg-white/5 p-4">
+            <p className="text-xs text-slate-300">{label}</p>
+            <p className="mt-2 text-lg font-semibold text-amber-100">{value}</p>
+          </div>
+        ))}
+      </div>}
       <div className="mb-8 flex flex-wrap justify-center gap-3">
         <button type="button" onClick={()=>{
           try{saveAsFile(exportReadings(),"pocket-tarot-readings.json","application/json");setError("");}
