@@ -25,10 +25,11 @@ test("complete 78-card deck, unique identifiers and local image names",()=>{
     assert.ok(existsSync(imagePath), "Missing local image: " + card.image);
     assert.ok(statSync(imagePath).size > 10000, "Image is too small: " + card.image);
     const fd = openSync(imagePath, "r");
-    const magic = Buffer.alloc(2);
-    readSync(fd, magic, 0, 2, 0);
+    const magic = Buffer.alloc(12);
+    readSync(fd, magic, 0, 12, 0);
     closeSync(fd);
-    assert.equal(magic.toString("hex"), "ffd8", "Not a JPEG: " + card.image);
+    assert.equal(magic.subarray(0,4).toString("ascii"), "RIFF", "Not a RIFF image: " + card.image);
+    assert.equal(magic.subarray(8,12).toString("ascii"), "WEBP", "Not WebP: " + card.image);
   }
 });
 test("all spreads have ordered, complete positions",()=>{
