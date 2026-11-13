@@ -3,7 +3,7 @@ const groupFor={
   "Таро дэлгэмэл":"Таро","Нэг карт":"Таро","78 карт":"Таро","Таро сурах":"Таро",
   "Орд":"Зурхай","Төрсөн үеийн тэнгэр":"Зурхай",
   "Өдрийн карт":"Өдөр тутам","Өдрийн санаа":"Өдөр тутам","Зүүд":"Өдөр тутам","Удирдамж":"Өдөр тутам",
-  "Миний түүх":"Тэмдэглэл","Offline карт":"Офлайн",
+  "Миний түүх":"Тэмдэглэл","Offline карт":"Офлайн","Хувийн тохиргоо":"Офлайн",
 };
 async function openView(page,name){
   const group=groupFor[name];
@@ -182,4 +182,18 @@ test("IANA city natal chart selection computes without entering UTC offset",asyn
   await page.getByRole("button",{name:"Тэнгэрийн зураг тооцоолох"}).click();
   await expect(page.locator("table tbody tr")).toHaveCount(10);
   await expect(page.getByText(/2024-11-01T02:00:00/)).toBeVisible();
+});
+
+test("reading preferences persist and upright-only card draw respects setting",async({page})=>{
+  await page.goto("/");
+  await openView(page,"Хувийн тохиргоо");
+  await page.getByLabel("Урвуу карт оруулах").uncheck();
+  await page.locator("#back-style").selectOption("moon");
+  await expect(page.getByText("Тохиргоог зөвхөн энэ төхөөрөмж дээр хадгаллаа.")).toBeVisible();
+  await openView(page,"Нэг карт");
+  await page.getByRole("button",{name:"Санамсаргүй нэг карт сугалах"}).click();
+  await expect(page.getByText("Урвуу", {exact:true})).toHaveCount(0);
+  await openView(page,"Хувийн тохиргоо");
+  await expect(page.getByLabel("Урвуу карт оруулах")).not.toBeChecked();
+  await expect(page.locator("#back-style")).toHaveValue("moon");
 });
