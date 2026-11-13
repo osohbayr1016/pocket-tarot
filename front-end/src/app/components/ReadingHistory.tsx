@@ -1,9 +1,11 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import {HISTORY_KEY,type SavedReading} from "../lib/readingHistory";
 import {
-  loadReadings, deleteReading, clearReadings, exportReadings, importReadings, updateReadingNotes, setReadingFavorite, HISTORY_KEY,
-  type SavedReading
-} from "../lib/readingHistory";
+  listJournal,deleteJournalReading,clearJournal,exportJournalJSON,
+  importJournalJSON,importJournal,changeJournalNotes,changeJournalFavorite,
+  JOURNAL_PAGE_SIZE
+} from "../lib/journalDb";
 import { tarotCards } from "../data/tarotCards";
 import { exportReadingPng } from "../lib/exportReadingPng";
 import { convertLegacyReadings } from "../lib/legacyMigration";
@@ -22,33 +24,40 @@ export default function ReadingHistory(){
   const [search,setSearch]=useState("");
   const [favoritesOnly,setFavoritesOnly]=useState(false);
   const [draftNotes,setDraftNotes]=useState("");
+  const [page,setPage]=useState(1);
+  const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
   const fileRef=useRef<HTMLInputElement>(null);
   const legacyRef=useRef<HTMLInputElement>(null);
+  const refresh=async()=>{
+    try{setItems(await listJournal());setError("");}
+    catch(cause){setError(cause instanceof Error?cause.message:"Түүхийг уншиж чадсангүй.");}
+    finally{setLoading(false);}
+  };
   useEffect(()=>{
-    // Read device-local storage after hydration; never read it during SSR.
-    const frame=requestAnimationFrame(()=>{
-      try{setItems(loadReadings());}
-      catch(cause){setError(cause instanceof Error?cause.message:"Түүхийг уншиж чадсангүй.");}
-    });
+    const frame=requestAnimationFrame(()=>{void refresh();});
     return ()=>cancelAnimationFrame(frame);
   },[]);
-  const onDelete=(id:string)=>{
+  const onDelete=async(id:string)=>{
     if(!window.confirm("Энэ уншилтыг бүр мөсөн арилгах уу?"))return;
-    try{setItems(deleteReading(id));setSelected(null);setError("");setMessage("Уншилт устлаа.");}
-    catch{setError("Устгаж чадсангүй.");}
+    try{
+      await deleteJournalReading(id);setItems(await listJournal());
+      setSelected(null);setError("");setMessage("Уншилт устлаа.");
+    }catch(cause){setError(cause instanceof Error?cause.message:"Устгаж чадсангүй.");}
   };
-  const clear=()=>{
-    if(!window.confirm("Энэ төхөөрөмж дээрх БҮХ уншилтыг арилгах уу?"))return;
-    try{clearReadings();setItems([]);setSelected(null);setError("");setMessage("Түүхийг арилгалаа.");}
-    catch{setError("Түүх арилгахад алдаа гарлаа.");}
+  const clear=async()=>{
+    if(!window.confirm("Энэ төхөөрөмж дээрх БҮХ уншилтыг арилгах уу? Эхлээд JSON backup хийгээрэй."))return;
+    try{
+      await clearJournal();setItems([]);setSelected(null);setPage(1);
+      setError("");setMessage("Түүхийг арилгалаа.");
+    }catch(cause){setError(cause instanceof Error?cause.message:"Түүх арилгахад алдаа гарлаа.");}
   };
   const readImport=async(file:File|undefined)=>{
     if(!file)return;
     try{
-      const text=await file.text();
-      setItems(importReadings(text));setError("");setMessage("JSON файл амжилттай импортлогдлоо.");
+      const count=await importJournalJSON(await file.text());
+      setItems(await listJournal());setError("");setMessage(count+" уншилт импортлогдлоо.");
     }catch(cause){setError(cause instanceof Error?cause.message:"Импорт амжилтгүй.");setMessage("");}
     if(fileRef.current)fileRef.current.value="";
   };
@@ -61,8 +70,8 @@ export default function ReadingHistory(){
     try{
       if(file.size>2_000_000)throw new Error("Legacy файл 2 MB-ээс бага байх ёстой.");
       const legacy=convertLegacyReadings(JSON.parse(await file.text()));
-      const payload=JSON.stringify({format:"pocket-tarot-readings",version:1,readings:legacy});
-      setItems(importReadings(payload));
+      await importJournal(legacy);
+      setItems(await listJournal());
       setMessage(legacy.length+" хуучин уншилт импортлогдлоо. Хуучин серверийн өгөгдөл устгагдаагүй.");
       setError("");
     }catch(cause){setError(cause instanceof Error?cause.message:"Legacy import амжилтгүй.");}
@@ -82,6 +91,9 @@ export default function ReadingHistory(){
     return [item.spread,item.question,item.notes,cardNames,item.date]
       .join(" ").toLocaleLowerCase().includes(searched);
   });
+  const pages=Math.max(1,Math.ceil(visible.length/JOURNAL_PAGE_SIZE));
+  const safePage=Math.min(page,pages);
+  const pageItems=visible.slice((safePage-1)*JOURNAL_PAGE_SIZE,safePage*JOURNAL_PAGE_SIZE);
   return (
     <section className="mx-auto max-w-4xl px-3 pb-20">
       <header className="mb-9 text-center">
@@ -108,8 +120,12 @@ export default function ReadingHistory(){
       </div>}
       <div className="mb-8 flex flex-wrap justify-center gap-3">
         <button type="button" onClick={()=>{
-          try{saveAsFile(exportReadings(),"pocket-tarot-readings.json","application/json");setError("");}
-          catch(cause){setError(cause instanceof Error?cause.message:"Export алдаа гарлаа.");}
+          void (async()=>{
+            try{
+              saveAsFile(await exportJournalJSON(),"pocket-tarot-readings-v2.json","application/json");
+              setError("");
+            }catch(cause){setError(cause instanceof Error?cause.message:"Export алдаа гарлаа.");}
+          })();
         }}
           className="rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200">
           JSON export
@@ -144,25 +160,26 @@ export default function ReadingHistory(){
       <div className="mb-7 flex flex-col items-start justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center">
         <label className="w-full max-w-md text-sm text-amber-100">
           Уншилт хайх
-          <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
+          <input type="search" value={search} onChange={event=>{setSearch(event.target.value);setPage(1);}}
             placeholder="Асуулт, карт, тэмдэглэл, огноо..."
             className="mt-2 w-full rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-white"/>
         </label>
         <label className="flex min-h-11 items-center gap-2 text-sm text-slate-200">
-          <input type="checkbox" checked={favoritesOnly} onChange={event=>setFavoritesOnly(event.target.checked)}/>
+          <input type="checkbox" checked={favoritesOnly} onChange={event=>{setFavoritesOnly(event.target.checked);setPage(1);}}/>
           Зөвхөн дуртай уншилт
         </label>
       </div>
       {message&&<p role="status" className="my-3 text-center text-sm text-emerald-200">{message}</p>}
-      {!items.length&&(
+      {!loading&&!items.length&&!error&&(
         <div className="rounded-2xl border border-white/10 bg-white/5 px-6 py-14 text-center">
           <p className="font-serif text-2xl text-amber-100">Одоогоор уншилт алга</p>
           <p className="mt-3 text-sm text-slate-300">Таро дэлгэмлээс карт уншиж, тэмдэглэлээ хадгалаарай.</p>
         </div>
       )}
       {items.length>0&&visible.length===0&&<p className="mb-4 text-center text-slate-300">Шүүлтүүрт тохирох уншилт олдсонгүй.</p>}
+      {loading&&<p role="status" className="py-8 text-center text-slate-300">Түүхийг ачаалж байна...</p>}
       <div className="space-y-3">
-        {visible.map(item=>(
+        {pageItems.map(item=>(
           <article key={item.id} className="rounded-xl border border-white/10 bg-[#211a34] p-4 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -173,10 +190,12 @@ export default function ReadingHistory(){
               <div className="flex flex-wrap gap-2">
                 <button type="button" aria-pressed={Boolean(item.favorite)}
                   aria-label={item.favorite?"Дуртайгаас хасах":"Дуртайд нэмэх"}
-                  onClick={()=>{
-                    try{setItems(setReadingFavorite(item.id,!item.favorite));setError("");}
-                    catch(cause){setError(cause instanceof Error?cause.message:"Хадгалж чадсангүй.");}
-                  }} className="rounded-full border border-amber-300/30 px-4 py-2 text-sm text-amber-100">
+                  onClick={()=>void (async()=>{
+                    try{
+                      await changeJournalFavorite(item.id,!item.favorite);
+                      setItems(await listJournal());setError("");
+                    }catch(cause){setError(cause instanceof Error?cause.message:"Хадгалж чадсангүй.");}
+                  })()} className="rounded-full border border-amber-300/30 px-4 py-2 text-sm text-amber-100">
                   {item.favorite?"★":"☆"}
                 </button>
                 <button type="button" aria-expanded={selected===item.id} onClick={()=>{ const next=selected===item.id?null:item.id;setSelected(next);setDraftNotes(next?item.notes:""); }}
@@ -214,14 +233,14 @@ export default function ReadingHistory(){
                     value={draftNotes} onChange={event=>setDraftNotes(event.target.value)} rows={3}
                     placeholder="Энэ уншилтын тухай хувийн тэмдэглэлээ бич..."
                     className="w-full rounded-lg border border-white/20 bg-white/5 p-3 text-sm text-white placeholder:text-slate-400 focus:border-amber-300 focus:outline-none"/>
-                  <button type="button" onClick={()=>{
-                    try {
-                      setItems(updateReadingNotes(active.id,draftNotes));
-                      setError("");setMessage("Тэмдэглэл хадгалагдлаа.");
+                  <button type="button" onClick={()=>void (async()=>{
+                    try{
+                      await changeJournalNotes(active.id,draftNotes);
+                      setItems(await listJournal());setError("");setMessage("Тэмдэглэл хадгалагдлаа.");
                     }catch(cause){
                       setError(cause instanceof Error?cause.message:"Тэмдэглэлийг хадгалж чадсангүй.");
                     }
-                  }} className="mt-2 rounded-full border border-amber-300/40 px-5 py-2 text-sm text-amber-100 hover:border-amber-300">
+                  })()} className="mt-2 rounded-full border border-amber-300/40 px-5 py-2 text-sm text-amber-100 hover:border-amber-300">
                     Тэмдэглэл хадгалах
                   </button>
                 </div>
@@ -245,6 +264,17 @@ export default function ReadingHistory(){
           </article>
         ))}
       </div>
+      {pages>1&&<nav aria-label="Уншилтын түүхийн хуудас" className="mt-8 flex items-center justify-center gap-4">
+        <button type="button" disabled={safePage===1} onClick={()=>setPage(p=>Math.max(1,p-1))}
+          className="min-h-11 rounded-full border border-amber-300/30 px-5 py-2 text-amber-100 disabled:opacity-40">
+          Өмнөх
+        </button>
+        <span aria-live="polite" className="text-sm text-slate-300">{safePage} / {pages} хуудас · {visible.length} уншилт</span>
+        <button type="button" disabled={safePage===pages} onClick={()=>setPage(p=>Math.min(pages,p+1))}
+          className="min-h-11 rounded-full border border-amber-300/30 px-5 py-2 text-amber-100 disabled:opacity-40">
+          Дараах
+        </button>
+      </nav>}
     </section>
   );
 }
