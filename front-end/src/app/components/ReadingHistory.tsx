@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import {HISTORY_KEY,type SavedReading,type ReadingMood} from "../lib/readingHistory";
+import {useLanguage} from "../lib/LanguageProvider";
 import {
   listJournal,deleteJournalReading,clearJournal,exportJournalJSON,
   importJournalJSON,importJournal,changeJournalNotes,changeJournalFavorite,changeJournalMetadata,
@@ -20,6 +21,9 @@ function saveAsFile(content:string,name:string,mime:string){
   setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
 export default function ReadingHistory(){
+  const {locale}=useLanguage();
+  const en=locale==="en";
+  const tr=(mn:string,english:string)=>en?english:mn;
   const [items,setItems]=useState<SavedReading[]>([]);
   const [selected,setSelected]=useState<string|null>(null);
   const [search,setSearch]=useState("");
@@ -43,30 +47,30 @@ export default function ReadingHistory(){
     return ()=>cancelAnimationFrame(frame);
   },[]);
   const onDelete=async(id:string)=>{
-    if(!window.confirm("Энэ уншилтыг бүр мөсөн арилгах уу?"))return;
+    if(!window.confirm(tr("Энэ уншилтыг бүр мөсөн арилгах уу?","Delete this reading permanently?")))return;
     try{
       await deleteJournalReading(id);setItems(await listJournal());
-      setSelected(null);setError("");setMessage("Уншилт устлаа.");
+      setSelected(null);setError("");setMessage(tr("Уншилт устлаа.","Reading deleted."));
     }catch(cause){setError(cause instanceof Error?cause.message:"Устгаж чадсангүй.");}
   };
   const clear=async()=>{
-    if(!window.confirm("Энэ төхөөрөмж дээрх БҮХ уншилтыг арилгах уу? Эхлээд JSON backup хийгээрэй."))return;
+    if(!window.confirm(tr("Энэ төхөөрөмж дээрх БҮХ уншилтыг арилгах уу? Эхлээд JSON backup хийгээрэй.","Delete ALL readings from this device? Export a JSON backup first.")))return;
     try{
       await clearJournal();setItems([]);setSelected(null);setPage(1);
-      setError("");setMessage("Түүхийг арилгалаа.");
+      setError("");setMessage(tr("Түүхийг арилгалаа.","Journal cleared."));
     }catch(cause){setError(cause instanceof Error?cause.message:"Түүх арилгахад алдаа гарлаа.");}
   };
   const readImport=async(file:File|undefined)=>{
     if(!file)return;
     try{
       const count=await importJournalJSON(await file.text());
-      setItems(await listJournal());setError("");setMessage(count+" уншилт импортлогдлоо.");
+      setItems(await listJournal());setError("");setMessage(en?`${count} readings imported.`:count+" уншилт импортлогдлоо.");
     }catch(cause){setError(cause instanceof Error?cause.message:"Импорт амжилтгүй.");setMessage("");}
     if(fileRef.current)fileRef.current.value="";
   };
   const readLegacy=async(file:File|undefined)=>{
     if(!file)return;
-    if(!window.confirm("Зөвхөн өөрийн хуучин Pocket Tarot account-аас албан ёсоор экспортолсон JSON-ийг импортлохыг баталгаажуулна уу.")){
+    if(!window.confirm(tr("Зөвхөн өөрийн хуучин Pocket Tarot account-аас албан ёсоор экспортолсон JSON-ийг импортлохыг баталгаажуулна уу.","Confirm this JSON was exported from your own Pocket Tarot account."))){
       if(legacyRef.current)legacyRef.current.value="";
       return;
     }
@@ -101,19 +105,17 @@ export default function ReadingHistory(){
     <section className="mx-auto max-w-4xl px-3 pb-20">
       <header className="mb-9 text-center">
         <p className="text-xs uppercase tracking-[0.3em] text-amber-300">Private reading journal</p>
-        <h1 className="mt-3 font-serif text-4xl text-amber-50">Уншилтын түүх</h1>
+        <h1 className="mt-3 font-serif text-4xl text-amber-50">{tr("Уншилтын түүх","Reading journal")}</h1>
         <p className="mt-4 text-sm leading-relaxed text-slate-300">
-          Таны тэмдэглэл энэ төхөөрөмж дээр хадгалагдана. Серверт илгээхгүй.
-          Browser-ийн мэдээллийг устгавал export хийгээгүй тэмдэглэлүүд алдагдана.
-          Хуучин account import-д өөрийн account-аас эрхтэйгээр татсан JSON хэрэгтэй; апп хуучин сервертэй холбогдохгүй.
+          {tr("Таны тэмдэглэл энэ төхөөрөмж дээр хадгалагдана. Серверт илгээхгүй. Browser-ийн мэдээллийг устгавал export хийгээгүй тэмдэглэлүүд алдагдана. Хуучин account import-д өөрийн account-аас эрхтэйгээр татсан JSON хэрэгтэй; апп хуучин сервертэй холбогдохгүй.","Journal entries stay on this device. Clearing browser data can erase entries without a backup. Legacy imports require a file you exported from your own account; this app never connects to the old server.")}
         </p>
       </header>
-      {items.length>0&&<div aria-label="Уншилтын хувийн статистик" className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {items.length>0&&<div aria-label={tr("Уншилтын хувийн статистик","Private journal statistics")} className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          ["Нийт уншилт",String(stats.total)],
-          ["Дуртай уншилт",String(stats.favorites)],
-          ["Өөр карт",String(stats.distinctCards)],
-          ["Их давтагдсан",mostSeen?mostSeen.name+" ("+stats.topCardDraws+")":"—"]
+          [tr("Нийт уншилт","Total readings"),String(stats.total)],
+          [tr("Дуртай уншилт","Favorites"),String(stats.favorites)],
+          [tr("Өөр карт","Unique cards"),String(stats.distinctCards)],
+          [tr("Их давтагдсан","Most drawn"),mostSeen?(en?mostSeen.englishName:mostSeen.name)+" ("+stats.topCardDraws+")":"—"]
         ].map(([label,value])=>(
           <div key={label} className="rounded-xl border border-white/10 bg-white/5 p-4">
             <p className="text-xs text-slate-300">{label}</p>
@@ -134,13 +136,13 @@ export default function ReadingHistory(){
           JSON export
         </button>
         <input ref={fileRef} type="file" accept=".json,application/json" className="sr-only"
-          aria-label="JSON уншилт импортлох" onChange={(event)=>void readImport(event.target.files?.[0])}/>
+          aria-label={tr("JSON уншилт импортлох","Import readings JSON")} onChange={(event)=>void readImport(event.target.files?.[0])}/>
         <button type="button" onClick={()=>fileRef.current?.click()}
           className="rounded-full border border-amber-300/30 px-5 py-3 text-sm text-amber-100 hover:border-amber-300">
           JSON import
         </button>
         <input ref={legacyRef} type="file" accept=".json,application/json" className="sr-only"
-          aria-label="Хуучин account export JSON" onChange={event=>void readLegacy(event.target.files?.[0])}/>
+          aria-label={tr("Хуучин account export JSON","Import user-owned legacy account JSON")} onChange={event=>void readLegacy(event.target.files?.[0])}/>
         <button type="button" onClick={()=>legacyRef.current?.click()}
           className="rounded-full border border-amber-300/30 px-5 py-3 text-sm text-amber-100">
           Хуучин account import
@@ -164,7 +166,7 @@ export default function ReadingHistory(){
         <label className="w-full max-w-md text-sm text-amber-100">
           Уншилт хайх
           <input type="search" value={search} onChange={event=>{setSearch(event.target.value);setPage(1);}}
-            placeholder="Асуулт, карт, тэмдэглэл, огноо..."
+            placeholder={tr("Асуулт, карт, тэмдэглэл, огноо...","Question, card, notes, date...")}
             className="mt-2 w-full rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-white"/>
         </label>
         <label className="flex min-h-11 items-center gap-2 text-sm text-slate-200">
@@ -175,19 +177,19 @@ export default function ReadingHistory(){
       {message&&<p role="status" className="my-3 text-center text-sm text-emerald-200">{message}</p>}
       {!loading&&!items.length&&!error&&(
         <div className="rounded-2xl border border-white/10 bg-white/5 px-6 py-14 text-center">
-          <p className="font-serif text-2xl text-amber-100">Одоогоор уншилт алга</p>
-          <p className="mt-3 text-sm text-slate-300">Таро дэлгэмлээс карт уншиж, тэмдэглэлээ хадгалаарай.</p>
+          <p className="font-serif text-2xl text-amber-100">{tr("Одоогоор уншилт алга","No readings yet")}</p>
+          <p className="mt-3 text-sm text-slate-300">{tr("Таро дэлгэмлээс карт уншиж, тэмдэглэлээ хадгалаарай.","Draw a Tarot spread and save your reflection.")}</p>
         </div>
       )}
-      {items.length>0&&visible.length===0&&<p className="mb-4 text-center text-slate-300">Шүүлтүүрт тохирох уншилт олдсонгүй.</p>}
-      {loading&&<p role="status" className="py-8 text-center text-slate-300">Түүхийг ачаалж байна...</p>}
+      {items.length>0&&visible.length===0&&<p className="mb-4 text-center text-slate-300">{tr("Шүүлтүүрт тохирох уншилт олдсонгүй.","No readings match these filters.")}</p>}
+      {loading&&<p role="status" className="py-8 text-center text-slate-300">{tr("Түүхийг ачаалж байна...","Loading your journal...")}</p>}
       <div className="space-y-3">
         {pageItems.map(item=>(
           <article key={item.id} className="rounded-xl border border-white/10 bg-[#211a34] p-4 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="font-serif text-xl text-amber-100">{item.spread || "Таро уншилт"}</h2>
-                <p className="mt-1 text-xs text-slate-400">{new Date(item.date).toLocaleString("mn-MN")}</p>
+                <p className="mt-1 text-xs text-slate-400">{new Date(item.date).toLocaleString(en?"en-US":"mn-MN")}</p>
                 {item.question&&<p className="mt-3 text-sm text-slate-200">{item.question}</p>}
                 {!!item.tags?.length&&<div className="mt-3 flex flex-wrap gap-2">{item.tags.map(tag=>
                   <span key={tag} className="rounded-full bg-amber-300/10 px-3 py-1 text-xs text-amber-100">#{tag}</span>
@@ -195,7 +197,7 @@ export default function ReadingHistory(){
               </div>
               <div className="flex flex-wrap gap-2">
                 <button type="button" aria-pressed={Boolean(item.favorite)}
-                  aria-label={item.favorite?"Дуртайгаас хасах":"Дуртайд нэмэх"}
+                  aria-label={item.favorite?tr("Дуртайгаас хасах","Remove favorite"):tr("Дуртайд нэмэх","Add favorite")}
                   onClick={()=>void (async()=>{
                     try{
                       await changeJournalFavorite(item.id,!item.favorite);
@@ -224,25 +226,25 @@ export default function ReadingHistory(){
                         <img src={card.image} alt={card.englishName} loading="lazy"
                           className={"aspect-[2/3] w-full rounded-md border border-amber-300/30 object-cover "+
                             (entry.reversed?"rotate-180":"")}/>
-                        <p className="mt-2 text-center text-[11px] text-slate-300">{entry.position}. {card.name}</p>
+                        <p className="mt-2 text-center text-[11px] text-slate-300">{entry.position}. {en?card.englishName:card.name}</p>
                       </div>
                     );
                   })}
                 </div>}
                 <pre className="mt-5 whitespace-pre-wrap break-words font-sans text-sm leading-7 text-slate-100">{active.reading}</pre>
                 {active.notes&&<div className="mt-5 border-l-2 border-amber-300/60 pl-4 text-sm text-slate-300">
-                  <h3 className="mb-1 font-semibold text-amber-100">Таны тэмдэглэл</h3>{active.notes}
+                  <h3 className="mb-1 font-semibold text-amber-100">{tr("Таны тэмдэглэл","Your notes")}</h3>{active.notes}
                 </div>}
                 <div className="mt-5">
-                  <label htmlFor={"history-notes-"+active.id} className="mb-2 block text-sm font-semibold text-amber-100">Тэмдэглэл засах</label>
+                  <label htmlFor={"history-notes-"+active.id} className="mb-2 block text-sm font-semibold text-amber-100">{tr("Тэмдэглэл засах","Edit notes")}</label>
                   <textarea id={"history-notes-"+active.id} maxLength={2000}
                     value={draftNotes} onChange={event=>setDraftNotes(event.target.value)} rows={3}
-                    placeholder="Энэ уншилтын тухай хувийн тэмдэглэлээ бич..."
+                    placeholder={tr("Энэ уншилтын тухай хувийн тэмдэглэлээ бич...","Write private notes about this reading...")}
                     className="w-full rounded-lg border border-white/20 bg-white/5 p-3 text-sm text-white placeholder:text-slate-400 focus:border-amber-300 focus:outline-none"/>
                   <button type="button" onClick={()=>void (async()=>{
                     try{
                       await changeJournalNotes(active.id,draftNotes);
-                      setItems(await listJournal());setError("");setMessage("Тэмдэглэл хадгалагдлаа.");
+                      setItems(await listJournal());setError("");setMessage(tr("Тэмдэглэл хадгалагдлаа.","Notes saved."));
                     }catch(cause){
                       setError(cause instanceof Error?cause.message:"Тэмдэглэлийг хадгалж чадсангүй.");
                     }
@@ -255,7 +257,7 @@ export default function ReadingHistory(){
                     Тэмдэглэгээ (таслалаар салгана, 6 хүртэл)
                     <input id={"journal-tags-"+active.id} value={draftTags}
                       onChange={event=>setDraftTags(event.target.value)} maxLength={210}
-                      placeholder="хайр, зорилго, шинэ эхлэл..."
+                      placeholder={tr("хайр, зорилго, шинэ эхлэл...","love, goals, new start...")}
                       className="mt-2 w-full rounded-lg border border-white/20 bg-white/5 p-3 text-sm text-white"/>
                   </label>
                   <label htmlFor={"journal-mood-"+active.id} className="text-sm text-amber-100">
@@ -263,18 +265,18 @@ export default function ReadingHistory(){
                     <select id={"journal-mood-"+active.id} value={draftMood}
                       onChange={event=>setDraftMood(event.target.value as ReadingMood)}
                       className="mt-2 w-full rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-white">
-                      <option value="neutral">Төвийг сахисан</option>
-                      <option value="calm">Тайван</option>
-                      <option value="hopeful">Итгэлтэй</option>
-                      <option value="uncertain">Эргэлзээтэй</option>
-                      <option value="anxious">Санаа зовсон</option>
+                      <option value="neutral">{tr("Төвийг сахисан","Neutral")}</option>
+                      <option value="calm">{tr("Тайван","Calm")}</option>
+                      <option value="hopeful">{tr("Итгэлтэй","Hopeful")}</option>
+                      <option value="uncertain">{tr("Эргэлзээтэй","Uncertain")}</option>
+                      <option value="anxious">{tr("Санаа зовсон","Anxious")}</option>
                     </select>
                   </label>
                   <button type="button" onClick={()=>void (async()=>{
                     try{
                       const tags=[...new Set(draftTags.split(",").map(v=>v.trim()).filter(Boolean))];
                       await changeJournalMetadata(active.id,tags,draftMood);
-                      setItems(await listJournal());setError("");setMessage("Мэдрэмж болон тэмдэглэгээ хадгалагдлаа.");
+                      setItems(await listJournal());setError("");setMessage(tr("Мэдрэмж болон тэмдэглэгээ хадгалагдлаа.","Mood and tags saved."));
                     }catch(cause){setError(cause instanceof Error?cause.message:"Мэдрэмж хадгалагдсангүй.");}
                   })()} className="w-fit rounded-full border border-amber-300/40 px-5 py-3 text-sm text-amber-100">
                     Ангилал хадгалах
@@ -312,7 +314,7 @@ export default function ReadingHistory(){
           </article>
         ))}
       </div>
-      {pages>1&&<nav aria-label="Уншилтын түүхийн хуудас" className="mt-8 flex items-center justify-center gap-4">
+      {pages>1&&<nav aria-label={tr("Уншилтын түүхийн хуудас","Reading journal pagination")} className="mt-8 flex items-center justify-center gap-4">
         <button type="button" disabled={safePage===1} onClick={()=>setPage(p=>Math.max(1,p-1))}
           className="min-h-11 rounded-full border border-amber-300/30 px-5 py-2 text-amber-100 disabled:opacity-40">
           Өмнөх
