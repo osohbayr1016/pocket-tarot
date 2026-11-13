@@ -441,7 +441,7 @@ export const tarotCards: TarotCard[] = [
     id, name, englishName: name, emoji: "✦", description: meaning, meaning, reversedMeaning,
     future: "Энэ карт нь ирээдүйн баттай таамаглал бус, эргэцүүлэн бодох нэг өнцөг юм. " + meaning,
     keywords: keywords.split(", "), element: "Сүнслэг", numerology: id, arcana: "major",
-    image: "/tarot/rws/" + file,
+    image: "/tarot/rws/" + file.replace(/\.jpg$/,".webp"),
   })),
   ...Object.entries(suitSource).flatMap(([suit, item], suitIndex) =>
     item.mean.map(([meaning, reversedMeaning], rankIndex): TarotCard => {
@@ -455,7 +455,7 @@ export const tarotCards: TarotCard[] = [
         numerology: rankIndex + 1, arcana: "minor",
         suit: suit as TarotCard["suit"],
         image: "/tarot/rws/" + ({Wands:"Wands", Cups:"Cups", Swords:"Swords", Pentacles:"Pents"}[suit]) +
-          String(rankIndex + 1).padStart(2,"0") + ".jpg",
+          String(rankIndex + 1).padStart(2,"0") + ".webp",
       };
     })
   ),
