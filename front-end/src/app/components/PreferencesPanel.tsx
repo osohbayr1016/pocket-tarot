@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
-import {createCompleteBackup,restoreCompleteBackup} from "../lib/offlineBackup";
+import {createCompleteBackupV3,restoreCompleteBackupV3} from "../lib/offlineBackup";
 import {
   defaultReadingPreferences,getReadingPreferences,saveReadingPreferences,
   type ReadingPreferences
@@ -24,9 +24,9 @@ export default function PreferencesPanel(){
       setError("Тохиргоог хадгалж чадсангүй. Browser storage-г шалгана уу.");
     }
   }
-  const exportAll=()=>{
+  const exportAll=async()=>{
     try{
-      const blob=new Blob([createCompleteBackup()],{type:"application/json"});
+      const blob=new Blob([await createCompleteBackupV3()],{type:"application/json"});
       const href=URL.createObjectURL(blob), link=document.createElement("a");
       link.href=href;link.download="pocket-tarot-complete-backup.json";link.click();
       setTimeout(()=>URL.revokeObjectURL(href),2000);
@@ -38,8 +38,8 @@ export default function PreferencesPanel(){
     if(backupInput.current)backupInput.current.value="";
     if(!window.confirm("Энэ төхөөрөмж дээрх journal, custom spread, сургалтын ахиц болон тохиргоо бүгд шинэ backup-ээр СОЛИГДОНО. Одоогийн data-г эхлээд export хийсэн үү?"))return;
     try{
-      if(file.size>3_000_000)throw new Error("Backup файл 3 MB-ээс бага байх ёстой.");
-      const restored=restoreCompleteBackup(await file.text());
+      if(file.size>20_000_000)throw new Error("Backup файл 20 MB-ээс бага байх ёстой.");
+      const restored=await restoreCompleteBackupV3(await file.text());
       setPrefs(restored.preferences);
       setMessage(restored.readings.length+" уншилт, "+restored.spreads.length+
         " дэлгэмэл, "+restored.study.length+" сурсан карт болон тохиргоо сэргээгдлээ. Бусад хэсэг рүү орж шинэ мэдээллээ хараарай.");
@@ -88,10 +88,10 @@ export default function PreferencesPanel(){
       <p className="mt-3 text-sm leading-7 text-slate-300">
         Journal, дуртай уншилт, custom spread, Tarot сургалтын ахиц болон тохиргоогоо нэг JSON файлд экспортолж
         өөр төхөөрөмж рүү зөөж болно. Нууц үг эсвэл сервер шаардлагагүй.
-        JSON файл таны хувийн тэмдэглэлийг агуулдаг тул бусдад бүү илгээгээрэй.
+        Бүрэн backup v3 нь IndexedDB-д хадгалсан 5000 хүртэлх уншилтыг багтаана. JSON файл таны хувийн тэмдэглэлийг агуулдаг тул бусдад бүү илгээгээрэй.
       </p>
       <div className="mt-5 flex flex-wrap gap-3">
-        <button type="button" onClick={exportAll}
+        <button type="button" onClick={()=>void exportAll()}
           className="rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-[#171127]">
           Бүх data export
         </button>
