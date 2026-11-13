@@ -69,7 +69,7 @@ export default function LearnTarot(){
       const next=reviewCard(progress,question.id,value===question.id);
       saveStudyProgress(next);
       setProgress(next);
-      setNow(Date.now());
+      setNow(next.find(row=>row.id===question.id)?.lastReviewedAt??now);
     }catch(cause){setError(cause instanceof Error?cause.message:"Сургалтын оноо хадгалагдсангүй.");}
   };
   const card=question?tarotCards.find(item=>item.id===question.id):null;
