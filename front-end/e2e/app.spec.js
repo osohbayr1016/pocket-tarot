@@ -219,3 +219,18 @@ test("legacy account JSON can be imported locally without a backend request",asy
   await expect(page.getByText("Нийт уншилт")).toBeVisible();
   expect(external).toEqual([]);
 });
+
+test("lazy-loaded natal chart works without internet after full PWA shell install",async({page,context,browserName})=>{
+  test.skip(browserName!=="chromium","Offline PWA integration is tested on Chromium.");
+  await page.goto("/");
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  await context.setOffline(true);
+  await openView(page,"Төрсөн үеийн тэнгэр");
+  await expect(page.getByRole("heading",{name:"Төрсөн үеийн тэнгэрийн зураг"})).toBeVisible();
+  await page.locator("#natal-city").selectOption("ulaanbaatar");
+  await page.locator("#natal-date").fill("2024-11-01");
+  await page.locator("#natal-time").fill("10:00");
+  await page.getByRole("button",{name:"Тэнгэрийн зураг тооцоолох"}).click();
+  await expect(page.locator("table tbody tr")).toHaveCount(10);
+  await context.setOffline(false);
+});
