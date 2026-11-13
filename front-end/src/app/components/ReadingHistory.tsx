@@ -145,11 +145,11 @@ export default function ReadingHistory(){
           aria-label={tr("Хуучин account export JSON","Import user-owned legacy account JSON")} onChange={event=>void readLegacy(event.target.files?.[0])}/>
         <button type="button" onClick={()=>legacyRef.current?.click()}
           className="rounded-full border border-amber-300/30 px-5 py-3 text-sm text-amber-100">
-          Хуучин account import
+          {(locale==="en"?"Import old account":"Хуучин account import")}
         </button>
         <button type="button" disabled={!items.length&&!error} onClick={clear}
           className="rounded-full border border-red-300/40 px-5 py-3 text-sm text-red-200 hover:border-red-300">
-          Бүгдийг арилгах
+          {(locale==="en"?"Clear all":"Бүгдийг арилгах")}
         </button>
       </div>
       {error&&<p role="alert" className="my-3 text-center text-sm text-red-300">{error}</p>}
@@ -160,18 +160,18 @@ export default function ReadingHistory(){
           saveAsFile(raw,"pocket-tarot-recovery-raw.json","application/json");
         }catch(cause){setMessage(cause instanceof Error?cause.message:"Raw backup үүсгэж чадсангүй.");}
       }} className="mb-4 rounded-full border border-amber-300/30 px-5 py-2 text-sm text-amber-100">
-        Өмнө нь raw backup татах
+        {(locale==="en"?"Download raw backup first":"Өмнө нь raw backup татах")}
       </button>}
       <div className="mb-7 flex flex-col items-start justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center">
         <label className="w-full max-w-md text-sm text-amber-100">
-          Уншилт хайх
+          {(locale==="en"?"Search readings":"Уншилт хайх")}
           <input type="search" value={search} onChange={event=>{setSearch(event.target.value);setPage(1);}}
             placeholder={tr("Асуулт, карт, тэмдэглэл, огноо...","Question, card, notes, date...")}
             className="mt-2 w-full rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-white"/>
         </label>
         <label className="flex min-h-11 items-center gap-2 text-sm text-slate-200">
           <input type="checkbox" checked={favoritesOnly} onChange={event=>{setFavoritesOnly(event.target.checked);setPage(1);}}/>
-          Зөвхөн дуртай уншилт
+          {(locale==="en"?"Favorites only":"Зөвхөн дуртай уншилт")}
         </label>
       </div>
       {message&&<p role="status" className="my-3 text-center text-sm text-emerald-200">{message}</p>}
@@ -211,7 +211,7 @@ export default function ReadingHistory(){
                   {selected===item.id?"Хураах":"Дэлгэрэнгүй"}
                 </button>
                 <button type="button" onClick={()=>onDelete(item.id)} className="rounded-full border border-red-300/30 px-4 py-2 text-sm text-red-200">
-                  Устгах
+                  {(locale==="en"?"Delete":"Устгах")}
                 </button>
               </div>
             </div>
@@ -249,19 +249,19 @@ export default function ReadingHistory(){
                       setError(cause instanceof Error?cause.message:"Тэмдэглэлийг хадгалж чадсангүй.");
                     }
                   })()} className="mt-2 rounded-full border border-amber-300/40 px-5 py-2 text-sm text-amber-100 hover:border-amber-300">
-                    Тэмдэглэл хадгалах
+                    {(locale==="en"?"Save notes":"Тэмдэглэл хадгалах")}
                   </button>
                 </div>
                 <div className="mt-5 grid gap-3 border-t border-white/10 pt-5 sm:grid-cols-2">
                   <label htmlFor={"journal-tags-"+active.id} className="text-sm text-amber-100">
-                    Тэмдэглэгээ (таслалаар салгана, 6 хүртэл)
+                    {(locale==="en"?"Tags (comma-separated, up to six)":"Тэмдэглэгээ (таслалаар салгана, 6 хүртэл)")}
                     <input id={"journal-tags-"+active.id} value={draftTags}
                       onChange={event=>setDraftTags(event.target.value)} maxLength={210}
                       placeholder={tr("хайр, зорилго, шинэ эхлэл...","love, goals, new start...")}
                       className="mt-2 w-full rounded-lg border border-white/20 bg-white/5 p-3 text-sm text-white"/>
                   </label>
                   <label htmlFor={"journal-mood-"+active.id} className="text-sm text-amber-100">
-                    Уншилтын дараах мэдрэмж
+                    {(locale==="en"?"Feeling after this reading":"Уншилтын дараах мэдрэмж")}
                     <select id={"journal-mood-"+active.id} value={draftMood}
                       onChange={event=>setDraftMood(event.target.value as ReadingMood)}
                       className="mt-2 w-full rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-white">
@@ -279,11 +279,11 @@ export default function ReadingHistory(){
                       setItems(await listJournal());setError("");setMessage(tr("Мэдрэмж болон тэмдэглэгээ хадгалагдлаа.","Mood and tags saved."));
                     }catch(cause){setError(cause instanceof Error?cause.message:"Мэдрэмж хадгалагдсангүй.");}
                   })()} className="w-fit rounded-full border border-amber-300/40 px-5 py-3 text-sm text-amber-100">
-                    Ангилал хадгалах
+                    {(locale==="en"?"Save tags and mood":"Ангилал хадгалах")}
                   </button>
                 </div>
                 <p className="mt-5 text-xs leading-5 text-slate-400">
-                  Social share зурагт зөвхөн картын нэр, дэлгэмлийн нэр орно. Таны асуулт, тэмдэглэл, бүтэн тайлал нийтлэгдэхгүй.
+                  {(locale==="en"?"Social images show only card and spread names; your question, private notes and full interpretation are excluded.":"Social share зурагт зөвхөн картын нэр, дэлгэмлийн нэр орно. Таны асуулт, тэмдэглэл, бүтэн тайлал нийтлэгдэхгүй.")}
                 </p>
                 <div className="mt-5 flex flex-wrap gap-2">
                   <button type="button"
@@ -292,7 +292,7 @@ export default function ReadingHistory(){
                       ()=>setError("PNG үүсгэх үед алдаа гарлаа.")
                     )}
                     className="rounded-full bg-amber-300 px-5 py-2 text-sm font-semibold text-[#171127]">
-                    PNG зураг
+                    {(locale==="en"?"PNG image":"PNG зураг")}
                   </button>
                   {(["story","square"] as const).map(format=>
                     <button type="button" key={format} onClick={()=>void exportReadingSocialPng(active,tarotCards,format).then(
@@ -307,7 +307,7 @@ export default function ReadingHistory(){
                     className="rounded-full border border-white/30 px-5 py-2 text-sm text-slate-100">Print / PDF</button>
                   <button type="button" onClick={()=>navigator.clipboard.writeText(active.reading).then(
                     ()=>setMessage("Тайлбар хууллаа."),()=>setError("Тайлбарыг хуулж чадсангүй."))}
-                    className="rounded-full border border-white/30 px-5 py-2 text-sm text-slate-100">Хуулах</button>
+                    className="rounded-full border border-white/30 px-5 py-2 text-sm text-slate-100">{tr("Хуулах","Copy")}</button>
                 </div>
               </div>
             )}
@@ -317,12 +317,12 @@ export default function ReadingHistory(){
       {pages>1&&<nav aria-label={tr("Уншилтын түүхийн хуудас","Reading journal pagination")} className="mt-8 flex items-center justify-center gap-4">
         <button type="button" disabled={safePage===1} onClick={()=>setPage(p=>Math.max(1,p-1))}
           className="min-h-11 rounded-full border border-amber-300/30 px-5 py-2 text-amber-100 disabled:opacity-40">
-          Өмнөх
+          {(locale==="en"?"Previous":"Өмнөх")}
         </button>
         <span aria-live="polite" className="text-sm text-slate-300">{safePage} / {pages} хуудас · {visible.length} уншилт</span>
         <button type="button" disabled={safePage===pages} onClick={()=>setPage(p=>Math.min(pages,p+1))}
           className="min-h-11 rounded-full border border-amber-300/30 px-5 py-2 text-amber-100 disabled:opacity-40">
-          Дараах
+          {(locale==="en"?"Next":"Дараах")}
         </button>
       </nav>}
     </section>
