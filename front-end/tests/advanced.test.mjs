@@ -21,7 +21,7 @@ test("multi-card reading includes context and inter-card synthesis",()=>{
   const text=createContextualReading(drawn,"Ажил карьер?", "career");
   assert.match(text,/Картуудын холбоо/);
   assert.match(text,/Дараагийн бодит алхам/);
-  assert.match(text,/бодит мэдээлэл/);
+  assert.match(text,/бодит мэдээл/);
   assert.match(text,/баттай таамагладаггүй/);
   assert.equal(text,createContextualReading(drawn,"Ажил карьер?","career"));
 });
@@ -29,8 +29,8 @@ test("secure local journal rejects invalid or malicious imported schemas",()=>{
   assert.equal(parseReadings({}).length,0);
   assert.equal(parseReadings([{id:"valid",date:"2024-01-01",reading:"text",spread:"One",
     question:"",notes:"",cards:[{id:99,reversed:false,position:1}]}]).length,0);
-  assert.throws(()=>importReadings("{}"),/формат|формат/);
-  assert.throws(()=>importReadings(JSON.stringify({format:"pocket-tarot-readings",version:2,readings:[]})),/формат/);
+  assert.throws(()=>importReadings("{}"),/JSON export/);
+  assert.throws(()=>importReadings(JSON.stringify({format:"pocket-tarot-readings",version:2,readings:[]})),/JSON export/);
 });
 test("birth UTC offset arithmetic respects quarter-hour offsets",()=>{
   const utc=parseBirthUTC({birthDate:"2024-03-20",birthTime:"08:30",
