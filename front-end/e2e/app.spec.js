@@ -20,10 +20,10 @@ test("offline-first tarot: three-card spread, sequential reveal and history",asy
   await page.getByRole("button",{name:"Миний түүх"}).click();
   await expect(page.getByRole("heading",{name:"Уншилтын түүх"})).toBeVisible();
   await page.getByRole("button",{name:"Дэлгэрэнгүй"}).first().click();
-  await expect(page.getByText("E2E тэмдэглэл")).toBeVisible();
+  await expect(page.getByRole("textbox",{name:"Тэмдэглэл засах"})).toHaveValue("E2E тэмдэглэл");
   await page.locator('textarea[id^="history-notes-"]').fill("Edited E2E note");
   await page.getByRole("button",{name:"Тэмдэглэл хадгалах"}).click();
-  await expect(page.getByText("Edited E2E note")).toBeVisible();
+  await expect(page.getByRole("textbox",{name:"Тэмдэглэл засах"})).toHaveValue("Edited E2E note");
   expect(external).toEqual([]);
 });
 test("all 78 local card images are discoverable",async({page})=>{
