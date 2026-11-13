@@ -9,6 +9,10 @@ on:
     paths:
       - "front-end/**"
       - ".github/workflows/offline-frontend.yml"
+# Cancel outdated PR runs so only the latest commit consumes browser minutes.
+concurrency:
+  group: pocket-tarot-ui-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   verify:
     runs-on: ubuntu-latest
