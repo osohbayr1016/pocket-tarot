@@ -111,7 +111,7 @@ export default function Home() {
         </div>
         <NavigationMenu section={section} onNavigate={navigate}/>
       </header>
-      <main id="main-content" tabIndex={-1} className="relative z-10 mx-auto max-w-7xl px-3 py-12 sm:px-6">
+      <main id="main-content" tabIndex={-1} className="relative z-10 mx-auto max-w-7xl px-3 py-6 sm:px-6 sm:py-12">
         {section==="reading" && <TraditionalTarotReading key="reading" onReset={()=>navigate("single")}/>}
         {section==="single" && (
           <section className="mx-auto max-w-4xl text-center">

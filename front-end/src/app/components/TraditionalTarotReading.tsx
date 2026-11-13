@@ -15,6 +15,7 @@ import {useLanguage} from "../lib/LanguageProvider";
 import {englishReading} from "../lib/englishTarot";
 import {englishSpreadName,englishSpreadDescription,englishSpreadPosition} from "../lib/englishSpreads";
 import {emitFeedback} from "../lib/feedback";
+import {exportReadingSocialPng,type SocialFormat} from "../lib/exportReadingSocialPng";
 import {loadSavedSpreads,saveCustomSpread,deleteCustomSpread,savedToSpread,type SavedSpread} from "../lib/savedCustomSpreads";
 
 interface Props {
@@ -44,6 +45,8 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
   const notes=notesDraft.text;
   const setNotes=notesDraft.setText;
   const [savedMessage, setSavedMessage] = useState("");
+  const [shareMessage,setShareMessage] = useState("");
+  const [exporting,setExporting] = useState(false);
   const [error, setError] = useState("");
   const [history, setHistory] = useState<{id:string; date:string; spread:string; question:string; reading:string}[]>([]);
   useEffect(()=>{
@@ -124,6 +127,21 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
     } catch {
       setError("Төхөөрөмжийн хадгалах эрх эсвэл зай хүрэлцэхгүй байна.");
     }
+  };
+  const shareReading=async(format:SocialFormat)=>{
+    if(!spread||drawn.length===0||visibleCount!==drawn.length||exporting)return;
+    setExporting(true);setShareMessage("");
+    try{
+      await exportReadingSocialPng({
+        id:crypto.randomUUID(),date:new Date().toISOString(),
+        spread:spread.name,question:"",reading:result,notes:"",
+        cards:drawn.map(entry=>({id:entry.card.id,reversed:entry.isReversed,position:entry.position})),
+      },tarotCards,format);
+      setShareMessage(tr("Хувийн асуулт, тэмдэглэл ороогүй зураг татагдлаа.","Image downloaded without private questions or notes."));
+      setError("");
+    }catch(cause){
+      setError(cause instanceof Error?cause.message:tr("Share зураг үүсгэж чадсангүй.","Could not export the image."));
+    }finally{setExporting(false);}
   };
   const clearHistory = async () => {
     if(!window.confirm(tr("БҮХ хадгалсан уншилтаа энэ төхөөрөмжөөс бүрмөсөн устгах уу? Эхлээд JSON backup хийхийг зөвлөе.","Permanently delete ALL readings from this device? Export a backup first.")))return;
@@ -240,7 +258,11 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
               ))}
             </div>
           </section>}
-          <div className="mt-8 rounded-2xl border border-amber-300/25 bg-[#20192f] p-5 sm:p-7">
+          <details id="custom-spread-builder" className="group mt-8">
+            <summary className="min-h-12 cursor-pointer rounded-xl border border-white/15 bg-white/5 px-5 py-4 text-sm font-semibold text-amber-100 hover:border-amber-300/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200">
+              {tr("Нарийвчилсан тохиргоо · Өөрийн дэлгэмэл","Advanced · Create a custom spread")}
+            </summary>
+            <div className="mt-3 rounded-2xl border border-amber-300/25 bg-[#20192f] p-5 sm:p-7">
             <h3 className="font-serif text-xl text-amber-100">{tr("Өөрийн дэлгэмэл үүсгэх","Create your own spread")}</h3>
             <p className="mt-2 text-sm text-slate-300">
               {(locale==="en"?"Set 1–12 cards and optionally name each position. Works without an AI service or the internet.":"1–12 картын тоо, байрлалын нэрсээ оруул. Интернэт эсвэл AI шаардлагагүй.")}
@@ -281,7 +303,8 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
               className="mt-6 rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200">
               {(locale==="en"?"Start custom spread":"Миний дэлгэмлийг эхлүүлэх")}
             </button>
-          </div>
+            </div>
+          </details>
         </div>
       )}
       {spread && (
@@ -353,7 +376,17 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
                       className="rounded-full border border-white/30 px-6 py-3 text-sm text-white hover:border-amber-300">
                       {(locale==="en"?"Shuffle again":"Дахин холих")}
                     </button>
+                    <button type="button" disabled={exporting} onClick={()=>void shareReading("story")}
+                      className="rounded-full border border-amber-300/40 px-6 py-3 text-sm text-amber-100 disabled:opacity-60">
+                      {tr("Story зураг татах","Share as Story")}
+                    </button>
+                    <button type="button" disabled={exporting} onClick={()=>void shareReading("square")}
+                      className="rounded-full border border-amber-300/40 px-6 py-3 text-sm text-amber-100 disabled:opacity-60">
+                      {tr("Square зураг татах","Share square image")}
+                    </button>
                   </div>
+                  <p className="mt-3 text-xs leading-5 text-slate-300">{tr("Хуваалцах зурагт зөвхөн карт, дэлгэмлийн нэр орно. Хувийн асуулт, тэмдэглэл багтахгүй.","Shared images show the cards and spread only; your question and private notes stay out.")}</p>
+                  {shareMessage&&<p role="status" className="mt-3 text-sm text-emerald-200">{shareMessage}</p>}
                   {savedMessage && <p role="status" className="mt-4 text-sm text-emerald-200">{savedMessage}</p>}
                 </div>
               )}

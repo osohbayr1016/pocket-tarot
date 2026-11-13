@@ -40,22 +40,22 @@ export default function NavigationMenu({section,onNavigate}:{
         {locale==="mn"?"EN":"MN"} · {locale==="mn"?"English":"Монгол"}
       </button>
     </div>
-    <div className="flex flex-wrap gap-2 border-b border-white/10 pb-3" aria-label={locale==="en"?"Main categories":"Үндсэн ангиллууд"}>
+    <div className="flex gap-2 overflow-x-auto overscroll-x-contain border-b border-white/10 pb-3 sm:flex-wrap sm:overflow-visible" aria-label={locale==="en"?"Main categories":"Үндсэн ангиллууд"}>
       {NAV_GROUPS.map(group=>(
         <button type="button" key={group.id}
           aria-current={group.id===selectedGroup.id?"page":undefined}
           aria-pressed={group.id===active.id} onClick={()=>setPreviewGroup(group.id)}
-          className={"min-h-11 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 "+
+          className={"min-h-11 shrink-0 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 "+
             (group.id===active.id?"bg-amber-300 text-[#171127]":"border border-white/15 text-slate-200 hover:border-amber-300/50 hover:text-amber-200")}>
           {t(group.label)}
         </button>
       ))}
     </div>
-    <div className="flex flex-wrap gap-2 py-3" aria-label={locale==="en"?t(active.label)+" sections":active.label+" хэсгүүд"}>
+    <div className="flex gap-2 overflow-x-auto overscroll-x-contain py-3 sm:flex-wrap sm:overflow-visible" aria-label={locale==="en"?t(active.label)+" sections":active.label+" хэсгүүд"}>
       {active.views.map(view=>(
         <button type="button" key={view.id} aria-current={section===view.id?"page":undefined}
           aria-pressed={section===view.id} onClick={()=>{setPreviewGroup(null);onNavigate(view.id);}}
-          className={"min-h-11 rounded-xl border px-4 py-2.5 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 "+
+          className={"min-h-11 shrink-0 whitespace-nowrap rounded-xl border px-4 py-2.5 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 "+
             (section===view.id?"border-amber-300/60 bg-amber-300/10 text-amber-100":"border-white/10 text-slate-200 hover:border-amber-300/50 hover:text-amber-100")}>
           {t(view.label)}
         </button>

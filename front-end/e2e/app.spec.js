@@ -13,6 +13,19 @@ async function openView(page,name){
 }
 
 
+test("quick three-card entry and privacy-first Story export",async({page})=>{
+  await page.goto("/");
+  await expect(page.locator("#custom-spread-builder")).not.toHaveAttribute("open");
+  await page.getByRole("button",{name:"3 карт сугалах"}).click();
+  for(let i=0;i<3;i++)await page.getByRole("button",{name:/Дараагийн картыг нээх/}).click();
+  await expect(page.getByRole("heading",{name:"Таны уншилтын тайлал"})).toBeVisible();
+  const downloaded=page.waitForEvent("download");
+  await page.getByRole("button",{name:"Story зураг татах"}).click();
+  const result=await downloaded;
+  expect(result.suggestedFilename()).toMatch(/pocket-tarot-story-.*\.png/);
+  await expect(page.getByText(/Хувийн асуулт, тэмдэглэл ороогүй/)).toBeVisible();
+});
+
 test("offline-first tarot: three-card spread, sequential reveal and history",async({page})=>{
   const external=[];
   page.on("request",req=>{
@@ -100,6 +113,7 @@ test("PWA reloads the app shell with networking disabled after first install",as
 
 test("custom tarot spread uses user's card count and labeled positions",async({page})=>{
   await page.goto("/");
+  await page.locator("#custom-spread-builder > summary").click();
   await page.locator("#custom-card-count").selectOption("4");
   await page.locator("#custom-position-0").fill("Зорилго");
   await page.locator("#custom-position-1").fill("Боломж");
@@ -147,6 +161,7 @@ test("deep links and browser back restore the correct grouped view",async({page}
 
 test("save a custom spread template and reuse it after returning to spread selection",async({page})=>{
   await page.goto("/");
+  await page.locator("#custom-spread-builder > summary").click();
   await page.locator("#custom-spread-name").fill("Миний тестийн дэлгэмэл");
   await page.locator("#custom-card-count").selectOption("2");
   await page.locator("#custom-position-0").fill("Өмнөх нөхцөл");
