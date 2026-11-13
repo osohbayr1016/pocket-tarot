@@ -258,7 +258,7 @@ test("complete offline backup can export and restore settings without network ca
   await expect(page.locator("#back-style")).toHaveValue("moon");
 });
 
-test("spaced-repetition quiz persists study progress and complete backup v3",async({page})=>{
+test("spaced-repetition quiz persists study progress and complete backup v4",async({page})=>{
   await page.goto("/");
   await openView(page,"Таро сурах");
   await page.getByRole("button",{name:"Дасгал эхлүүлэх"}).click();
@@ -281,7 +281,7 @@ test("spaced-repetition quiz persists study progress and complete backup v3",asy
   const file=await download.path();
   const buffer=require("node:fs").readFileSync(file,"utf8");
   const backup=JSON.parse(buffer);
-  expect(backup.version).toBe(3);
+  expect(backup.version).toBe(4);
   expect(backup.study).toHaveLength(1);
 });
 
@@ -477,4 +477,38 @@ test("English Moon calendar and natal chart show translated astronomy labels",as
   await page.getByRole("button",{name:"Calculate birth chart"}).click();
   await expect(page.getByRole("heading",{name:"Planetary positions"})).toBeVisible();
   await expect(page.getByRole("heading",{name:"Natal versus planetary transits"})).toBeVisible();
+});
+
+test("v4 complete backup restores unsaved drafts and language without external API",async({page})=>{
+  const api=[];
+  page.on("request",request=>{if(request.url().includes("/api/"))api.push(request.url());});
+  await page.goto("/");
+  await openView(page,"Өдрийн карт");
+  await page.locator("#daily-notes").fill("Private offline draft to rescue");
+  await page.getByRole("button",{name:"Switch language to English"}).click();
+  await page.getByRole("button",{name:"Offline",exact:true}).click();
+  await page.getByRole("button",{name:"Preferences",exact:true}).click();
+  await page.getByRole("checkbox",{name:/Encrypt the backup using AES-256-GCM/}).uncheck();
+  const request=page.waitForEvent("download");
+  await page.getByRole("button",{name:"Export all data"}).click();
+  const download=await request;
+  const backup=JSON.parse(require("node:fs").readFileSync(await download.path(),"utf8"));
+  expect(backup.version).toBe(4);
+  expect(backup.locale).toBe("en");
+  expect(backup.drafts.some(row=>row.text==="Private offline draft to rescue")).toBe(true);
+  await page.evaluate(()=>{
+    for(const key of Object.keys(localStorage)){
+      if(key.startsWith("pocket-tarot-draft-v1:"))localStorage.removeItem(key);
+    }
+  });
+  await page.getByRole("button",{name:"Монгол хэл рүү шилжих"}).click();
+  page.on("dialog",dialog=>void dialog.accept());
+  await page.locator('input[aria-label="Бүх data import JSON"]').setInputFiles({
+    name:"portable-v4.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(backup))
+  });
+  await expect(page.getByRole("button",{name:"Монгол хэл рүү шилжих"})).toBeVisible();
+  await page.getByRole("button",{name:"Daily",exact:true}).click();
+  await page.getByRole("button",{name:"Daily card",exact:true}).click();
+  await expect(page.locator("#daily-notes")).toHaveValue("Private offline draft to rescue");
+  expect(api).toEqual([]);
 });
