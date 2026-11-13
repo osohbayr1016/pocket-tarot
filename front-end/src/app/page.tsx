@@ -21,6 +21,7 @@ const NatalChartPage = dynamic(() => import("./components/NatalChartPage"), {
 });
 import CardDetailsDialog from "./components/CardDetailsDialog";
 import OfflineDeckManager from "./components/OfflineDeckManager";
+import PreferencesPanel from "./components/PreferencesPanel";
 import NavigationMenu, {isSection, type Section} from "./components/NavigationMenu";
 
 export default function Home() {
@@ -152,6 +153,7 @@ export default function Home() {
         {section==="daily-card" && <DailyTarotCard/>}
         {section==="learn" && <LearnTarot/>}
         {section==="offline" && <OfflineDeckManager/>}
+        {section==="settings" && <PreferencesPanel/>}
       </main>
       <footer className="relative z-10 border-t border-white/10 px-4 py-8 text-center text-xs leading-6 text-slate-400">
         <p className="font-serif text-lg text-amber-200">✧ Pocket Tarot</p>
