@@ -1,6 +1,6 @@
 # Pocket Tarot — Release checklist
 
-Updated: 2026-11-13. Target branch: `feat/offline-tarot-foundation`.
+Updated: 2026-11-13 (second implementation wave). Target branch: `feat/offline-tarot-foundation`.
 
 **Do not describe this release as “100% bug-free”, “100% accurate forecasts”, or “professionally verified astrology.”** These cannot be established by a CI run.
 
@@ -15,7 +15,7 @@ Updated: 2026-11-13. Target branch: `feat/offline-tarot-foundation`.
 - [x] TypeScript and production build checks
 - [x] Linting checks
 - [x] Chromium Playwright journeys including date, cards, history and offline reload on passing CI commits
-- [ ] Latest HEAD must pass **all** jobs after the last change; do not infer from an older green run
+- [ ] **LATEST HEAD** must pass security/unit/lint/build and Chromium/Firefox/WebKit checks after the last commit. Earlier green runs do not authorize a merge.
 
 ## P0 security and operations
 
@@ -23,19 +23,24 @@ Updated: 2026-11-13. Target branch: `feat/offline-tarot-foundation`.
 - [x] Credential-bearing config removed from the active feature branch and ignored
 - [ ] **OWNER ACTION REQUIRED:** Rotate any exposed credentials from Git history, provider dashboards, and deployed services; invalidate affected sessions
 - [ ] Check legacy deployment is actually shut down and no old API endpoints remain reachable outside the new code
+- [x] Vercel uses the same reproducible `npm ci --legacy-peer-deps` install policy as CI
 - [ ] Confirm Vercel/production points to the expected build and branch; audit public runtime network requests
 - [ ] Create rollback/redeploy plan and preserve a stable release tag
 
 ## P1 product QA
 
-- [x] Five built-in spreads and custom spread UI
-- [x] Rule-based multi-card contextual interpretation and daily reflection
-- [x] Local journal history, deletion, JSON export/import and notes editing
-- [x] PWA cache manifest and on-device install support
-- [x] Local astronomical ephemeris, ascendant, aspects and Whole Sign house UI
-- [ ] Manual iPhone Safari, Android Chrome, desktop Safari/Firefox checks (small screens, landscape, notch, safe areas)
+- [x] Five built-in spreads, 1–12-card custom spreads and saved custom templates
+- [x] Rule-based contextual interpretation including card pairs, suit/rank patterns and reflection prompts
+- [x] Offline reading preferences: upright-only, card back, reduced motion
+- [x] Local journal history, favorites/search/statistics, deletion, JSON export/import, notes editing, corruption/overflow safeguards
+- [x] User-supplied legacy JSON converter and opt-in import (device only); NO connection to old account database
+- [ ] Owner must confirm authenticated legacy user export from live service and test user-specific data migration; see issue #5
+- [x] PWA cache manifest, reproducibly versioned service worker, offline artwork manager and full Next static chunk precache
+- [ ] Test worker upgrades, cache eviction, iOS PWA install, slow connection and all offline lazy-loaded routes in real devices
+- [x] Local ephemeris, ascendant, aspects, Whole Sign houses, IANA timezone city presets and DST ambiguity/gap checks
+- [ ] Manual iPhone Safari, Android Chrome and screen-reader checks (small screens, landscape, notch, safe areas); Playwright desktop Firefox/WebKit is not a substitute
 - [ ] Keyboard accessibility audit including focus trap, Esc close, keyboard-only draw and screen reader announcements
-- [ ] Real-world slow/offline test: clear caches, warm caches, upgrade service worker, refresh, image fallback and 22MB card bundle
+- [ ] Real-world slow/offline test: clear/warm caches, update service worker, image fallback and optional compressed card bundle
 - [ ] Verify historical timezone/DST correctness and astrology numerical outputs against independent professional ephemeris tools for multiple cities/dates
 - [ ] 78-card Mongolian editorial review with qualified Tarot/domain reader
 - [ ] Product privacy review: local notes storage may be visible to other users of shared device
