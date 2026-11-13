@@ -97,3 +97,20 @@ test("custom tarot spread uses user's card count and labeled positions",async({p
   await expect(page.getByText(/Зорилго —/)).toBeVisible();
   await expect(page.getByText(/Боломж —/)).toBeVisible();
 });
+
+test("opt-in offline card pack saves all 78 images and survives an offline library visit",async({page,context})=>{
+  test.setTimeout(90000);
+  await page.goto("/");
+  await page.getByRole("button",{name:"Offline карт"}).click();
+  await expect(page.getByRole("heading",{name:"Офлайн картын сан"})).toBeVisible();
+  await page.getByRole("button",{name:"78 зураг offline татах"}).click();
+  await expect(page.getByRole("progressbar",{name:"Offline карт таталтын явц"}))
+    .toHaveAttribute("aria-valuenow","78",{timeout:70000});
+  await expect(page.getByText("78 / 78")).toBeVisible();
+  await context.setOffline(true);
+  await page.getByRole("button",{name:"78 карт"}).click();
+  await expect(page.locator("main button img")).toHaveCount(78);
+  const first=page.locator("main button img").first();
+  await expect.poll(()=>first.evaluate(img=>img.complete && img.naturalWidth>0)).toBe(true);
+  await context.setOffline(false);
+});
