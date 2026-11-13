@@ -1,3 +1,4 @@
+import {encryptBackup,decryptBackup,isEncryptedBackup} from "../src/app/lib/encryptedBackup.ts";
 import {moonSnapshot,getMoonMonth,closestLunation} from "../src/app/lib/lunarCalendar.ts";
 import {reviewCard,pickStudyCard,learningStats,validateStudyProgress} from "../src/app/lib/studyProgress.ts";
 import {parseCompleteBackup,BACKUP_FORMAT} from "../src/app/lib/offlineBackup.ts";
@@ -260,4 +261,15 @@ test("lunar calendar returns every valid day and bounded illumination",()=>{
   const nearest=closestLunation(rows,0);
   assert.ok(nearest?.day>=6&&nearest?.day<=10);
   assert.throws(()=>getMoonMonth(2025,13),/1900/);
+});
+
+test("AES-GCM backup encrypts and decrypts without exposing plaintext",async()=>{
+  const original=JSON.stringify({format:"pocket-tarot-complete-backup",notes:"private journal"});
+  const encrypted=await encryptBackup(original,"long enough unique password");
+  assert.ok(isEncryptedBackup(encrypted));
+  assert.ok(!encrypted.includes("private journal"));
+  const decoded=JSON.parse(await decryptBackup(encrypted,"long enough unique password"));
+  assert.equal(decoded.notes,"private journal");
+  await assert.rejects(decryptBackup(encrypted,"incorrect password"),/Нууц үг/);
+  await assert.rejects(encryptBackup(original,"short"),/12/);
 });
