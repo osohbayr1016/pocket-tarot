@@ -1,709 +1,164 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import TarotCard from "./components/TarotCard";
+import { useMemo, useState } from "react";
+import { tarotCards, type TarotCard } from "./data/tarotCards";
+import { secureRandomInt } from "./lib/offlineEngine";
+import TarotCardView from "./components/TarotCard";
 import CardReading from "./components/CardReading";
-import AuthModal from "./components/AuthModal";
-import Navigation from "./components/Navigation";
-import DreamInterpretation from "./components/DreamInterpretation";
+import TraditionalTarotReading from "./components/TraditionalTarotReading";
 import Horoscope from "./components/Horoscope";
 import DailyFortune from "./components/DailyFortune";
+import DreamInterpretation from "./components/DreamInterpretation";
 import LifeGuidance from "./components/LifeGuidance";
-import TraditionalTarotReading from "./components/TraditionalTarotReading";
-import { tarotCards, TarotCard as TarotCardType } from "./data/tarotCards";
-import axios from "axios";
 
-const BASE_URL =
-  process.env.NODE_ENV === "production"
-    ? "https://pocket-tarot-slp7.onrender.com"
-    : "http://localhost:5001";
+type Section = "reading" | "single" | "library" | "horoscope" | "daily" | "dream" | "guidance";
+const sections: {id: Section; label: string}[] = [
+  {id:"reading",label:"Таро дэлгэмэл"},
+  {id:"single",label:"Нэг карт"},
+  {id:"library",label:"78 карт"},
+  {id:"horoscope",label:"Орд"},
+  {id:"daily",label:"Өдрийн санаа"},
+  {id:"dream",label:"Зүүд"},
+  {id:"guidance",label:"Удирдамж"},
+];
 
 export default function Home() {
-  const [selectedCard, setSelectedCard] = useState<TarotCardType | null>(null);
-  const [isReading, setIsReading] = useState(false);
-  const [shuffling, setShuffling] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [activeSection, setActiveSection] = useState("traditional-tarot");
+  const [section,setSection] = useState<Section>("reading");
+  const [selected,setSelected] = useState<TarotCard|null>(null);
+  const [error,setError] = useState("");
+  const [query,setQuery] = useState("");
+  const [arcana,setArcana] = useState<"all"|"major"|"minor">("all");
+  const [libraryCard,setLibraryCard] = useState<TarotCard|null>(null);
+  const filtered = useMemo(()=>tarotCards.filter((card)=>(
+    (arcana === "all" || card.arcana === arcana) &&
+    (card.name + " " + card.englishName).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
+  )),[arcana,query]);
 
-  const [canSelect, setCanSelect] = useState(true);
-  const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(
-    null
-  );
-  const [shufflePhase, setShufflePhase] = useState<"idle" | "shuffling">(
-    "idle"
-  );
-  const [userQuestion, setUserQuestion] = useState("");
-  const [showQuestionInput, setShowQuestionInput] = useState(true);
-  const [authError, setAuthError] = useState("");
-
-  // Example: Get all readings for the logged-in user
-  const [readings, setReadings] = useState<any[]>([]);
-  const [readingsLoading, setReadingsLoading] = useState(false);
-  const [readingsError, setReadingsError] = useState("");
-  const [readingsFetched, setReadingsFetched] = useState(false);
-  const [isPageLoading, setIsPageLoading] = useState(true);
-
-  const selectCard = (card: TarotCardType, index: number) => {
-    if (shuffling || shufflePhase !== "idle") return; // Prevent selection during shuffling
-
-    setSelectedCardIndex(index);
-    setShuffling(true);
-    setShowQuestionInput(false);
-    setTimeout(() => {
-      setSelectedCard(card);
-      setIsReading(true);
-      setShuffling(false);
-      setSelectedCardIndex(null);
-    }, 2000);
-  };
-
-  const shuffleCards = () => {
-    setShuffling(true);
-    setSelectedCardIndex(null);
-    setShufflePhase("shuffling");
-
-    // Single phase: cards shuffle and return to positions
-    setTimeout(() => {
-      setShuffling(false);
-      setShufflePhase("idle");
-    }, 2000);
-  };
-
-  const resetReading = () => {
-    setSelectedCard(null);
-    setIsReading(false);
-    setShowQuestionInput(true);
-    setUserQuestion("");
-  };
-
-  // Check for existing token on component mount
-  useEffect(() => {
-    const token = localStorage.getItem("tarot_token");
-    if (token) {
-      // Verify token with backend
-      axios
-        .get(`${BASE_URL}/api/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          withCredentials: true,
-        })
-        .then((res) => {
-          const data = res.data;
-          if (data.success) {
-            setUser(data.data.user);
-          } else {
-            localStorage.removeItem("tarot_token");
-          }
-        })
-        .catch(() => {
-          localStorage.removeItem("tarot_token");
-        })
-        .finally(() => {
-          setIsPageLoading(false);
-        });
-    } else {
-      setIsPageLoading(false);
-    }
-
-    // Check for auth error in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get("auth_error") === "true") {
-      setAuthError("Нэвтрэхэд алдаа гарлаа. Дахин оролдоно уу.");
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
-
-  const handleLogin = (token: string, userData: any) => {
-    localStorage.setItem("tarot_token", token);
-    setUser(userData);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("tarot_token");
-    setUser(null);
-  };
-
-  // Example: Update user profile with PUT
-  const handleUpdateProfile = async () => {
+  const drawSingleCard = () => {
     try {
-      const token = localStorage.getItem("tarot_token");
-      const data = await axios.put(
-        `${BASE_URL}/api/auth/profile`,
-        { firstName: "ШинэНэр" },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          withCredentials: true,
-        }
-      );
-      alert("Профайл амжилттай шинэчлэгдлээ!");
-    } catch (error: any) {
-      alert(
-        "Профайл шинэчлэхэд алдаа гарлаа: " +
-          (error?.response?.data?.message || error.message)
-      );
+      const index = secureRandomInt(tarotCards.length);
+      setSelected(tarotCards[index]);
+      setError("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Карт сугалж чадсангүй.");
     }
   };
-
-  // Example: Delete a reading with DELETE
-  const handleDeleteReading = async (readingId: string) => {
-    try {
-      const token = localStorage.getItem("tarot_token");
-      await axios.delete(`${BASE_URL}/api/readings/${readingId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      });
-      alert("Уншилт амжилттай устгагдлаа!");
-    } catch (error: any) {
-      alert(
-        "Уншилт устгахад алдаа гарлаа: " +
-          (error?.response?.data?.message || error.message)
-      );
-    }
+  const navigate = (next: Section) => {
+    setSection(next);
+    setError("");
   };
-
-  // Example: Get all readings for the logged-in user
-  const handleGetReadings = async () => {
-    setReadingsLoading(true);
-    setReadingsError("");
-    setReadingsFetched(false);
-    try {
-      const token = localStorage.getItem("tarot_token");
-      const response = await axios.get(`${BASE_URL}/api/readings`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      });
-      const data = response.data;
-      if (data.success && Array.isArray(data.data.readings)) {
-        // Add a delay to simulate loading
-        setTimeout(() => {
-          setReadings(data.data.readings);
-          setReadingsFetched(true);
-          setReadingsLoading(false);
-        }, 1200);
-      } else {
-        setReadings([]);
-        setReadingsFetched(true);
-        setReadingsError(data.message || "Уншилтуудыг авахад алдаа гарлаа");
-        setReadingsLoading(false);
-      }
-    } catch (error: any) {
-      setReadings([]);
-      setReadingsFetched(true);
-      setReadingsError(
-        "Уншилтуудыг авахад алдаа гарлаа: " +
-          (error?.response?.data?.message || error.message)
-      );
-      setReadingsLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-blue-950 to-black text-white mystical-bg">
-      {/* Mystical background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-20 w-32 h-32 bg-purple-500/10 rounded-full blur-xl animate-float"></div>
-        <div
-          className="absolute bottom-20 right-20 w-40 h-40 bg-blue-500/10 rounded-full blur-xl animate-float"
-          style={{ animationDelay: "1s" }}
-        ></div>
-        <div
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-60 h-60 bg-pink-500/5 rounded-full blur-2xl animate-float"
-          style={{ animationDelay: "2s" }}
-        ></div>
-        <div className="absolute top-1/3 right-1/4 w-24 h-24 bg-purple-400/5 rounded-full blur-lg animate-sparkle"></div>
-        <div
-          className="absolute bottom-1/3 left-1/4 w-20 h-20 bg-pink-400/5 rounded-full blur-lg animate-sparkle"
-          style={{ animationDelay: "1s" }}
-        ></div>
-      </div>
-
-      {/* Navigation */}
-      <Navigation
-        activeSection={activeSection}
-        onSectionChange={setActiveSection}
-      />
-
-      <div className="relative z-10 container mx-auto px-4 py-8">
-        {/* Loading Screen */}
-        {isPageLoading && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-400 mx-auto mb-4"></div>
-              <p className="text-purple-200 text-lg">
-                Pocket Tarot ачааллаж байна...
-              </p>
-            </div>
-          </div>
-        )}
-        {/* Header */}
-        <header className="text-center mb-12 animate-fade-in">
-          <div className="flex justify-between items-center mb-8">
-            <div></div>
-            <h1 className="text-5xl md:text-7xl font-bold animate-mystical-shimmer bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
-              Pocket Tarot
-            </h1>
-            <div className="flex items-center gap-4">
-              {user ? (
-                <div className="flex items-center gap-3 animate-scale-in">
-                  <span className="text-purple-200 text-sm">
-                    Сайн байна, {user.firstName}! ✨
-                  </span>
-                  <button
-                    onClick={handleLogout}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-full transition-all duration-300 hover:scale-105"
-                  >
-                    Гарах
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowAuthModal(true)}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-full transition-all duration-300 hover:scale-105 animate-pulse-glow"
-                >
-                  Нэвтрэх
-                </button>
-              )}
-            </div>
-          </div>
-          <p className="text-xl text-purple-200 max-w-2xl mx-auto animate-slide-in-left">
-            Pocket Tarot ертөнцийн эртний мэргэн ухаанаар хувь заяагаа нээ.
-            Таро, зүүдний тайлал, зурхай, өдрийн хувь, амьдралын зөвлөмж.
-          </p>
-        </header>
-
-        {/* Main content */}
-        <main className="max-w-6xl mx-auto">
-          {activeSection === "tarot" && (
-            <>
-              {!isReading ? (
-                <div className="text-center">
-                  {/* Question Input Section */}
-                  {showQuestionInput && (
-                    <div className="mb-12">
-                      <div className="bg-purple-800/30 backdrop-blur-sm rounded-lg p-8 border border-purple-400/20 max-w-2xl mx-auto">
-                        <h2 className="text-3xl font-bold mb-6 text-purple-200">
-                          🔮 Асуултаа Асуу 🔮
-                        </h2>
-                        <p className="text-lg text-purple-200 mb-6">
-                          Картуудад асуултаа асуу, тэд танд хариулт өгнө
-                        </p>
-                        <div className="space-y-4">
-                          <textarea
-                            value={userQuestion}
-                            onChange={(e) => setUserQuestion(e.target.value)}
-                            placeholder="Жишээ: Миний ирээдүй ямар байх вэ? Миний хайр ямар байх вэ? Миний ажил ямар байх вэ?"
-                            rows={4}
-                            className="w-full px-4 py-3 bg-white/10 border border-purple-400/30 rounded-lg text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none text-lg"
-                          />
-                          <div className="text-sm text-purple-300">
-                            💡 Зөвлөмж: Тодорхой, эерэг асуулт асууна уу
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* All Tarot Cards Display */}
-                  <div className="mb-12">
-                    <h2 className="text-3xl font-bold mb-8 text-purple-200">
-                      🔮 Нууцлаг Таро Картууд 🔮
-                    </h2>
-                    <div className="relative grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-11 gap-2 md:gap-3 p-4 md:p-6 bg-purple-900/20 rounded-lg border border-purple-400/20 max-w-5xl mx-auto animate-smooth-in">
-                      {/* Center point indicator during shuffle */}
-                      {shufflePhase === "shuffling" && (
-                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-purple-400 rounded-full opacity-50 animate-pulse z-10"></div>
-                      )}
-                      {tarotCards.map((card, index) => (
-                        <div
-                          key={index}
-                          onClick={() => selectCard(card, index)}
-                          className={`relative cursor-pointer transform transition-all duration-300 hover:scale-110 ${
-                            shufflePhase === "shuffling"
-                              ? "animate-shuffle"
-                              : ""
-                          } ${
-                            selectedCardIndex === index
-                              ? "animate-selected"
-                              : ""
-                          }`}
-                          style={
-                            {
-                              animationDelay:
-                                shufflePhase === "shuffling"
-                                  ? `${index * 0.1}s`
-                                  : "0s",
-                              "--start-x": `${((index % 11) - 5) * 25}px`,
-                              "--start-y": `${
-                                (Math.floor(index / 11) - 1) * 35
-                              }px`,
-                            } as React.CSSProperties
-                          }
-                        >
-                          <div className="w-16 h-24 sm:w-18 sm:h-26 md:w-20 md:h-28 bg-gradient-to-br from-purple-600 to-indigo-800 rounded-lg shadow-lg border-2 border-purple-400/30 hover:border-purple-300/50 cursor-pointer transition-all duration-300">
-                            <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent rounded-lg"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="text-center">
-                                <div className="text-2xl text-purple-300/30">
-                                  ?
-                                </div>
-                              </div>
-                            </div>
-                            {/* Mystical overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-indigo-900/40 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Instructions */}
-                  <div className="mb-8">
-                    <h2 className="text-2xl font-semibold mb-4 text-purple-200">
-                      🔮 Таро Уншилтын Заавар 🔮
-                    </h2>
-                    <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-                      <div className="bg-purple-800/30 backdrop-blur-sm rounded-lg p-6 border border-purple-400/20">
-                        <div className="text-3xl mb-3">1️⃣</div>
-                        <h3 className="font-semibold mb-2">
-                          Сэтгэлээ Төвлөрүүл
-                        </h3>
-                        <p className="text-sm text-purple-200">
-                          Бодлоо цэвэрлэж, ирээдүйд талаар юу мэдэхийг хүсэж
-                          байгаагаа төвлөрүүл.
-                        </p>
-                      </div>
-                      <div className="bg-purple-800/30 backdrop-blur-sm rounded-lg p-6 border border-purple-400/20">
-                        <div className="text-3xl mb-3">2️⃣</div>
-                        <h3 className="font-semibold mb-2">Картуудыг Холих</h3>
-                        <p className="text-sm text-purple-200">
-                          Картуудыг холих товчийг дарж, энергийг цэвэрлэ.
-                        </p>
-                      </div>
-                      <div className="bg-purple-800/30 backdrop-blur-sm rounded-lg p-6 border border-purple-400/20">
-                        <div className="text-3xl mb-3">3️⃣</div>
-                        <h3 className="font-semibold mb-2">Картаа Сонго</h3>
-                        <p className="text-sm text-purple-200">
-                          Таныг дуудаж байгаа картыг сонго, уншилтаа хүлээн ав.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Shuffle and instructions */}
-                  <div className="space-y-6">
-                    <button
-                      onClick={shuffleCards}
-                      disabled={shuffling}
-                      className="px-8 py-4 bg-gradient-to-r from-blue-950 to-blue-900 hover:from-black hover:to-blue-950 text-white font-semibold rounded-full text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {shuffling ? (
-                        <div className="flex items-center gap-2">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                          {shufflePhase === "shuffling"
-                            ? "Картуудыг Холиж Байна..."
-                            : ""}
-                        </div>
-                      ) : (
-                        "🔄 Картуудыг Холих 🔄"
-                      )}
-                    </button>
-
-                    <div className="text-purple-200 text-lg">
-                      <p>💫 Бүрэн нууцлаг картуудаас нэгийг сонгоно уу 💫</p>
-                      <p className="text-sm mt-2">
-                        Сэтгэлээ төвлөрүүлж, таныг дуудаж байгаа картыг сонгоно
-                        уу
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : selectedCard ? (
-                <CardReading
-                  card={selectedCard}
-                  onReset={resetReading}
-                  user={user}
-                  onLogin={handleLogin}
-                  userQuestion={userQuestion}
-                />
-              ) : null}
-            </>
-          )}
-
-          {activeSection === "tarot" && (
-            <>
-              {!isReading ? (
-                <div className="text-center">
-                  {/* Question Input Section */}
-                  {showQuestionInput && (
-                    <div className="mb-12">
-                      <div className="bg-purple-800/30 backdrop-blur-sm rounded-lg p-8 border border-purple-400/20 max-w-2xl mx-auto">
-                        <h2 className="text-3xl font-bold mb-6 text-purple-200">
-                          🔮 Асуултаа Асуу 🔮
-                        </h2>
-                        <p className="text-lg text-purple-200 mb-6">
-                          Картуудад асуултаа асуу, тэд танд хариулт өгнө
-                        </p>
-                        <div className="space-y-4">
-                          <textarea
-                            value={userQuestion}
-                            onChange={(e) => setUserQuestion(e.target.value)}
-                            placeholder="Жишээ: Миний ирээдүй ямар байх вэ? Миний хайр ямар байх вэ? Миний ажил ямар байх вэ?"
-                            rows={4}
-                            className="w-full px-4 py-3 bg-white/10 border border-purple-400/30 rounded-lg text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none text-lg"
-                          />
-                          <div className="text-sm text-purple-300">
-                            💡 Зөвлөмж: Тодорхой, эерэг асуулт асууна уу
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* All Tarot Cards Display */}
-                  <div className="mb-12">
-                    <h2 className="text-3xl font-bold mb-8 text-purple-200">
-                      🔮 Нууцлаг Таро Картууд 🔮
-                    </h2>
-                    <div className="relative grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-11 gap-3 p-6 bg-purple-900/20 rounded-lg border border-purple-400/20 max-w-5xl mx-auto">
-                      {/* Center point indicator during shuffle */}
-                      {shufflePhase === "shuffling" && (
-                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-purple-400 rounded-full opacity-50 animate-pulse z-10"></div>
-                      )}
-                      {tarotCards.map((card, index) => (
-                        <div
-                          key={index}
-                          onClick={() => selectCard(card, index)}
-                          className={`relative cursor-pointer transform transition-all duration-300 hover:scale-110 ${
-                            shufflePhase === "shuffling"
-                              ? "animate-shuffle"
-                              : ""
-                          } ${
-                            selectedCardIndex === index
-                              ? "animate-selected"
-                              : ""
-                          }`}
-                          style={
-                            {
-                              animationDelay:
-                                shufflePhase === "shuffling"
-                                  ? `${index * 0.1}s`
-                                  : "0s",
-                              "--start-x": `${((index % 11) - 5) * 25}px`,
-                              "--start-y": `${
-                                (Math.floor(index / 11) - 1) * 35
-                              }px`,
-                            } as React.CSSProperties
-                          }
-                        >
-                          <div className="w-16 h-24 sm:w-18 sm:h-26 md:w-20 md:h-28 bg-gradient-to-br from-purple-600 to-indigo-800 rounded-lg shadow-lg border-2 border-purple-400/30 hover:border-purple-300/50 cursor-pointer transition-all duration-300">
-                            <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent rounded-lg"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="text-center">
-                                <div className="text-2xl text-purple-300/30">
-                                  ?
-                                </div>
-                              </div>
-                            </div>
-                            {/* Mystical overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-indigo-900/40 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Instructions */}
-                  <div className="mb-8">
-                    <h2 className="text-2xl font-semibold mb-4 text-purple-200">
-                      🔮 Таро Уншилтын Заавар 🔮
-                    </h2>
-                    <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-                      <div className="bg-purple-800/30 backdrop-blur-sm rounded-lg p-6 border border-purple-400/20">
-                        <div className="text-3xl mb-3">1️⃣</div>
-                        <h3 className="font-semibold mb-2">
-                          Сэтгэлээ Төвлөрүүл
-                        </h3>
-                        <p className="text-sm text-purple-200">
-                          Бодлоо цэвэрлэж, ирээдүйд талаар юу мэдэхийг хүсэж
-                          байгаагаа төвлөрүүл.
-                        </p>
-                      </div>
-                      <div className="bg-purple-800/30 backdrop-blur-sm rounded-lg p-6 border border-purple-400/20">
-                        <div className="text-3xl mb-3">2️⃣</div>
-                        <h3 className="font-semibold mb-2">Картуудыг Холих</h3>
-                        <p className="text-sm text-purple-200">
-                          Картуудыг холих товчийг дарж, энергийг цэвэрлэ.
-                        </p>
-                      </div>
-                      <div className="bg-purple-800/30 backdrop-blur-sm rounded-lg p-6 border border-purple-400/20">
-                        <div className="text-3xl mb-3">3️⃣</div>
-                        <h3 className="font-semibold mb-2">Картаа Сонго</h3>
-                        <p className="text-sm text-purple-200">
-                          Таныг дуудаж байгаа картыг сонго, уншилтаа хүлээн ав.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Shuffle and instructions */}
-                  <div className="space-y-6">
-                    <button
-                      onClick={shuffleCards}
-                      disabled={shuffling}
-                      className="px-8 py-4 bg-gradient-to-r from-blue-950 to-blue-900 hover:from-black hover:to-blue-950 text-white font-semibold rounded-full text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {shuffling ? (
-                        <div className="flex items-center gap-2">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                          {shufflePhase === "shuffling"
-                            ? "Картуудыг Холиж Байна..."
-                            : ""}
-                        </div>
-                      ) : (
-                        "🔄 Картуудыг Холих 🔄"
-                      )}
-                    </button>
-
-                    <div className="text-purple-200 text-lg">
-                      <p>💫 Бүрэн нууцлаг картуудаас нэгийг сонгоно уу 💫</p>
-                      <p className="text-sm mt-2">
-                        Сэтгэлээ төвлөрүүлж, таныг дуудаж байгаа картыг сонгоно
-                        уу
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : selectedCard ? (
-                <CardReading
-                  card={selectedCard}
-                  onReset={resetReading}
-                  user={user}
-                  onLogin={handleLogin}
-                  userQuestion={userQuestion}
-                />
-              ) : null}
-            </>
-          )}
-          {activeSection === "traditional-tarot" && (
-            <TraditionalTarotReading
-              onReset={resetReading}
-              user={user}
-              onLogin={handleLogin}
-              userQuestion={userQuestion}
-            />
-          )}
-          {activeSection === "dreams" && <DreamInterpretation />}
-          {activeSection === "horoscope" && <Horoscope />}
-          {activeSection === "fortune" && <DailyFortune />}
-          {activeSection === "guidance" && <LifeGuidance />}
-
-          {/* Example buttons for PUT/DELETE/GET */}
-          <div className="flex gap-4 justify-center my-8">
-            <button
-              onClick={handleUpdateProfile}
-              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Профайл шинэчлэх (PUT)
-            </button>
-            <button
-              onClick={() => handleDeleteReading("REPLACE_WITH_READING_ID")}
-              className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-            >
-              Уншилт устгах (DELETE)
-            </button>
-            <button
-              onClick={handleGetReadings}
-              className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            >
-              Уншилтуудыг авах (GET)
-            </button>
-          </div>
-          {/* Display readings if loaded */}
-          {readingsLoading && (
-            <div className="text-center text-lg text-blue-300">
-              Уншилтуудыг ачааллаж байна...
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mt-2"></div>
-            </div>
-          )}
-          {readingsFetched && readingsError && (
-            <div className="text-center text-lg text-red-400">
-              {readingsError}
-            </div>
-          )}
-          {readingsFetched && readings.length > 0 && (
-            <div className="max-w-2xl mx-auto my-8">
-              <h3 className="text-xl font-bold mb-4 text-purple-200">
-                Таны уншилтууд:
-              </h3>
-              <ul className="space-y-2">
-                {readings.map((reading: any) => (
-                  <li
-                    key={reading.id}
-                    className="bg-purple-900/30 rounded p-4 border border-purple-400/20"
-                  >
-                    <div className="font-semibold text-purple-100">
-                      {reading.card && reading.card.name ? (
-                        reading.card.name
-                      ) : (
-                        <span className="italic text-purple-400">
-                          Картын нэр байхгүй
-                        </span>
-                      )}
-                    </div>
-                    {reading.question && (
-                      <div className="text-purple-200 text-sm">
-                        {reading.question}
-                      </div>
-                    )}
-                    {reading.readingDate && (
-                      <div className="text-purple-300 text-xs">
-                        {reading.readingDate}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </main>
-
-        {/* Footer */}
-        <footer className="text-center mt-16 text-purple-300">
-          <p className="text-sm">
-            ✨ Картууд таны жинхэнэ замыг илчлэх болтугай ✨
-          </p>
-        </footer>
-      </div>
-
-      {/* Auth Error Message */}
-      {authError && (
-        <div className="fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50">
-          <div className="flex items-center justify-between">
-            <span>{authError}</span>
-            <button
-              onClick={() => setAuthError("")}
-              className="ml-4 text-white hover:text-gray-200"
-            >
-              ×
-            </button>
+    <div className="min-h-screen bg-[#100e1e] text-[#f6f1e9]">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[580px] bg-[radial-gradient(ellipse_at_50%_0%,rgba(110,75,126,0.26),transparent_65%)]" />
+      <header className="relative z-10 border-b border-white/10">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-8">
+          <button type="button" onClick={()=>navigate("reading")} className="flex items-center gap-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full border border-amber-300/50 font-serif text-2xl text-amber-200" aria-hidden="true">✧</span>
+            <span><span className="block font-serif text-xl tracking-[0.04em] text-amber-50">Pocket Tarot</span>
+              <span className="block text-[10px] uppercase tracking-[0.3em] text-amber-300/90">Read • Reflect • Discover</span>
+            </span>
+          </button>
+          <div className="flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-xs text-emerald-200">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden="true" />
+            AI / API шаардлагагүй
           </div>
         </div>
-      )}
-
-      {/* Authentication Modal */}
-      {showAuthModal && (
-        <AuthModal
-          isOpen={showAuthModal}
-          onClose={() => setShowAuthModal(false)}
-          onLogin={handleLogin}
-        />
-      )}
+        <nav aria-label="Үндсэн цэс" className="mx-auto max-w-7xl px-4 sm:px-8">
+          <div className="flex gap-2 overflow-x-auto pb-3">
+            {sections.map((item)=>(
+              <button type="button" key={item.id} aria-pressed={section===item.id} onClick={()=>navigate(item.id)}
+                className={"shrink-0 rounded-full px-4 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 " +
+                  (section===item.id ? "bg-amber-300 font-semibold text-[#171127]" : "border border-white/10 text-slate-200 hover:border-amber-300/50 hover:text-amber-200")}>
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </nav>
+      </header>
+      <main className="relative z-10 mx-auto max-w-7xl px-3 py-12 sm:px-6">
+        {section==="reading" && <TraditionalTarotReading key="reading" onReset={()=>navigate("single")}/>}
+        {section==="single" && (
+          <section className="mx-auto max-w-4xl text-center">
+            <p className="text-xs uppercase tracking-[0.3em] text-amber-300">One-card ritual</p>
+            <h1 className="mt-3 font-serif text-4xl text-amber-50 sm:text-5xl">Нэг картын уншилт</h1>
+            <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-slate-300">
+              78 картын аль нэгийг жигд санамсаргүй сугалж, тухайн картын уламжлалт бэлгэдлийг хараарай.
+            </p>
+            {!selected ? (
+              <div className="mx-auto mt-10 max-w-md rounded-2xl border border-amber-300/20 bg-white/5 p-9">
+                <div className="mx-auto mb-7 w-fit">
+                  <TarotCardView card={tarotCards[0]} size="md" onClick={drawSingleCard}/>
+                </div>
+                <button type="button" onClick={drawSingleCard} className="w-full rounded-full bg-amber-300 px-8 py-3 font-semibold text-[#171127] hover:bg-amber-200">
+                  Санамсаргүй нэг карт сугалах
+                </button>
+              </div>
+            ) : <div className="mt-10"><CardReading card={selected} onReset={()=>setSelected(null)}/></div>}
+            {error&&<p role="alert" className="mt-5 text-sm text-red-300">{error}</p>}
+          </section>
+        )}
+        {section==="library" && (
+          <section className="mx-auto max-w-6xl">
+            <header className="mb-10 text-center">
+              <p className="text-xs uppercase tracking-[0.3em] text-amber-300">Rider–Waite–Smith • 1909</p>
+              <h1 className="mt-3 font-serif text-4xl text-amber-50 sm:text-5xl">78 картын сан</h1>
+              <p className="mt-4 text-sm text-slate-300">22 Их Аркан, 56 Бага Аркан. Карт дээр дарж утгыг нь үзнэ үү.</p>
+            </header>
+            <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row">
+              <input type="search" aria-label="Карт хайх" placeholder="Картын нэрээр хайх..." value={query}
+                onChange={(event)=>setQuery(event.target.value)}
+                className="w-full rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-amber-300 focus:outline-none sm:max-w-sm"/>
+              <div className="flex flex-wrap gap-2" aria-label="Аркана шүүлтүүр">
+                {(["all","major","minor"] as const).map((value)=>(
+                  <button type="button" key={value} aria-pressed={arcana===value} onClick={()=>setArcana(value)}
+                    className={"rounded-full px-4 py-2 text-sm " + (arcana===value?"bg-amber-300 text-[#171127]":"border border-white/15 text-slate-200")}>
+                    {value==="all"?"Бүгд (78)":value==="major"?"Их Аркан (22)":"Бага Аркан (56)"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+              {filtered.map((card)=>(
+                <button type="button" key={card.id} onClick={()=>setLibraryCard(card)}
+                  className="group rounded-xl border border-white/10 bg-white/5 p-3 text-left transition-colors hover:border-amber-300/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200">
+                  <div className="aspect-[2/3] overflow-hidden rounded-lg bg-[#1f1b33]">
+                    <img src={card.image} onError={(event)=>{event.currentTarget.onerror=null;event.currentTarget.src="/tarot/card-placeholder.svg";}}
+                      alt={card.englishName} width={260} height={430} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"/>
+                  </div>
+                  <h2 className="mt-3 text-sm font-semibold leading-snug text-amber-100">{card.name}</h2>
+                  <p className="mt-1 text-xs text-slate-400">{card.englishName}</p>
+                </button>
+              ))}
+            </div>
+            {filtered.length===0&&<p className="mt-10 text-center text-sm text-slate-400">Ийм нэртэй карт олдсонгүй.</p>}
+            {libraryCard && (
+              <div role="dialog" aria-modal="true" aria-label={libraryCard.name}
+                className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-4"
+                onClick={()=>setLibraryCard(null)}>
+                <div className="relative my-auto max-h-[95vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-amber-300/30 bg-[#1c172d] p-5 shadow-2xl sm:p-7"
+                  onClick={(event)=>event.stopPropagation()}>
+                  <button type="button" onClick={()=>setLibraryCard(null)} aria-label="Хаах"
+                    className="absolute right-4 top-4 z-10 rounded-full border border-white/30 bg-[#171127] px-4 py-2 text-sm text-white">Хаах</button>
+                  <div className="mx-auto max-w-52 pt-8"><TarotCardView card={libraryCard} isRevealed size="lg"/></div>
+                  <div className="mt-6 space-y-3 text-sm leading-relaxed text-slate-200">
+                    <p><strong className="text-amber-200">Эгц:</strong> {libraryCard.meaning}</p>
+                    <p><strong className="text-amber-200">Урвуу:</strong> {libraryCard.reversedMeaning}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+        {section==="horoscope" && <Horoscope/>}
+        {section==="daily" && <DailyFortune/>}
+        {section==="dream" && <DreamInterpretation/>}
+        {section==="guidance" && <LifeGuidance/>}
+      </main>
+      <footer className="relative z-10 border-t border-white/10 px-4 py-8 text-center text-xs leading-6 text-slate-400">
+        <p className="font-serif text-lg text-amber-200">✧ Pocket Tarot</p>
+        <p className="mt-2">Бэлгэдлийн тайлал ба өөрийгөө эргэцүүлэх орон зай. Ирээдүйг баттай таамаглахгүй.</p>
+        <p className="mt-1">Rider–Waite–Smith illustrations © public domain (1909). Art by Pamela Colman Smith.</p>
+      </footer>
     </div>
   );
 }
