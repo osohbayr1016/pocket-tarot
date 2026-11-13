@@ -44,7 +44,7 @@ test("one-card draw, date zodiac and dream reflection work without API",async({p
   await page.getByRole("button",{name:"Зүүд",exact:true}).click();
   await page.locator("#dream-text").fill("Би далайд сэлж байсан");
   await page.getByRole("button",{name:"Бэлгэдлийг тайлбарлах"}).click();
-  await expect(page.getByText(/Ус нь зарим уламжлалд/)).toBeVisible();
+  await expect(page.getByText(/Ус: мэдрэмж/)).toBeVisible();
 });
 test("natal chart computes 10 bodies, ascendant and whole-sign houses locally",async({page})=>{
   await page.goto("/");
