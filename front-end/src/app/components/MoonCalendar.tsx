@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
-import {closestLunation,getMoonMonth} from "../lib/lunarCalendar";
+import {closestLunation,getMoonMonth,getExactMoonEvents} from "../lib/lunarCalendar";
+import {OFFLINE_CITIES} from "../lib/astroTimeZone";
 
 const PHASE_ICONS=["○","◔","◐","◕","●","◕","◑","◔"];
 const WEEKDAYS=["Да","Мя","Лх","Пү","Ба","Бя","Ня"];
@@ -10,6 +11,7 @@ function isoToday(now:Date){
 export default function MoonCalendar(){
   const [month,setMonth]=useState<{year:number;month:number}|null>(null);
   const [today,setToday]=useState("");
+  const [timeZone,setTimeZone]=useState("Asia/Ulaanbaatar");
   const [selected,setSelected]=useState<number|null>(null);
   useEffect(()=>{
     const frame=requestAnimationFrame(()=>{
@@ -22,6 +24,7 @@ export default function MoonCalendar(){
   },[]);
   const year=month?.year||2024,mon=month?.month||1;
   const days=useMemo(()=>month?getMoonMonth(year,mon):[],[month,year,mon]);
+  const exactEvents=useMemo(()=>month?getExactMoonEvents(year,mon,timeZone):[],[month,year,mon,timeZone]);
   const firstOffset=month?(new Date(year,mon-1,1).getDay()+6)%7:0;
   const active=days.find(d=>d.day===selected)||days[0];
   const nearestNew=closestLunation(days,0);
@@ -92,6 +95,24 @@ export default function MoonCalendar(){
             <p className="text-center text-sm text-slate-300">Ойролцоох гэрэлтэлт: {active.illumination}%</p>
             <p className="text-center text-xs text-slate-400">Нар–Сарны фазын өнцөг: {active.phase.toFixed(1)}°</p>
           </>}
+          <div className="border-t border-white/10 pt-5">
+            <label htmlFor="moon-zone" className="block text-xs font-semibold text-amber-100">Цагийн бүс</label>
+            <select id="moon-zone" value={timeZone} onChange={event=>setTimeZone(event.target.value)}
+              className="mt-2 w-full rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-slate-100">
+              {Array.from(new Map(OFFLINE_CITIES.map(city=>[city.timeZone,city.label])).entries()).map(([zone,label])=>
+                <option key={zone} value={zone}>{label} ({zone})</option>
+              )}
+            </select>
+            <h3 className="mt-5 font-semibold text-amber-100">Сарны фаз солигдох яг цаг</h3>
+            {exactEvents.length===0?<p className="mt-2 text-sm text-slate-300">Энэ сард фазын өгөгдөл олдсонгүй.</p>:
+              <ul className="mt-3 space-y-3">
+                {exactEvents.map(event=><li key={event.utc} className="rounded-lg border border-amber-300/15 bg-white/5 p-3">
+                  <p className="text-sm font-semibold text-amber-100">{event.label}</p>
+                  <p className="mt-1 text-xs text-slate-200">Орон нутгийн цаг: {event.local}</p>
+                  <p className="mt-1 text-xs text-slate-400">UTC: {event.utc}</p>
+                </li>)}
+              </ul>}
+          </div>
           <div className="border-t border-white/10 pt-5 text-sm leading-7 text-slate-200">
             {nearestNew&&<p>Шинэ сартай хамгийн ойр өдөр: <strong className="text-amber-200">{nearestNew.date}</strong></p>}
             {nearestFull&&<p className="mt-2">Бүтэн сартай хамгийн ойр өдөр: <strong className="text-amber-200">{nearestFull.date}</strong></p>}
