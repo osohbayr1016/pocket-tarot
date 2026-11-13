@@ -6,6 +6,8 @@ import { interpretReading, type DrawnCard } from "../lib/offlineEngine";
 import TarotCard from "./TarotCard";
 import {saveJournalReading} from "../lib/journalDb";
 import {useLocalDraft} from "../lib/useLocalDraft";
+import {useLanguage} from "../lib/LanguageProvider";
+import {englishReading} from "../lib/englishTarot";
 
 interface Props {
   card: TarotCardType;
@@ -16,6 +18,7 @@ interface Props {
   userQuestion?: string;
 }
 export default function CardReading({card,isReversed=false,onReset,userQuestion=""}:Props) {
+  const {locale}=useLanguage();
   const draft=useLocalDraft("single-"+card.id+"-"+(isReversed?"reversed":"upright"));
   const [saved,setSaved]=useState(false);
   const [message,setMessage] = useState("");
@@ -25,7 +28,7 @@ export default function CardReading({card,isReversed=false,onReset,userQuestion=
     positionName:"Одоогийн сэдэв",
     positionDescription:"Энэ картаас өөрт хамаатай сэдвийг эргэцүүл",
   }];
-  const reading = interpretReading(drawn,userQuestion);
+  const reading = locale==="en"?englishReading(drawn,userQuestion):interpretReading(drawn,userQuestion);
   const save = async () => {
     if(!draft.ready || saved)return;
     try {
