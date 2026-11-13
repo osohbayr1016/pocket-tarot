@@ -23,9 +23,9 @@ if(!assets.length)throw new Error("No static chunks to cache");
 assets.sort();
 const filename=join(root,"public/sw.js");
 const before=readFileSync(filename,"utf8");
-const updated=before.replace(/const BUILD_ASSETS = \[[\s\S]*?\];/,
-  "const BUILD_ASSETS = "+JSON.stringify(assets)+";");
-if(!/const BUILD_ASSETS = \\[[\\s\\S]*?\\];/.test(before))
+const assetMarker=/const BUILD_ASSETS = \[[\s\S]*?\];/;
+if(!assetMarker.test(before))
   throw new Error("Service worker BUILD_ASSETS marker missing");
+const updated=before.replace(assetMarker,"const BUILD_ASSETS = "+JSON.stringify(assets)+";");
 writeFileSync(filename,updated);
 console.log("PWA precache manifest:",assets.length,"static chunk/CSS/font files");
