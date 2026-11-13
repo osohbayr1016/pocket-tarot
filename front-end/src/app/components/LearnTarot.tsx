@@ -4,12 +4,13 @@ import { tarotCards } from "../data/tarotCards";
 import { secureRandomInt } from "../lib/offlineEngine";
 
 type Question = {id:number; options:number[]};
-const major=tarotCards.filter(card=>card.arcana==="major");
-function nextQuestion():Question{
-  const correct=major[secureRandomInt(major.length)];
+type QuizPool = "major" | "minor" | "all";
+function nextQuestion(pool: QuizPool):Question{
+  const cards=pool==="all"?tarotCards:tarotCards.filter(card=>card.arcana===pool);
+  const correct=cards[secureRandomInt(cards.length)];
   const options=[correct.id];
   while(options.length<4){
-    const candidate=major[secureRandomInt(major.length)].id;
+    const candidate=cards[secureRandomInt(cards.length)].id;
     if(!options.includes(candidate))options.push(candidate);
   }
   for(let index=options.length-1;index>0;index--){
@@ -24,8 +25,9 @@ export default function LearnTarot(){
   const [score,setScore]=useState(0);
   const [attempts,setAttempts]=useState(0);
   const [error,setError]=useState("");
+  const [pool,setPool]=useState<QuizPool>("major");
   const begin=()=>{
-    try{setQuestion(nextQuestion());setAnswer(null);setError("");}
+    try{setQuestion(nextQuestion(pool));setAnswer(null);setError("");}
     catch{setError("Санамсаргүй карт сонгох боломжгүй байна.");}
   };
   const choose=(value:number)=>{
@@ -38,9 +40,26 @@ export default function LearnTarot(){
     <header className="mb-8 text-center">
       <p className="text-xs uppercase tracking-[0.3em] text-amber-300">Tarot academy</p>
       <h1 className="mt-3 font-serif text-4xl text-amber-50">Таро сурах</h1>
-      <p className="mt-3 text-sm leading-relaxed text-slate-300">Их Арканын 22 картын дүрслэлийг таних богино дасгал. AI, сервер шаардлагагүй.</p>
+      <p className="mt-3 text-sm leading-relaxed text-slate-300">Их Аркан, Бага Аркан болон бүх 78 картын дүрслэлийг таних дасгал. AI, сервер шаардлагагүй.</p>
       <p className="mt-5 text-sm text-amber-100">Зөв хариулт: {score} / {attempts}</p>
     </header>
+    <fieldset className="mx-auto mb-7 max-w-xl">
+      <legend className="mb-3 text-sm text-amber-100">Суралцах картын хүрээ</legend>
+      <div className="flex flex-wrap justify-center gap-2">
+        {([
+          ["major","Их Аркан (22)"],
+          ["minor","Бага Аркан (56)"],
+          ["all","Бүгд (78)"]
+        ] as const).map(([value,label])=>(
+          <button type="button" key={value} aria-pressed={pool===value}
+            onClick={()=>{setPool(value);setQuestion(null);setAnswer(null);setScore(0);setAttempts(0);}}
+            className={"rounded-full border px-4 py-2 text-sm transition-colors "+
+              (pool===value?"border-amber-300 bg-amber-300 text-[#171127]":"border-white/25 text-slate-200 hover:border-amber-300/50")}>
+            {label}
+          </button>
+        ))}
+      </div>
+    </fieldset>
     {!question?(
       <div className="rounded-2xl border border-amber-300/20 bg-[#211a34] p-10 text-center">
         <p className="font-serif text-xl text-amber-100">Зураг хараад картын нэрийг таагаарай.</p>
