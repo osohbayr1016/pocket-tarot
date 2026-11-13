@@ -19,13 +19,7 @@ router.get("/test", (req, res) => {
     success: true,
     message: "AI routes are working",
     hasApiKey: hasValidApiKey,
-    apiKeyLength: process.env.GEMINI_API_KEY
-      ? process.env.GEMINI_API_KEY.length
-      : 0,
-    apiKeyStartsWith: process.env.GEMINI_API_KEY
-      ? process.env.GEMINI_API_KEY.substring(0, 10) + "..."
-      : "N/A",
-    mode: hasValidApiKey ? "AI" : "Mock",
+mode: hasValidApiKey ? "AI" : "Mock",
     environment: process.env.NODE_ENV,
   });
 });
