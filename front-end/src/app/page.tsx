@@ -13,13 +13,15 @@ import LifeGuidance from "./components/LifeGuidance";
 import ReadingHistory from "./components/ReadingHistory";
 import DailyTarotCard from "./components/DailyTarotCard";
 import LearnTarot from "./components/LearnTarot";
+import NatalChartPage from "./components/NatalChartPage";
 
-type Section = "reading" | "single" | "library" | "horoscope" | "daily" | "dream" | "guidance" | "history" | "daily-card" | "learn";
+type Section = "reading" | "single" | "library" | "horoscope" | "daily" | "dream" | "guidance" | "history" | "daily-card" | "learn" | "natal";
 const sections: {id: Section; label: string}[] = [
   {id:"reading",label:"Таро дэлгэмэл"},
   {id:"single",label:"Нэг карт"},
   {id:"library",label:"78 карт"},
   {id:"horoscope",label:"Орд"},
+  {id:"natal",label:"Төрсөн үеийн тэнгэр"},
   {id:"daily",label:"Өдрийн санаа"},
   {id:"dream",label:"Зүүд"},
   {id:"guidance",label:"Удирдамж"},
@@ -156,6 +158,7 @@ export default function Home() {
           </section>
         )}
         {section==="horoscope" && <Horoscope/>}
+        {section==="natal" && <NatalChartPage/>}
         {section==="daily" && <DailyFortune/>}
         {section==="dream" && <DreamInterpretation/>}
         {section==="guidance" && <LifeGuidance/>}
