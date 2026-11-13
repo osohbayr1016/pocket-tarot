@@ -158,7 +158,7 @@ export function createContextualReading(drawn:readonly DrawnCard[], question="",
       (i+1)+". "+positionName+" — "+card.name+
       (isReversed?" (урвуу)":" (эгц)")+"\n"+
       positionDescription+". "+(isReversed?card.reversedMeaning:card.meaning)+"."),
-    ...(drawn.length>1?["Картуудын холбоо",...thematicConnections(drawn)]:[]),
+    ...(drawn.length>1?["Картуудын холбоо",...thematicConnections(drawn),...extraConnections(drawn,topic)]:[]),
     "Таны эргэцүүлэх асуулт\n"+guide.question,
     "Дараагийн бодит алхам\n"+guide.action,
   ];
