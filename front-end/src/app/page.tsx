@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { tarotCards, type TarotCard } from "./data/tarotCards";
 import { secureRandomInt } from "./lib/offlineEngine";
 import TarotCardView from "./components/TarotCard";
@@ -13,7 +14,10 @@ import LifeGuidance from "./components/LifeGuidance";
 import ReadingHistory from "./components/ReadingHistory";
 import DailyTarotCard from "./components/DailyTarotCard";
 import LearnTarot from "./components/LearnTarot";
-import NatalChartPage from "./components/NatalChartPage";
+const NatalChartPage = dynamic(() => import("./components/NatalChartPage"), {
+  ssr: false,
+  loading: () => <p role="status" className="py-12 text-center text-amber-100">Тэнгэрийн зураг ачаалж байна...</p>,
+});
 import CardDetailsDialog from "./components/CardDetailsDialog";
 
 type Section = "reading" | "single" | "library" | "horoscope" | "daily" | "dream" | "guidance" | "history" | "daily-card" | "learn" | "natal";
