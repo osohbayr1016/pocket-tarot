@@ -36,7 +36,7 @@ export default function PreferencesPanel(){
   const importAll=async(file:File|undefined)=>{
     if(!file)return;
     if(backupInput.current)backupInput.current.value="";
-    if(!window.confirm("Энэ төхөөрөмж дээрх journal, custom spread, тохиргоо бүгд шинэ backup-ээр СОЛИГДОНО. Одоогийн data-г эхлээд export хийсэн үү?"))return;
+    if(!window.confirm("Энэ төхөөрөмж дээрх journal, custom spread, сургалтын ахиц болон тохиргоо бүгд шинэ backup-ээр СОЛИГДОНО. Одоогийн data-г эхлээд export хийсэн үү?"))return;
     try{
       if(file.size>3_000_000)throw new Error("Backup файл 3 MB-ээс бага байх ёстой.");
       const restored=restoreCompleteBackup(await file.text());
