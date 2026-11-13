@@ -3,6 +3,7 @@ import {useEffect,useRef,useState} from "react";
 import {createCompleteBackupV4,restoreCompleteBackupV3} from "../lib/offlineBackup";
 import {encryptBackup,decryptBackup,isEncryptedBackup} from "../lib/encryptedBackup";
 import {useLanguage} from "../lib/LanguageProvider";
+import {readRawDraftKeys} from "../lib/useLocalDraft";
 import {
   defaultReadingPreferences,getReadingPreferences,saveReadingPreferences,
   type ReadingPreferences
@@ -63,6 +64,20 @@ export default function PreferencesPanel(){
         restored.readings.length+" уншилт, "+restored.spreads.length+" дэлгэмэл, "+restored.study.length+" сурсан карт болон тохиргоо сэргээгдлээ. Бусад хэсэг рүү орж шинэ мэдээллээ хараарай.");
       setError("");
     }catch(cause){setError(cause instanceof Error?cause.message:"Backup сэргээхэд алдаа гарлаа.");}
+  };
+  const clearUnsavedDrafts=()=>{
+    if(!window.confirm(en?
+      "Permanently delete ALL unsaved draft notes on this device? Saved readings are not affected.":
+      "Энэ төхөөрөмж дээрх БҮХ түр draft тэмдэглэлийг устгах уу? Хадгалсан уншилт хэвээр үлдэнэ."))return;
+    try{
+      const keys=readRawDraftKeys();
+      for(const key of keys)localStorage.removeItem(key);
+      setError("");
+      setMessage(en?`${keys.length} unsaved drafts cleared. Saved readings remain intact.`:
+        keys.length+" түр тэмдэглэл ариллаа. Хадгалсан уншилтууд хэвээр.");
+    }catch{
+      setError(en?"Could not clear drafts; check browser storage.":"Түр тэмдэглэлийг арилгаж чадсангүй. Browser storage-г шалгана уу.");
+    }
   };
   return <section className="mx-auto max-w-2xl px-3 pb-20">
     <header className="mb-8 text-center">
@@ -156,6 +171,10 @@ export default function PreferencesPanel(){
         "Шифрлэсэн файлыг импортлох үед зөвхөн эхний нууц үгийн талбарыг бөглөнө. Нууц үг мартвал сэргээх арга байхгүй. Төхөөрөмж дээрх journal өөрөө тусдаа шифрлэгдээгүй тул shared device дээр browser-ийн профайлаа хамгаалаарай."}
       </p>
       <div className="mt-5 flex flex-wrap gap-3">
+        <button type="button" onClick={clearUnsavedDrafts}
+          className="min-h-11 rounded-full border border-red-300/40 px-5 py-3 text-sm text-red-200">
+          {en?"Clear unsaved drafts":"Түр тэмдэглэлүүд арилгах"}
+        </button>
         <button type="button" onClick={()=>void exportAll()}
           className="rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-[#171127]">
           {en?"Export all data":"Бүх data export"}
