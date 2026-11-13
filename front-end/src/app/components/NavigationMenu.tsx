@@ -1,13 +1,13 @@
 "use client";
 import {useState} from "react";
-export type Section = "reading"|"single"|"library"|"learn"|"horoscope"|"natal"|"daily"|"daily-card"|"dream"|"guidance"|"history"|"offline"|"settings";
+export type Section = "reading"|"single"|"library"|"learn"|"horoscope"|"natal"|"moon"|"daily"|"daily-card"|"dream"|"guidance"|"history"|"offline"|"settings";
 export const NAV_GROUPS: readonly {id:string;label:string;views:readonly {id:Section;label:string}[]}[]=[
   {id:"tarot",label:"Таро",views:[
     {id:"reading",label:"Таро дэлгэмэл"},{id:"single",label:"Нэг карт"},
     {id:"library",label:"78 карт"},{id:"learn",label:"Таро сурах"}
   ]},
   {id:"astro",label:"Зурхай",views:[
-    {id:"horoscope",label:"Орд"},{id:"natal",label:"Төрсөн үеийн тэнгэр"}
+    {id:"horoscope",label:"Орд"},{id:"natal",label:"Төрсөн үеийн тэнгэр"},{id:"moon",label:"Сарны календарь"}
   ]},
   {id:"daily",label:"Өдөр тутам",views:[
     {id:"daily-card",label:"Өдрийн карт"},{id:"daily",label:"Өдрийн санаа"},
