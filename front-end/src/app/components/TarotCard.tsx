@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { TarotCard as TarotCardType } from "../data/tarotCards";
 
 interface TarotCardProps {
@@ -18,6 +18,7 @@ export default function TarotCard({
   isReversed = false, size = "lg",
 }: TarotCardProps) {
   const [imageError, setImageError] = useState(false);
+  useEffect(() => setImageError(false), [card.image]);
   const widthClass = sizes[size];
   if (!isRevealed) {
     return (
