@@ -1,4 +1,7 @@
 import {calculateTransits} from "../src/app/lib/astroTransits.ts";
+import {englishCardMeaning,englishReading} from "../src/app/lib/englishTarot.ts";
+import {TAROT_LESSONS,lessonMetrics} from "../src/app/lib/tarotCurriculum.ts";
+import {expandLatinDreamSymbols} from "../src/app/lib/offlineEngine.ts";
 import {encryptBackup,decryptBackup,isEncryptedBackup} from "../src/app/lib/encryptedBackup.ts";
 import {moonSnapshot,getMoonMonth,closestLunation,getExactMoonEvents} from "../src/app/lib/lunarCalendar.ts";
 import {reviewCard,pickStudyCard,learningStats,validateStudyProgress} from "../src/app/lib/studyProgress.ts";
@@ -295,4 +298,31 @@ test("offline planetary transits use bounded longitude and natal aspect angles",
   assert.ok(report.bodies.every(body=>body.longitude>=0&&body.longitude<360));
   assert.ok(report.aspects.every(aspect=>aspect.orb>=0&&aspect.orb<=2.5));
   assert.equal(report.utc,"2024-07-01T12:00:00.000Z");
+});
+
+test("English tarot reflection covers 78 upright/reversed cards",()=>{
+  for(const card of tarotCards){
+    const normal=englishCardMeaning(card,false),reversed=englishCardMeaning(card,true);
+    assert.ok(normal.length>24,card.englishName);
+    assert.ok(reversed.length>24,card.englishName);
+    assert.notEqual(normal,reversed);
+  }
+  const drawn=drawSpread(tarotCards,tarotSpreads[1],()=>0);
+  const english=englishReading(drawn,"What can I improve?");
+  assert.match(english,/Tarot is a symbolic reflection/);
+  assert.match(english,/What can I improve/);
+});
+test("curriculum covers all 78 cards without missing suit or major groups",()=>{
+  assert.equal(TAROT_LESSONS.length,7);
+  assert.deepEqual([...new Set(TAROT_LESSONS.slice(0,6).flatMap(x=>x.cardIds))].sort((a,b)=>a-b),
+    tarotCards.map(x=>x.id).sort((a,b)=>a-b));
+  const m=lessonMetrics(TAROT_LESSONS[0],[]);
+  assert.equal(m.started,0);
+  assert.equal(m.total,11);
+});
+test("Latin Mongolian dream aliases expand symbols without remote translation",()=>{
+  const expanded=expandLatinDreamSymbols("Bi usand jivj baisan, daraa ni nislee");
+  assert.match(expanded,/усанд/);
+  assert.match(expanded,/живж/);
+  assert.match(expanded,/нисэх/);
 });
