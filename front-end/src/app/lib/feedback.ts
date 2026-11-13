@@ -15,8 +15,8 @@ export function emitFeedback(kind:FeedbackKind):void{
   }
   if(!prefs.sound)return;
   try{
-    const Audio=(window as Window & {webkitAudioContext?:typeof AudioContext}).AudioContext
-      ||(window as Window & {webkitAudioContext?:typeof AudioContext}).webkitAudioContext;
+    const Audio=typeof AudioContext==="function"?AudioContext:
+      (window as Window & {webkitAudioContext?:typeof AudioContext}).webkitAudioContext;
     if(!Audio)return;
     const context=new Audio();
     const oscillator=context.createOscillator(),gain=context.createGain();
