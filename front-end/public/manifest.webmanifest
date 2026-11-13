@@ -1,0 +1,20 @@
+{
+  "name": "Pocket Tarot — Tarot ба өөрийгөө эргэцүүлэх",
+  "short_name": "Pocket Tarot",
+  "description": "78 Tarot карт, ордын тайлбар болон өдөр тутмын эргэцүүлэл. AI/API-гүй.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#100e1e",
+  "theme_color": "#100e1e",
+  "lang": "mn",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
