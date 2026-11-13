@@ -11,9 +11,11 @@ A Mongolian-language, browser-side Tarot reading and reflection application. Its
 - **Zodiac overview** — conventional tropical sun-sign dates with Gregorian date validation.
 - **Natal chart calculator** — browser-local ephemeris via Astronomy Engine: geocentric tropical positions of 10 bodies, ascendant, Whole Sign houses, moon phase, and simple aspects. Accurate **historical UTC offset, birth time and location must be supplied**; no time-zone guesswork. See accuracy limits below.
 - **Daily tarot, symbolic daily reflection, dream dictionary and guided journaling** — local rules and deterministic date-dependent prompts, not professional advice or AI diagnoses.
-- **Reading journal** — device-only localStorage, view/clear/delete notes, edit notes, JSON import/export, print/PDF and shareable PNG generated on-device.
-- **Learn Tarot** — image recognition quiz for Major Arcana.
-- **PWA** — install metadata, service worker and app-shell caching for offline revisits once assets are cached. Incomplete cache/first visits still require connectivity.
+- **Reading journal** — device-only localStorage, search/favorites/stats, view/clear/delete, edit notes, validated JSON/legacy imports, print/PDF and shareable PNG. Whole-device backup v2 includes journal, custom spreads, preferences and study progress, and can restore v1 backups.
+- **Learn Tarot** — offline spaced-repetition quiz across all 78 cards with daily due reviews, per-card progress, answer tracking and a masked card title to prevent giving away the answer. Training progress is backed up locally.
+- **Lunar calendar** — astronomical Sun–Moon phase-angle computation, 8 phase labels and approximate illumination for each day of the selected month; no external API.
+- **Advanced card library** — search Mongolian/English names and keywords, filter by suit, arcana and element, and inspect traditional correspondences.
+- **PWA** — install metadata, versioned service worker, built JavaScript chunk precache (including lazy natal/lunar screens) and an optional 78-image offline pack. Incomplete cache/first visits still require connectivity.
 - **Privacy** — main application does not transmit questions, birth data or reading records to a backend.
 
 ## Run
@@ -70,6 +72,9 @@ See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for tests still required before
 - `front-end/src/app/lib/offlineEngine.ts` — random draw, sun signs and local reflection helpers
 - `front-end/src/app/lib/readingIntelligence.ts` — contextual rule-based Tarot interpretation
 - `front-end/src/app/lib/astroChart.ts` — offline ephemeris and natal chart calculations
+- `front-end/src/app/lib/lunarCalendar.ts` — astronomical lunar phases by day
+- `front-end/src/app/lib/studyProgress.ts` — spaced-repetition learning engine and local progress
+- `front-end/src/app/lib/offlineBackup.ts` — portable validated complete backup (v1 and v2 input)
 - `front-end/src/app/lib/readingHistory.ts` — validated private journal and import/export
 - `front-end/src/app/lib/customSpread.ts` — bounded custom spreads
 - `front-end/src/app/components/` — UI experiences
