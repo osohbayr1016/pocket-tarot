@@ -1,3 +1,4 @@
+import {parseSavedSpreads,savedToSpread} from "../src/app/lib/savedCustomSpreads.ts";
 import { OFFLINE_CITIES, resolveLocalTime } from "../src/app/lib/astroTimeZone.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -118,4 +119,24 @@ test("journal rejects truncation and duplicated imported card IDs",()=>{
       {id:1,reversed:false,position:1},{id:1,reversed:true,position:2}
     ]};
   assert.equal(parseReadings([reading]).length,0);
+});
+
+test("saved custom spread serialization validates card labels and template IDs",()=>{
+  const saved={id:"custom-1234",name:"Миний долоо хоног",labels:["Зорилго","Саад","Дараагийн алхам"]};
+  const parsed=parseSavedSpreads([saved]);
+  assert.equal(parsed.length,1);
+  assert.equal(savedToSpread(parsed[0]).positions[1].name,"Саад");
+  assert.throws(()=>parseSavedSpreads([{...saved,labels:[]}]),/бүтэц/);
+  assert.throws(()=>parseSavedSpreads([saved,saved]),/давхардсан/);
+  assert.throws(()=>parseSavedSpreads(Array.from({length:21},()=>saved)),/сан/);
+});
+test("major arcana pairs include a transparent cross-card interpretation",()=>{
+  const pair=[tarotCards[0],tarotCards[1]].map((card,i)=>({
+    card,position:i+1,positionName:i===0?"Эхлэл":"Нөөц",
+    positionDescription:"Хувийн эргэцүүлэл",isReversed:false
+  }));
+  const text=createContextualReading(pair,"Шинэ төсөл","career");
+  assert.match(text,/Картын хослол/);
+  assert.match(text,/Нөөц/);
+  assert.match(text,/баттай таамагладаггүй/);
 });
