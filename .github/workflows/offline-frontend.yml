@@ -37,6 +37,7 @@ jobs:
         run: |
           npm run build
           test "$(find public/tarot/rws -maxdepth 1 -name '*.jpg' | wc -l)" -eq 78
+          test "$(find public/tarot/rws -maxdepth 1 -name '*.webp' | wc -l)" -eq 78
 
   browser-e2e:
     needs: verify
