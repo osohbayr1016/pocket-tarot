@@ -159,13 +159,13 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
           ))}
         </ol>
         <p className="mt-4 text-xs leading-5 text-slate-400">
-          Энэ нь өөрийн нөхцөлөө эргэцүүлэх бэлгэдлийн дасгал болохоос баталгаатай ирээдүйг хэлдэггүй.
+          {(locale==="en"?"This is a symbolic reflection exercise, not a reliable prediction of future events.":"Энэ нь өөрийн нөхцөлөө эргэцүүлэх бэлгэдлийн дасгал болохоос баталгаатай ирээдүйг хэлдэггүй.")}
         </p>
       </section>
       {!spread && (
         <div className="mx-auto max-w-4xl">
           <label htmlFor="tarot-question" className="mb-3 block text-sm font-medium text-amber-100">
-            Эргэцүүлэх асуулт (заавал биш)
+            {(locale==="en"?"Reflection question (optional)":"Эргэцүүлэх асуулт (заавал биш)")}
           </label>
           <textarea
             id="tarot-question" value={question} onChange={(event) => setQuestion(event.target.value)}
@@ -195,7 +195,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
                 <h3 className="font-serif text-xl text-amber-50">{en?englishSpreadName(option):option.name}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-300">{en?englishSpreadDescription(option):option.description}</p>
                 <span className="mt-5 block text-xs uppercase tracking-wider text-amber-300 group-hover:text-amber-100">
-                  Сонгох
+                  {(locale==="en"?"Select":"Сонгох")}
                 </span>
               </button>
             ))}
@@ -222,7 +222,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
           <div className="mt-8 rounded-2xl border border-amber-300/25 bg-[#20192f] p-5 sm:p-7">
             <h3 className="font-serif text-xl text-amber-100">{tr("Өөрийн дэлгэмэл үүсгэх","Create your own spread")}</h3>
             <p className="mt-2 text-sm text-slate-300">
-              1–12 картын тоо, байрлалын нэрсээ оруул. Интернэт эсвэл AI шаардлагагүй.
+              {(locale==="en"?"Set 1–12 cards and optionally name each position. Works without an AI service or the internet.":"1–12 картын тоо, байрлалын нэрсээ оруул. Интернэт эсвэл AI шаардлагагүй.")}
             </p>
             <label htmlFor="custom-spread-name" className="mt-5 block text-sm text-amber-100">{tr("Дэлгэмлийн нэр","Spread name")}</label>
             <input id="custom-spread-name" value={customName} maxLength={60}
@@ -253,12 +253,12 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
             </div>
             <button type="button" onClick={saveTemplate}
               className="mr-3 mt-6 rounded-full border border-amber-300/40 px-6 py-3 text-sm font-semibold text-amber-100">
-              Дэлгэмлийг хадгалах
+              {(locale==="en"?"Save spread":"Дэлгэмлийг хадгалах")}
             </button>
             {templateMessage&&<p role="status" className="mt-3 text-sm text-emerald-200">{templateMessage}</p>}
             <button type="button" onClick={()=>chooseSpread(makeCustomSpread(customCount,customLabels))}
               className="mt-6 rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200">
-              Миний дэлгэмлийг эхлүүлэх
+              {(locale==="en"?"Start custom spread":"Миний дэлгэмлийг эхлүүлэх")}
             </button>
           </div>
         </div>
@@ -273,18 +273,18 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
             </div>
             <button type="button" onClick={startAgain}
               className="rounded-full border border-white/25 px-5 py-2 text-sm text-white transition-colors hover:border-amber-300">
-              Дэлгэмэл солих
+              {(locale==="en"?"Change spread":"Дэлгэмэл солих")}
             </button>
           </div>
           {drawn.length === 0 ? (
             <div className="mx-auto max-w-lg rounded-2xl border border-amber-300/20 bg-[#1c1830] px-8 py-12 text-center">
               <p className="text-5xl text-amber-300" aria-hidden="true">✦</p>
               <p className="my-5 text-sm leading-relaxed text-slate-200">
-                Картуудыг жигд холиж, давхардалгүй сугална. Эгц эсвэл урвуу байрлалыг тусад нь санамсаргүй сонгоно.
+                {(locale==="en"?"Cards are shuffled fairly without duplicates. Upright or reversed orientation is selected independently.":"Картуудыг жигд холиж, давхардалгүй сугална. Эгц эсвэл урвуу байрлалыг тусад нь санамсаргүй сонгоно.")}
               </p>
               <button type="button" onClick={makeReading}
                 className="w-full rounded-full bg-amber-300 px-8 py-3 font-semibold text-[#161024] transition-colors hover:bg-amber-200">
-                Хольж, хөзөр сугалах
+                {(locale==="en"?"Shuffle and draw":"Хольж, хөзөр сугалах")}
               </button>
             </div>
           ) : (
@@ -294,7 +294,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
                 {visibleCount < drawn.length && (
                   <button type="button" onClick={revealNext}
                     className="rounded-full bg-amber-300 px-6 py-3 font-medium text-[#161024] hover:bg-amber-200">
-                    Дараагийн картыг нээх
+                    {(locale==="en"?"Reveal next card":"Дараагийн картыг нээх")}
                   </button>
                 )}
               </div>
@@ -326,11 +326,11 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
                   <div className="mt-4 flex flex-wrap gap-3">
                     <button type="button" onClick={save}
                       className="rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#161024] hover:bg-amber-200">
-                      Төхөөрөмж дээр хадгалах
+                      {(locale==="en"?"Save to this device":"Төхөөрөмж дээр хадгалах")}
                     </button>
                     <button type="button" onClick={makeReading}
                       className="rounded-full border border-white/30 px-6 py-3 text-sm text-white hover:border-amber-300">
-                      Дахин холих
+                      {(locale==="en"?"Shuffle again":"Дахин холих")}
                     </button>
                   </div>
                   {savedMessage && <p role="status" className="mt-4 text-sm text-emerald-200">{savedMessage}</p>}
