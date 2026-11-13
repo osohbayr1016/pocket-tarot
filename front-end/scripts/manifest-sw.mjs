@@ -25,6 +25,7 @@ const filename=join(root,"public/sw.js");
 const before=readFileSync(filename,"utf8");
 const updated=before.replace(/const BUILD_ASSETS = \[[\s\S]*?\];/,
   "const BUILD_ASSETS = "+JSON.stringify(assets)+";");
-if(updated===before)throw new Error("Service worker BUILD_ASSETS marker missing or unchanged");
+if(!/const BUILD_ASSETS = \\[[\\s\\S]*?\\];/.test(before))
+  throw new Error("Service worker BUILD_ASSETS marker missing");
 writeFileSync(filename,updated);
 console.log("PWA precache manifest:",assets.length,"static chunk/CSS/font files");
