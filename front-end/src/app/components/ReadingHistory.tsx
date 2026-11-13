@@ -21,7 +21,11 @@ export default function ReadingHistory(){
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
   const fileRef=useRef<HTMLInputElement>(null);
-  useEffect(()=>{setItems(loadReadings());},[]);
+  useEffect(()=>{
+    // Read device-local storage after hydration; never read it during SSR.
+    const frame=requestAnimationFrame(()=>setItems(loadReadings()));
+    return ()=>cancelAnimationFrame(frame);
+  },[]);
   const onDelete=(id:string)=>{
     if(!window.confirm("Энэ уншилтыг бүр мөсөн арилгах уу?"))return;
     try{setItems(deleteReading(id));setSelected(null);setMessage("Уншилт устлаа.");}
