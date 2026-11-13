@@ -8,6 +8,7 @@ import {
 } from "../lib/journalDb";
 import { tarotCards } from "../data/tarotCards";
 import { exportReadingPng } from "../lib/exportReadingPng";
+import {exportReadingSocialPng} from "../lib/exportReadingSocialPng";
 import { convertLegacyReadings } from "../lib/legacyMigration";
 import { calculateReadingStats } from "../lib/readingStats";
 
@@ -279,6 +280,9 @@ export default function ReadingHistory(){
                     Ангилал хадгалах
                   </button>
                 </div>
+                <p className="mt-5 text-xs leading-5 text-slate-400">
+                  Social share зурагт зөвхөн картын нэр, дэлгэмлийн нэр орно. Таны асуулт, тэмдэглэл, бүтэн тайлал нийтлэгдэхгүй.
+                </p>
                 <div className="mt-5 flex flex-wrap gap-2">
                   <button type="button"
                     onClick={()=>void exportReadingPng(active,tarotCards).then(
@@ -288,6 +292,15 @@ export default function ReadingHistory(){
                     className="rounded-full bg-amber-300 px-5 py-2 text-sm font-semibold text-[#171127]">
                     PNG зураг
                   </button>
+                  {(["story","square"] as const).map(format=>
+                    <button type="button" key={format} onClick={()=>void exportReadingSocialPng(active,tarotCards,format).then(
+                      ()=>setMessage(format==="story"?"Story PNG хадгалагдлаа.":"Square PNG хадгалагдлаа."),
+                      ()=>setError("Share зураг экспортолж чадсангүй.")
+                    )}
+                    className="rounded-full border border-amber-300/40 px-5 py-2 text-sm text-amber-100">
+                      {format==="story"?"Story 9:16":"Square 1:1"} PNG
+                    </button>
+                  )}
                   <button type="button" onClick={()=>window.print()}
                     className="rounded-full border border-white/30 px-5 py-2 text-sm text-slate-100">Print / PDF</button>
                   <button type="button" onClick={()=>navigator.clipboard.writeText(active.reading).then(
