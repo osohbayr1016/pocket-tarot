@@ -4,6 +4,7 @@ import {
   computeNatalChart, type BirthDetails, type NatalChart, TROPICAL_SIGNS,
 } from "../lib/astroChart";
 import { OFFLINE_CITIES } from "../lib/astroTimeZone";
+import TransitComparison from "./TransitComparison";
 
 const symbols=["♈","♉","♊","♋","♌","♍","♎","♏","♐","♑","♒","♓"];
 function coords(angle:number,radius:number){
@@ -169,6 +170,7 @@ export default function NatalChartPage(){
                 <span className="block text-xs text-amber-300">{i+1}-р house</span>{name}
               </div>)}
             </div>
+            <TransitComparison natal={chart}/>
           </div>
         )}
         <p className="mt-8 text-xs leading-6 text-slate-400">
