@@ -44,6 +44,73 @@ const elementPairAdvice: Record<string,string> = {
   "Агаар+Шороо":"Өөрийн бодож төлөвлөснөө жижиг үйлдлээр шалга.",
   "Ус+Шороо":"Сэтгэлийн хэрэгцээгээ өдөр тутмын бодит нөхцөлтэй нийцүүл."
 };
+
+const suitDescriptions:Record<string,string>={
+  Wands:"санаачилга, зорилго, үйлдэл",
+  Cups:"мэдрэмж, хүн хоорондын холбоо",
+  Swords:"шийдвэр, бодол, ярилцлага",
+  Pentacles:"нөөц, ур чадвар, бодит төлөвлөгөө"
+};
+const numberThemes:Record<number,string>={
+  1:"эхлэл болон шинэ санаа",2:"сонголт ба хоёр тал",3:"бүтээл ба хамтын ажиллагаа",
+  4:"суурь, бүтэц",5:"сорилт ба өөрчлөлт",6:"зохицол ба эргэж харах",
+  7:"шинжилгээ, өөрийгөө шалгах",8:"хөдөлгөөн ба дадал",
+  9:"бие даах, туршлага",10:"мөчлөгийн төгсгөл"
+};
+const meaningfulPairs:Record<string,string>={
+  "0:1":"Шинэ эхлэлийг хэрэгжүүлэхийн тулд нөөц, ур чадвараа бодитоор шалгах.",
+  "3:4":"Бүтээлч санааг тогтвортой бүтэц болон хил хязгаартай хослуулах.",
+  "6:11":"Харилцааны сонголтыг шударга байдал, харилцан хариуцлагаар харах.",
+  "7:9":"Урагшлах зоригийн өмнө ганцаар эргэцүүлж, чиглэлээ тодорхойлох.",
+  "8:15":"Хувийн тэвчээр ба хязгаарлаж буй дадлын харилцааг эргэцүүлэх.",
+  "13:17":"Хуучин мөчлөгөөс салсны дараа найдвар, шинэ боломжийг анзаарах.",
+  "14:16":"Огцом өөрчлөлтийн дараа тэнцвэрээ аажмаар сэргээх.",
+  "18:19":"Тодорхойгүй мэдрэмжийг илүү тодорхой мэдээллээр шалгах."
+};
+function extraConnections(cards:readonly DrawnCard[],topic:ReadingTopic):string[]{
+  const notes:string[]=[];
+  const suits=new Map<string,DrawnCard[]>();
+  const ranks=new Map<number,DrawnCard[]>();
+  for(const entry of cards){
+    if(entry.card.suit){
+      const group=suits.get(entry.card.suit)||[];
+      group.push(entry);suits.set(entry.card.suit,group);
+      if(entry.card.numerology<=10){
+        const rank=ranks.get(entry.card.numerology)||[];
+        rank.push(entry);ranks.set(entry.card.numerology,rank);
+      }
+    }
+  }
+  for(const [suit,group] of suits){
+    if(group.length>=2){
+      notes.push(group.length+" карт нэг бүлэгт ("+group[0].card.name.split(" ").slice(-1).join(" ")+") хамаарна: "+
+        suitDescriptions[suit]+". Тэдгээрийн байрлалуудыг хооронд нь харьцуул.");
+    }
+  }
+  for(const [rank,group] of ranks){
+    if(group.length>=2){
+      notes.push(rank+" дугаартай "+group.length+" карт давтагдсан: "+
+        numberThemes[rank]+". Энэ нь уламжлалт тоон бэлгэдэл бөгөөд баттай үр дүн биш.");
+    }
+  }
+  const majors=cards.filter(entry=>entry.card.arcana==="major");
+  for(let i=0;i<majors.length;i++){
+    for(let j=i+1;j<majors.length;j++){
+      const a=majors[i],b=majors[j],key=[a.card.id,b.card.id].sort((x,y)=>x-y).join(":");
+      if(meaningfulPairs[key])notes.push("Картын хослол ("+a.card.name+" / "+b.card.name+"): "+meaningfulPairs[key]+
+        " Байрлал: "+a.positionName+" ба "+b.positionName+".");
+    }
+  }
+  const relevant=topic==="love"?["Cups"]:topic==="career"?["Wands","Pentacles"]:topic==="growth"?["Swords"]:[];
+  const related=cards.filter(entry=>entry.card.suit&&relevant.includes(entry.card.suit));
+  if(related.length){
+    notes.push("Сонгосон асуултын чиглэлтэй холбоотой бэлгэдэл: "+
+      related.map(entry=>entry.card.name+" ("+entry.positionName+")").join(", ")+
+      ". Тухайн картын утгыг өөрийн бодит нөхцөлд тулгаж үз.");
+  }
+  return notes.slice(0,8);
+}
+
 function thematicConnections(cards: readonly DrawnCard[]): string[] {
   const out: string[] = [];
   const major = cards.filter(item => item.card.arcana === "major");
