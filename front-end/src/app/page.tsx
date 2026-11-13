@@ -34,6 +34,8 @@ export default function Home() {
   const [error,setError] = useState("");
   const [query,setQuery] = useState("");
   const [arcana,setArcana] = useState<"all"|"major"|"minor">("all");
+  const [suit,setSuit] = useState<"all"|"Wands"|"Cups"|"Swords"|"Pentacles">("all");
+  const [element,setElement] = useState<"all"|"Гал"|"Ус"|"Агаар"|"Шороо">("all");
   const [libraryCard,setLibraryCard] = useState<TarotCard|null>(null);
   useEffect(()=>{
     // Hydration-safe deep-link initialization; back/forward also restore sections.
@@ -48,8 +50,10 @@ export default function Home() {
   },[]);
   const filtered = useMemo(()=>tarotCards.filter((card)=>(
     (arcana === "all" || card.arcana === arcana) &&
-    (card.name + " " + card.englishName).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
-  )),[arcana,query]);
+    (suit === "all" || card.suit === suit) &&
+    (element === "all" || card.element === element) &&
+    (card.name + " " + card.englishName+" "+card.keywords.join(" ")).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
+  )),[arcana,query,suit,element]);
 
   const drawSingleCard = () => {
     try {
@@ -130,6 +134,38 @@ export default function Home() {
                   </button>
                 ))}
               </div>
+            </div>
+            <div className="mb-8 flex flex-wrap items-end gap-4 rounded-xl border border-white/10 bg-white/5 p-4">
+              <label className="flex-1 text-sm text-amber-100" htmlFor="library-suit">
+                Бүлэг
+                <select id="library-suit" value={suit} onChange={event=>setSuit(event.target.value as typeof suit)}
+                  className="mt-2 block w-full min-w-36 rounded-lg border border-white/20 bg-[#171127] p-3 text-slate-100">
+                  <option value="all">Бүх бүлэг</option>
+                  <option value="Wands">Саваа (Wands)</option>
+                  <option value="Cups">Хундага (Cups)</option>
+                  <option value="Swords">Сэлэм (Swords)</option>
+                  <option value="Pentacles">Зоос (Pentacles)</option>
+                </select>
+              </label>
+              <label className="flex-1 text-sm text-amber-100" htmlFor="library-element">
+                Элемент
+                <select id="library-element" value={element} onChange={event=>setElement(event.target.value as typeof element)}
+                  className="mt-2 block w-full min-w-36 rounded-lg border border-white/20 bg-[#171127] p-3 text-slate-100">
+                  <option value="all">Бүх элемент</option>
+                  <option value="Гал">Гал</option>
+                  <option value="Ус">Ус</option>
+                  <option value="Агаар">Агаар</option>
+                  <option value="Шороо">Шороо</option>
+                </select>
+              </label>
+              <button type="button" onClick={()=>{
+                setQuery("");setArcana("all");setSuit("all");setElement("all");
+              }} className="min-h-11 rounded-full border border-amber-300/30 px-4 py-2 text-sm text-amber-100">
+                Шүүлтүүр цэвэрлэх
+              </button>
+              <p role="status" aria-live="polite" className="w-full text-xs text-slate-300">
+                Нийт {filtered.length} / 78 карт харагдаж байна.
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {filtered.map((card)=>(
