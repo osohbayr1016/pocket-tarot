@@ -5,6 +5,7 @@ import {
   type SavedReading
 } from "../lib/readingHistory";
 import { tarotCards } from "../data/tarotCards";
+import { exportReadingPng } from "../lib/exportReadingPng";
 
 function saveAsFile(content:string,name:string,mime:string){
   const blob=new Blob([content],{type:mime});
@@ -113,6 +114,14 @@ export default function ReadingHistory(){
                   <h3 className="mb-1 font-semibold text-amber-100">Таны тэмдэглэл</h3>{active.notes}
                 </div>}
                 <div className="mt-5 flex flex-wrap gap-2">
+                  <button type="button"
+                    onClick={()=>void exportReadingPng(active,tarotCards).then(
+                      ()=>setMessage("PNG зураг хадгалагдлаа."),
+                      ()=>setError("PNG үүсгэх үед алдаа гарлаа.")
+                    )}
+                    className="rounded-full bg-amber-300 px-5 py-2 text-sm font-semibold text-[#171127]">
+                    PNG зураг
+                  </button>
                   <button type="button" onClick={()=>window.print()}
                     className="rounded-full border border-white/30 px-5 py-2 text-sm text-slate-100">Print / PDF</button>
                   <button type="button" onClick={()=>navigator.clipboard.writeText(active.reading).then(
