@@ -11,6 +11,8 @@ import CelticCrossBoard from "./CelticCrossBoard";
 import { makeCustomSpread } from "../lib/customSpread";
 import {getReadingPreferences} from "../lib/readingPreferences";
 import {useLocalDraft} from "../lib/useLocalDraft";
+import {useLanguage} from "../lib/LanguageProvider";
+import {englishReading} from "../lib/englishTarot";
 import {loadSavedSpreads,saveCustomSpread,deleteCustomSpread,savedToSpread,type SavedSpread} from "../lib/savedCustomSpreads";
 
 interface Props {
@@ -21,6 +23,7 @@ interface Props {
 }
 
 export default function TraditionalTarotReading({ onReset, userQuestion = "" }: Props) {
+  const {locale,t}=useLanguage();
   const [spread, setSpread] = useState<TarotSpread | null>(null);
   const questionDraft=useLocalDraft("traditional-question",userQuestion);
   const question=questionDraft.text;
@@ -54,7 +57,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
       setError("");
     }catch(cause){setError(cause instanceof Error?cause.message:"Дэлгэмлийг хадгалж чадсангүй.");}
   };
-  const result = interpretReading(drawn, question, topic === "auto" ? undefined : topic);
+  const result = locale==="en"?englishReading(drawn,question):interpretReading(drawn, question, topic === "auto" ? undefined : topic);
 
   const refreshHistory = async () => {
     try{setHistory((await listJournal()).slice(0,20));}
@@ -119,7 +122,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
     <section className="mx-auto max-w-6xl px-3 pb-16 sm:px-6">
       <header className="mx-auto mb-10 max-w-2xl text-center">
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-amber-300">THE ART OF REFLECTION</p>
-        <h2 className="font-serif text-4xl font-medium tracking-tight text-amber-50 sm:text-5xl">Уламжлалт таро</h2>
+        <h2 className="font-serif text-4xl font-medium tracking-tight text-amber-50 sm:text-5xl">{t("Уламжлалт таро")}</h2>
         <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-slate-300">
           78 хөзрөөс уламжлалт байрлалаар санамсаргүй сонгож, бэлгэдлийг нь тайлбарлана.
           AI, төлбөртэй API, сервер шаардлагагүй.
@@ -305,7 +308,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
               }
               {visibleCount === drawn.length && (
                 <div className="mx-auto mt-10 max-w-3xl rounded-2xl border border-amber-300/25 bg-gradient-to-b from-[#27203d] to-[#151224] p-6 sm:p-9">
-                  <h4 className="font-serif text-2xl text-amber-100">Таны уншилтын тайлал</h4>
+                  <h4 className="font-serif text-2xl text-amber-100">{t("Таны уншилтын тайлал")}</h4>
                   <pre className="mt-5 whitespace-pre-wrap break-words font-sans text-sm leading-7 text-slate-100">{result}</pre>
                   <label className="mt-8 block text-sm font-medium text-amber-100" htmlFor="reading-notes">Хувийн тэмдэглэл</label>
                   <textarea id="reading-notes" disabled={!notesDraft.ready} value={notes} onChange={(event)=>{setNotes(event.target.value);setSavedMessage("");}}
