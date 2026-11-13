@@ -84,7 +84,7 @@ export function createContextualReading(drawn:readonly DrawnCard[], question="",
   const topic=chosen||detectReadingTopic(question);
   const guide=topicAdvice[topic];
   const parts=[
-    "Энэ бол уламжлалт таро бэлгэдэлд тулгуурласан өөрийгөө эргэцүүлэх тайлбар; бодит ирээдүйн баттай таамаглал биш.",
+    "Таро нь бодит ирээдүйг баттай таамагладаггүй. Энэ бол уламжлалт бэлгэдэлд тулгуурласан эргэцүүлэл.",
     question.trim()?"Асуулт: "+question.trim().slice(0,300):"",
     "Карт ба байрлалууд",
     ...drawn.map(({card,isReversed,positionName,positionDescription},i)=>
