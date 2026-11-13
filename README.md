@@ -1,235 +1,69 @@
-# Pocket Tarot 🔮
+# Pocket Tarot
 
-A mystical tarot reading website with AI-powered dream interpretation, built with Next.js, Express.js, and MongoDB.
+**Tarot & astrology-inspired reflection, computed locally without AI or runtime API calls.**
 
-## ✨ Features
+An offline-first Next.js 15 / React 19 experience in Mongolian. The browser draws cards, interprets traditional card meanings, validates dates, computes conventional Western tropical zodiac sun signs, and stores user readings **on the same device**.
 
-- 🔮 **Tarot Card Reading**: Interactive tarot card selection and readings
-- 💭 **AI Dream Interpretation**: Powered by Google Gemini AI in Mongolian
-- ⭐ **Horoscope**: Daily horoscope readings (coming soon)
-- 🎯 **Daily Fortune**: Daily fortune predictions (coming soon)
-- 🔐 **User Authentication**: Secure login system (coming soon)
-- 📱 **Responsive Design**: Beautiful UI that works on all devices
+> Tarot and astrology are cultural/interpretive traditions, not scientific methods of predicting personal events. This application makes no claims about guaranteed future outcomes. Medical, legal, financial, and safety decisions require appropriate professional evidence.
 
-## 🚀 Quick Start
+## Available experiences
 
-### Prerequisites
+- **78-card Rider–Waite–Smith deck**: 22 Major Arcana, 56 Minor Arcana, actual historical card art.
+- **Five readings**: one card, past/present/possible direction, love, career, Celtic Cross (10).
+- **Reading engine**: unbiased Fisher–Yates shuffle via Web Crypto, no duplicate cards, upright/reversed drawn independently.
+- **Interpretation**: Mongolian card meanings with spread position labels, deterministic, fully local.
+- **Zodiac**: all 12 conventional tropical sun-sign date ranges and Gregorian date validation.
+- **Daily reflection**: date-dependent, repeatable local symbolic prompt; lucky numbers/colors are **entertainment, not forecasts**.
+- **Dream journal**: transparent keyword-based interpretations; not AI or clinical analysis.
+- **Personal guidance**: structured reflection, not generated professional advice.
+- **Privacy**: optional readings stored in browser localStorage; no login or network account needed.
 
-- Node.js 18+
-- MongoDB (local or Atlas)
-- Gemini AI API key
+## Run the frontend
 
-### Installation
+Requirements: Node.js 22+, npm, network once to fetch publicly hosted artwork *if missing*.
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/pocket-tarot.git
-cd pocket-tarot
-
-# Install all dependencies
-npm run install:all
-
-# Set up environment variables
-cp back-end/config.env back-end/.env
-# Edit back-end/.env with your configuration
-
-# Start development servers
+\`\`\`bash
+cd front-end
+npm ci --legacy-peer-deps
+npm run assets:sync   # skips already-installed card files
 npm run dev
-```
+\`\`\`
 
-### Environment Variables
+Open http://localhost:3000. Actual images are committed under \`front-end/public/tarot/rws\`, so on this repo version assets sync is a no-op. Re-download is possible using \`npm run assets:sync\` if an image is missing.
 
-#### Backend (`back-end/.env`)
+To build and test:
 
-```env
-PORT=5001
-MONGODB_URI=mongodb://localhost:27017/pocket-tarot
-JWT_SECRET=your_jwt_secret_here
-GEMINI_API_KEY=your_gemini_api_key_here
-NODE_ENV=development
-```
-
-#### Frontend (`front-end/.env.local`)
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5001
-```
-
-## 🛠️ Development
-
-### Available Scripts
-
-```bash
-# Development
-npm run dev                    # Start both frontend and backend
-npm run dev:frontend          # Start frontend only
-npm run dev:backend           # Start backend only
-
-# Building
-npm run build                 # Build frontend for production
-npm run build:frontend        # Build frontend only
-npm run build:backend         # Build backend only
-
-# Production
-npm start                     # Start backend in production
-npm run start:frontend        # Start frontend in production
-
-# Installation
-npm run install:all          # Install dependencies for all packages
-```
-
-### Project Structure
-
-```
-pocket-tarot/
-├── front-end/                 # Next.js frontend
-│   ├── src/app/              # App router pages
-│   ├── src/app/components/   # React components
-│   ├── src/app/data/         # Static data (tarot cards)
-│   └── public/               # Static assets
-├── back-end/                 # Express.js backend
-│   ├── routes/               # API routes
-│   ├── models/               # MongoDB models
-│   ├── middleware/           # Express middleware
-│   └── config/               # Configuration files
-├── package.json              # Root package.json
-└── DEPLOYMENT_GUIDE.md       # Deployment instructions
-```
-
-## 🌐 API Endpoints
-
-### Health Check
-
-- `GET /api/health` - Server health status
-
-### Dream Interpretation
-
-- `POST /api/dreams/interpret` - AI-powered dream interpretation
-
-### Authentication (Coming Soon)
-
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `GET /api/auth/me` - Get current user
-
-### Tarot Readings (Coming Soon)
-
-- `POST /api/readings` - Save tarot reading
-- `GET /api/readings` - Get user readings
-
-## 🎨 Technologies Used
-
-### Frontend
-
-- **Next.js 15** - React framework
-- **TypeScript** - Type safety
-- **Tailwind CSS** - Styling
-- **React 19** - UI library
-
-### Backend
-
-- **Express.js** - Web framework
-- **MongoDB** - Database
-- **Mongoose** - ODM
-- **Google Gemini AI** - AI integration
-- **JWT** - Authentication
-- **Passport.js** - OAuth strategies
-
-### Development Tools
-
-- **Nodemon** - Auto-restart server
-- **Concurrently** - Run multiple commands
-- **ESLint** - Code linting
-
-## 🚀 Deployment
-
-For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md).
-
-### Quick Deploy
-
-#### Frontend (Vercel)
-
-```bash
+\`\`\`bash
 cd front-end
-vercel --prod
-```
-
-#### Backend (Railway/Render/Heroku)
-
-```bash
-cd back-end
-# Follow platform-specific deployment steps
-```
-
-## 🔧 Configuration
-
-### MongoDB Setup
-
-1. Create a MongoDB Atlas account or use local MongoDB
-2. Update `MONGODB_URI` in your environment variables
-
-### Gemini AI Setup
-
-1. Get API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Add `GEMINI_API_KEY` to your environment variables
-
-### CORS Configuration
-
-The backend is configured to accept requests from:
-
-- Development: `http://localhost:3000`, `http://localhost:3001`
-- Production: Vercel domains and custom frontend URL
-
-## 🧪 Testing
-
-### API Testing
-
-```bash
-# Health check
-curl http://localhost:5001/api/health
-
-# Dream interpretation
-curl -X POST http://localhost:5001/api/dreams/interpret \
-  -H "Content-Type: application/json" \
-  -d '{"dream":"Би нисэж байсан"}'
-```
-
-### Frontend Testing
-
-```bash
-cd front-end
+npm test
+npm run typecheck
 npm run build
-npm start
-# Visit http://localhost:3000
-```
+\`\`\`
 
-## 🤝 Contributing
+After the frontend is built, readings, images, and astrology calculations make no backend or AI requests. **This is not yet a packaged offline-installable PWA**; serving/loading the website initially still requires a web server or local Next.js instance.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## Artwork provenance
 
-## 📝 License
+78 Rider–Waite–Smith historical illustrations (1909), illustrated by **Pamela Colman Smith** under the direction of **A. E. Waite**. Local JPEG files sourced from the Rider–Waite deck maintained in [mixvlad/TarotCards](https://github.com/mixvlad/TarotCards/tree/main/tarot/rider-waite/720px). They document this edition as public domain; verify applicable copyright rules before distributing in a particular jurisdiction. The included asset sync tool only downloads assets during installation/build, never during card readings.
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+The \`front-end/public/tarot/card-placeholder.svg\` fallback is original to this project.
 
-## 🙏 Acknowledgments
+## Project structure
 
-- Google Gemini AI for dream interpretation
-- Tarot card data and interpretations
-- Next.js and Express.js communities
-- All contributors and supporters
+- \`front-end/src/app/data/tarotCards.ts\` — the complete card catalog.
+- \`front-end/src/app/data/tarotSpreads.ts\` — 5 spreads and position definitions.
+- \`front-end/src/app/lib/offlineEngine.ts\` — reusable local computation.
+- \`front-end/src/app/components/\` — accessible responsive reading UI.
+- \`front-end/tests/offline.test.mjs\` — deterministic card/zodiac tests.
+- \`front-end/public/tarot/rws/\` — 78 local JPG assets.
+- \`back-end/\` — **legacy optional backend**, no longer called by the redesigned frontend. Before deploying this legacy server, audit its authentication, rate limiting, and credentials.
 
-## 📞 Support
+## Known limitations
 
-For support and questions:
+- Sun-sign boundaries are conventional approximations; exact zodiac ingress, ascendant, houses, moon sign, transits, natal aspects require an ephemeris plus birth time and location. None are claimed here.
+- Dream interpretation is simple keyword matching; it does not understand novel free text the way a language model would.
+- Browser storage is device-local and may be erased by browser settings. It is not encrypted, backed up, or shared with another device.
+- Unit tests are not a proof of 100% correctness; perform live browser, accessibility, cross-device and deployment tests before production release.
+- If you're using the old backend: any credentials that were once committed must be rotated, even after deletion. See \`SECURITY.md\`.
 
-- Create an issue on GitHub
-- Check the [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for deployment help
-- Review the API documentation above
-
----
-
-**Pocket Tarot** - Discover your destiny with mystical wisdom ✨
+See \`IMPLEMENTATION_AUDIT.md\` for engineering scope and release blockers.
