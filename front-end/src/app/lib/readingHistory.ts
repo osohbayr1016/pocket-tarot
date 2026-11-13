@@ -10,6 +10,7 @@ export interface SavedReading {
   question: string;
   reading: string;
   notes: string;
+  favorite?: boolean;
   cards: {id:number; reversed:boolean; position:number}[];
 }
 const MAX_RECORDS=100;
@@ -24,13 +25,18 @@ function sanitize(value:unknown):SavedReading|null {
   if(typeof item.reading!=="string"||item.reading.length<1||item.reading.length>20000)return null;
   if(!Array.isArray(item.cards)||item.cards.length>78)return null;
   const cards:SavedReading["cards"]=[];
+  const seenCards=new Set<number>();
+  const seenPositions=new Set<number>();
   for(const raw of item.cards){
     if(!raw||typeof raw!=="object")return null;
     const card=raw as Record<string,unknown>;
     if(!Number.isInteger(card.id)||!Number.isInteger(card.position)||
        Number(card.id)<0||Number(card.id)>77||Number(card.position)<1||
        Number(card.position)>78||typeof card.reversed!=="boolean")return null;
-    cards.push({id:Number(card.id),reversed:card.reversed,position:Number(card.position)});
+    const id=Number(card.id),position=Number(card.position);
+    if(seenCards.has(id)||seenPositions.has(position))return null;
+    seenCards.add(id);seenPositions.add(position);
+    cards.push({id,reversed:card.reversed,position});
   }
   return {
     id:item.id, date:item.date,
@@ -38,6 +44,7 @@ function sanitize(value:unknown):SavedReading|null {
     question:limitText(item.question,500),
     reading:item.reading,
     notes:limitText(item.notes,2000),
+    favorite:item.favorite===true,
     cards,
   };
 }
@@ -46,14 +53,22 @@ export function parseReadings(raw:unknown):SavedReading[]{
   return raw.slice(0,MAX_RECORDS).map(sanitize).filter((item):item is SavedReading=>item!==null);
 }
 export function loadReadings():SavedReading[] {
-  try{return parseReadings(JSON.parse(localStorage.getItem(HISTORY_KEY)||"[]"));}
-  catch{return [];}
+  const raw=localStorage.getItem(HISTORY_KEY);
+  if(!raw)return [];
+  let parsed:unknown;
+  try{parsed=JSON.parse(raw);}
+  catch{throw new Error("Хадгалсан түүх эвдэрсэн байна. Backup-аас сэргээхээс өмнө устгахгүй байхыг зөвлөе.");}
+  if(!Array.isArray(parsed))throw new Error("Хадгалсан түүхийн бүтэц буруу байна. Import/export шалгана уу.");
+  const valid=parseReadings(parsed);
+  if(valid.length!==parsed.length)throw new Error("Түүхийн зарим мөр гэмтсэн байна. Хадгалахдаа өгөгдлийг дарж бичихгүй.");
+  return valid;
 }
 export function addReading(reading:SavedReading):SavedReading[]{
   const record=sanitize(reading);
   if(!record)throw new Error("Уншилтын бүтэц буруу байна.");
   const old=loadReadings();
-  const records=[record,...old.filter(item=>item.id!==record.id)].slice(0,MAX_RECORDS);
+  const records=[record,...old.filter(item=>item.id!==record.id)];
+  if(records.length>MAX_RECORDS)throw new Error("100 уншилтын хязгаарт хүрлээ. Өмнөх уншилтуудыг JSON export хийгээд зай чөлөөлнө үү.");
   localStorage.setItem(HISTORY_KEY,JSON.stringify(records));
   return records;
 }
@@ -88,7 +103,8 @@ export function importReadings(text:string):SavedReading[]{
   if(incoming.length!==object.readings.length)throw new Error("Импортлох уншилтын нэг буюу хэд хэдэн мөр хүчингүй байна.");
   const combined=[...incoming,...loadReadings()];
   const seen=new Set<string>();
-  const unique=combined.filter(item=>{if(seen.has(item.id))return false;seen.add(item.id);return true;}).slice(0,MAX_RECORDS);
+  const unique=combined.filter(item=>{if(seen.has(item.id))return false;seen.add(item.id);return true;});
+  if(unique.length>MAX_RECORDS)throw new Error("Импорт нь одоогийн түүхийн 100 уншилтын хязгаарыг давж байна. Эхлээд JSON backup хийгээд зай чөлөөлнө үү.");
   localStorage.setItem(HISTORY_KEY,JSON.stringify(unique));
   return unique;
 }
@@ -100,6 +116,15 @@ export function updateReadingNotes(id:string,notes:string):SavedReading[]{
   const current=loadReadings();
   if(!current.some(item=>item.id===id))throw new Error("Уншилт олдсонгүй.");
   const result=current.map(item=>item.id===id?{...item,notes}:item);
+  localStorage.setItem(HISTORY_KEY,JSON.stringify(result));
+  return result;
+}
+
+/** Toggle favorite without modifying interpretation or losing older records. */
+export function setReadingFavorite(id:string,favorite:boolean):SavedReading[]{
+  const current=loadReadings();
+  if(!current.some(item=>item.id===id))throw new Error("Уншилт олдсонгүй.");
+  const result=current.map(item=>item.id===id?{...item,favorite}:item);
   localStorage.setItem(HISTORY_KEY,JSON.stringify(result));
   return result;
 }
