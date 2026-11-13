@@ -272,7 +272,7 @@ test("spaced-repetition quiz persists study progress and complete backup v3",asy
   expect(progress[0].seen).toBe(1);
   await page.reload();
   await openView(page,"Таро сурах");
-  await expect(page.getByText("1/78")).toBeVisible();
+  await expect(page.getByText("1/78",{exact:true})).toBeVisible();
   await openView(page,"Хувийн тохиргоо");
   await page.getByRole("checkbox",{name:/Backup файлыг AES-256-GCM/}).uncheck();
   const downloadPromise=page.waitForEvent("download");
