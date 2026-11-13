@@ -1,4 +1,5 @@
 import {englishHoroscope,englishDailyFortune,englishLifeGuidance,englishDreamReflection} from "../src/app/lib/englishReflections.ts";
+import {parseActiveReading} from "../src/app/lib/activeReading.ts";
 import {calculateTransits} from "../src/app/lib/astroTransits.ts";
 import {englishCardMeaning,englishReading} from "../src/app/lib/englishTarot.ts";
 import {TAROT_LESSONS,lessonMetrics} from "../src/app/lib/tarotCurriculum.ts";
@@ -24,6 +25,20 @@ import {
   parseBirthUTC, calculateAscendant, computeNatalChart, calculateAspects,
 } from "../src/app/lib/astroChart.ts";
 
+test("session reading recovery validates card IDs, spread size and reveal count",()=>{
+  const spread=tarotSpreads.find(item=>item.cardCount===3);
+  const cards=drawSpread(tarotCards,spread,()=>0);
+  const snapshot={version:1,spread,visibleCount:1,topic:"career",
+    cards:cards.map(item=>({id:item.card.id,reversed:item.isReversed,position:item.position}))};
+  const restored=parseActiveReading(JSON.stringify(snapshot));
+  assert.ok(restored);
+  assert.equal(restored.drawn.length,3);
+  assert.equal(restored.visibleCount,1);
+  assert.equal(restored.topic,"career");
+  assert.equal(parseActiveReading(JSON.stringify({...snapshot,visibleCount:4})),null);
+  assert.equal(parseActiveReading(JSON.stringify({...snapshot,cards:[...snapshot.cards,snapshot.cards[0]]})),null);
+  assert.equal(parseActiveReading("not-json"),null);
+});
 test("topic detection uses transparent Mongolian/English tokens",()=>{
   assert.equal(detectReadingTopic("Хайр харилцааны тухай"),"love");
   assert.equal(detectReadingTopic("My salary and career"),"career");

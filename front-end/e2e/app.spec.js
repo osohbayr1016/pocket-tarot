@@ -13,6 +13,19 @@ async function openView(page,name){
 }
 
 
+test("unfinished tarot reading resumes after navigation and reload",async({page})=>{
+  await page.goto("/");
+  await page.getByRole("button",{name:"3 карт сугалах"}).click();
+  await page.getByRole("button",{name:/Дараагийн картыг нээх/}).click();
+  await openView(page,"Миний түүх");
+  await openView(page,"Таро дэлгэмэл");
+  await expect(page.getByText("1 / 3 карт нээсэн")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("1 / 3 карт нээсэн")).toBeVisible();
+  for(let i=0;i<2;i++)await page.getByRole("button",{name:/Дараагийн картыг нээх/}).click();
+  await expect(page.getByRole("heading",{name:"Таны уншилтын тайлал"})).toBeVisible();
+});
+
 test("one-card quick entry reveals immediately without setup",async({page})=>{
   await page.goto("/");
   await page.getByRole("button",{name:"1 карт сугалах"}).click();

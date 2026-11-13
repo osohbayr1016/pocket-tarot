@@ -15,6 +15,7 @@ import {useLanguage} from "../lib/LanguageProvider";
 import {englishReading} from "../lib/englishTarot";
 import {englishSpreadName,englishSpreadDescription,englishSpreadPosition} from "../lib/englishSpreads";
 import {emitFeedback} from "../lib/feedback";
+import {loadActiveReading,saveActiveReading} from "../lib/activeReading";
 import {exportReadingSocialPng,type SocialFormat} from "../lib/exportReadingSocialPng";
 import {loadSavedSpreads,saveCustomSpread,deleteCustomSpread,savedToSpread,type SavedSpread} from "../lib/savedCustomSpreads";
 
@@ -41,6 +42,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
   const [topic,setTopic] = useState<ReadingTopic|"auto">("auto");
   const [drawn, setDrawn] = useState<DrawnCard[]>([]);
   const [visibleCount, setVisibleCount] = useState(0);
+  const [restored,setRestored] = useState(false);
   const notesDraft=useLocalDraft("traditional-notes");
   const notes=notesDraft.text;
   const setNotes=notesDraft.setText;
@@ -49,6 +51,21 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
   const [exporting,setExporting] = useState(false);
   const [error, setError] = useState("");
   const [history, setHistory] = useState<{id:string; date:string; spread:string; question:string; reading:string}[]>([]);
+  useEffect(()=>{
+    const frame=requestAnimationFrame(()=>{
+      const previous=loadActiveReading();
+      if(previous){
+        setSpread(previous.spread);setDrawn(previous.drawn);
+        setVisibleCount(previous.visibleCount);setTopic(previous.topic);
+      }
+      setRestored(true);
+    });
+    return ()=>cancelAnimationFrame(frame);
+  },[]);
+  useEffect(()=>{
+    if(!restored)return;
+    saveActiveReading(spread?{spread,drawn,visibleCount,topic}:null);
+  },[restored,spread,drawn,visibleCount,topic]);
   useEffect(()=>{
     const frame=requestAnimationFrame(()=>{
       try{setSavedSpreads(loadSavedSpreads());}
@@ -166,7 +183,11 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
           {tr("78 хөзрөөс уламжлалт байрлалаар санамсаргүй сонгож, бэлгэдлийг нь тайлбарлана. AI, төлбөртэй API, сервер шаардлагагүй.","Draw from 78 cards in a traditional spread, then reflect on their symbolism. No AI, paid API or backend is needed.")}
         </p>
       </header>
-      <section aria-label={tr("Анхны уншилтын алхам","First reading steps")} className="mx-auto mb-9 max-w-4xl rounded-2xl border border-amber-300/20 bg-white/5 px-5 py-5 sm:px-7">
+      <details className="mx-auto mb-5 max-w-4xl">
+        <summary className="min-h-11 cursor-pointer rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-amber-100 hover:border-amber-300/40">
+          {tr("Анхны удаа ашиглаж байна уу? 3 алхамтай заавар","New to Tarot? See the three steps")}
+        </summary>
+      <section aria-label={tr("Анхны уншилтын алхам","First reading steps")} className="mt-3 rounded-2xl border border-amber-300/20 bg-white/5 px-5 py-5 sm:px-7">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="font-serif text-lg text-amber-100">{tr("Анх удаа ашиглаж байна уу?","New to Tarot?")}</h3>
           <span className="text-xs text-slate-300">
@@ -191,8 +212,24 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
           {(locale==="en"?"This is a symbolic reflection exercise, not a reliable prediction of future events.":"Энэ нь өөрийн нөхцөлөө эргэцүүлэх бэлгэдлийн дасгал болохоос баталгаатай ирээдүйг хэлдэггүй.")}
         </p>
       </section>
+      </details>
       {!spread && (
         <div className="mx-auto max-w-4xl">
+          <div className="mb-6 rounded-2xl border border-amber-300/35 bg-gradient-to-r from-[#31213f] to-[#20182d] p-5 sm:p-7">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">{tr("Хурдан эхлэх","Quick start")}</p>
+            <h3 className="font-serif text-2xl text-amber-50">{tr("3 картаар эхэл","Start with three cards")}</h3>
+            <p className="mt-2 max-w-lg text-sm leading-6 text-slate-300">{tr("Асуултаа бичих эсвэл алгасаад шууд картаа сугал. Нарийн тохиргоо шаардлагагүй.","Write a question or skip it. Draw a simple spread without advanced setup.")}</p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button type="button" onClick={()=>startQuickReading(1)}
+                className="min-h-12 flex-1 rounded-full border border-amber-300/50 px-5 py-3 font-semibold text-amber-100 hover:bg-amber-300/10 sm:flex-none">
+                {tr("1 карт сугалах","Draw one card")}
+              </button>
+              <button type="button" onClick={()=>startQuickReading(3)}
+                className="min-h-12 flex-1 rounded-full bg-amber-300 px-6 py-3 font-semibold text-[#171127] hover:bg-amber-200 sm:flex-none">
+                {tr("3 карт сугалах","Draw three cards")}
+              </button>
+            </div>
+          </div>
           <label htmlFor="tarot-question" className="mb-3 block text-sm font-medium text-amber-100">
             {(locale==="en"?"Reflection question (optional)":"Эргэцүүлэх асуулт (заавал биш)")}
           </label>
@@ -211,21 +248,6 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
             <option value="career">{tr("Ажил, карьер","Work & career")}</option>
             <option value="growth">{tr("Хувь хүний хөгжил","Personal growth")}</option>
           </select>
-          <div className="mb-6 rounded-2xl border border-amber-300/35 bg-gradient-to-r from-[#31213f] to-[#20182d] p-5 sm:p-7">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">{tr("Хурдан эхлэх","Quick start")}</p>
-            <h3 className="font-serif text-2xl text-amber-50">{tr("3 картаар эхэл","Start with three cards")}</h3>
-            <p className="mt-2 max-w-lg text-sm leading-6 text-slate-300">{tr("Асуултаа бичих эсвэл алгасаад шууд картаа сугал. Нарийн тохиргоо шаардлагагүй.","Write a question or skip it. Draw a simple spread without advanced setup.")}</p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <button type="button" onClick={()=>startQuickReading(1)}
-                className="min-h-12 flex-1 rounded-full border border-amber-300/50 px-5 py-3 font-semibold text-amber-100 hover:bg-amber-300/10 sm:flex-none">
-                {tr("1 карт сугалах","Draw one card")}
-              </button>
-              <button type="button" onClick={()=>startQuickReading(3)}
-                className="min-h-12 flex-1 rounded-full bg-amber-300 px-6 py-3 font-semibold text-[#171127] hover:bg-amber-200 sm:flex-none">
-                {tr("3 карт сугалах","Draw three cards")}
-              </button>
-            </div>
-          </div>
           <h3 className="mb-4 font-serif text-lg text-amber-100">{tr("Бусад дэлгэмэлүүд","Other spreads")}</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {tarotSpreads.map((option) => (
@@ -341,6 +363,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
             <>
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
                 <span role="status" aria-live="polite">{visibleCount} / {drawn.length} {tr("карт нээсэн","cards revealed")}</span>
+                <span className="text-xs text-slate-400">{tr("Энэ tab-д үргэлжлүүлэх боломжтой","Progress stays in this tab")}</span>
                 {visibleCount < drawn.length && (
                   <button type="button" onClick={revealNext}
                     className="rounded-full bg-amber-300 px-6 py-3 font-medium text-[#161024] hover:bg-amber-200">
