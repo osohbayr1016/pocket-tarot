@@ -174,7 +174,7 @@ export default function LearnTarot(){
           </div>}
         </div>}
         <p className="my-6 text-center font-serif text-xl text-amber-100">Энэ ямар карт вэ?</p>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div role="group" aria-label="Сонгох хариултууд" className="grid gap-3 sm:grid-cols-2">
           {question.options.map(id=>{
             const item=tarotCards.find(c=>c.id===id);
             const correct=id===question.id;
