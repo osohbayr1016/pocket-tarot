@@ -73,7 +73,7 @@ export default function PreferencesPanel(){
       <label className="flex min-h-14 items-center justify-between gap-4 text-sm text-slate-100">
         <span><strong className="block text-amber-100">{en?"Include reversed cards":"Урвуу карт оруулах"}</strong>
           <span className="mt-1 block text-xs leading-6 text-slate-300">
-            Унтраавал шинэ нэг карт болон дэлгэмлийн бүх карт эгц гарна.
+            {en?"When turned off, every new card is drawn upright.":"Унтраавал шинэ нэг карт болон дэлгэмлийн бүх карт эгц гарна."}
           </span></span>
         <input type="checkbox" checked={prefs.allowReversed}
           onChange={event=>update({...prefs,allowReversed:event.target.checked})}
@@ -91,7 +91,7 @@ export default function PreferencesPanel(){
       <label className="flex min-h-14 items-center justify-between gap-4 border-t border-white/10 pt-5 text-sm text-slate-100">
         <span><strong className="block text-amber-100">{en?"Reduce motion":"Хөдөлгөөнийг багасгах"}</strong>
           <span className="mt-1 block text-xs leading-6 text-slate-300">
-            Flip, hover болон бусад анимейшнийг багасгана. Төхөөрөмжийн reduced-motion тохиргоог мөн хүндэтгэнэ.
+            {en?"Reduce flip/hover animations; system reduced-motion settings are also respected.":"Flip, hover болон бусад анимейшнийг багасгана. Төхөөрөмжийн reduced-motion тохиргоог мөн хүндэтгэнэ."}
           </span></span>
         <input type="checkbox" checked={prefs.reduceMotion}
           onChange={event=>update({...prefs,reduceMotion:event.target.checked})}
@@ -133,18 +133,18 @@ export default function PreferencesPanel(){
           className="mt-1 h-4 w-4 accent-amber-300"/>
         <span><strong>{en?"Encrypt the backup using AES-256-GCM":"Backup файлыг AES-256-GCM-ээр шифрлэх"}</strong>
           <span className="mt-1 block text-xs leading-5 text-slate-300">
-            Файл хулгайлагдсан үед агуулгыг хамгаална. Нууц үг сервер эсвэл browser storage-д хадгалагдахгүй.
+            {en?"Protect the downloaded file. Your password is not saved in browser storage or sent to a server.":"Файл хулгайлагдсан үед агуулгыг хамгаална. Нууц үг сервер эсвэл browser storage-д хадгалагдахгүй."}
           </span></span>
       </label>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <label htmlFor="backup-password" className="text-sm text-amber-100">
-          Backup нууц үг (шифрлэх болон тайлахад)
+          {en?"Backup password (encrypt and decrypt)":"Backup нууц үг (шифрлэх болон тайлахад)"}
           <input id="backup-password" type="password" value={backupPassword}
             onChange={event=>setBackupPassword(event.target.value)} autoComplete="new-password"
             className="mt-2 w-full rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-white"/>
         </label>
         <label htmlFor="backup-confirm-password" className="text-sm text-amber-100">
-          Экспортлох үед нууц үг давтах
+          {en?"Confirm password for export":"Экспортлох үед нууц үг давтах"}
           <input id="backup-confirm-password" type="password" value={passwordConfirmation}
             onChange={event=>setPasswordConfirmation(event.target.value)} autoComplete="new-password"
             className="mt-2 w-full rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-white"/>
@@ -157,14 +157,14 @@ export default function PreferencesPanel(){
       <div className="mt-5 flex flex-wrap gap-3">
         <button type="button" onClick={()=>void exportAll()}
           className="rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-[#171127]">
-          Бүх data export
+          {en?"Export all data":"Бүх data export"}
         </button>
         <input type="file" accept=".json,application/json" ref={backupInput}
           aria-label={en?"Import complete JSON backup":"Бүх data import JSON"} className="sr-only"
           onChange={event=>void importAll(event.target.files?.[0])}/>
         <button type="button" onClick={()=>backupInput.current?.click()}
           className="rounded-full border border-amber-300/40 px-5 py-3 text-sm text-amber-100">
-          Backup import
+          {en?"Import a backup":"Backup import"}
         </button>
       </div>
     </div>
