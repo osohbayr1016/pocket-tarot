@@ -442,3 +442,39 @@ test("EN navigation, zodiac, daily, dream and guidance use English offline outpu
   await page.getByRole("button",{name:"Монгол хэл рүү шилжих"}).click();
   await expect(page.getByRole("button",{name:"Зурхай",exact:true})).toBeVisible();
 });
+
+test("English Tarot spread, Celtic Cross labels, and Academy quizzes are usable",async({page})=>{
+  await page.goto("/");
+  await page.getByRole("button",{name:"Switch language to English"}).click();
+  await expect(page.getByRole("heading",{name:"Traditional Tarot"})).toBeVisible();
+  await page.getByRole("button",{name:/Past • Present • Possible direction/}).click();
+  await page.getByRole("button",{name:"Shuffle and draw"}).click();
+  for(let i=0;i<3;i++)await page.getByRole("button",{name:"Reveal next card"}).click();
+  await expect(page.getByRole("heading",{name:"Your reading"})).toBeVisible();
+  await expect(page.getByText(/Tarot is a symbolic reflection practice/)).toBeVisible();
+  await page.getByRole("button",{name:"Tarot",exact:true}).click();
+  await page.getByRole("button",{name:"Learn Tarot",exact:true}).click();
+  await expect(page.getByRole("heading",{name:"Learn Tarot"})).toBeVisible();
+  await expect(page.getByRole("heading",{name:"Seven-stage Tarot curriculum"})).toBeVisible();
+  await page.getByRole("button",{name:"Start practice"}).click();
+  const answers=page.getByRole("group",{name:"Answer choices"}).getByRole("button");
+  await expect(answers).toHaveCount(4);
+  await answers.first().click();
+  await expect(page.getByRole("button",{name:"Next card"})).toBeVisible();
+});
+test("English Moon calendar and natal chart show translated astronomy labels",async({page})=>{
+  await page.goto("/");
+  await page.getByRole("button",{name:"Switch language to English"}).click();
+  await page.getByRole("button",{name:"Astrology",exact:true}).click();
+  await page.getByRole("button",{name:"Moon calendar",exact:true}).click();
+  await expect(page.getByRole("heading",{name:"Moon phase calendar"})).toBeVisible();
+  await expect(page.getByLabel("Daily Moon phase calendar")).toBeVisible();
+  await page.getByRole("button",{name:"Natal chart",exact:true}).click();
+  await expect(page.getByRole("heading",{name:"Natal chart"})).toBeVisible();
+  await page.locator("#natal-city").selectOption("ulaanbaatar");
+  await page.locator("#natal-date").fill("2024-11-01");
+  await page.locator("#natal-time").fill("10:00");
+  await page.getByRole("button",{name:"Calculate birth chart"}).click();
+  await expect(page.getByRole("heading",{name:"Planetary positions"})).toBeVisible();
+  await expect(page.getByRole("heading",{name:"Natal versus planetary transits"})).toBeVisible();
+});
