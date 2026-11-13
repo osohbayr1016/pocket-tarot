@@ -1,4 +1,4 @@
-import { makeCustomSpread } from "./customSpread";
+import { makeCustomSpread } from "./customSpread.ts";
 import type { TarotSpread } from "../data/tarotSpreads";
 
 export interface SavedSpread {
