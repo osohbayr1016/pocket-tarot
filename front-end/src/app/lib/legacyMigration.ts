@@ -29,7 +29,9 @@ export function convertLegacyReadings(raw:unknown):SavedReading[]{
     if(!Number.isInteger(cardId)||cardId<0||cardId>=tarotCards.length)
       throw new Error((index+1)+"-р мөрийн Tarot card ID буруу.");
     const oldDate=data.readingDate||data.createdAt||data.date;
-    const date=typeof oldDate==="string"?oldDate:new Date(oldDate as number).toISOString();
+    if(typeof oldDate!=="string"&&typeof oldDate!=="number")
+      throw new Error("Хуучин уншилтын огноо байхгүй.");
+    const date=new Date(oldDate).toISOString();
     if(!Number.isFinite(Date.parse(date)))throw new Error("Legacy уншилтын огноо буруу.");
     const oldId=typeof data.id==="string"||typeof data.id==="number"?String(data.id):
       typeof data._id==="string"?data._id:String(index);
