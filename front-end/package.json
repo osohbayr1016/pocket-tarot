@@ -12,7 +12,8 @@
     "prebuild": "npm run assets:sync && node scripts/version-sw.mjs",
     "predev": "npm run assets:sync",
     "typecheck": "tsc --noEmit",
-    "test:legacy": "jest --runInBand"
+    "test:legacy": "jest --runInBand",
+    "postbuild": "node scripts/manifest-sw.mjs"
   },
   "dependencies": {
     "astronomy-engine": "2.1.19",
