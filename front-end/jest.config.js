@@ -1,6 +1,7 @@
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "jsdom",
+  testPathIgnorePatterns: ["<rootDir>/e2e/"],
   transform: {
     "^.+\\.(ts|tsx)$": ["ts-jest", {
       tsconfig: { jsx: "react-jsx", module: "commonjs", esModuleInterop: true },
