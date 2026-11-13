@@ -197,3 +197,25 @@ test("reading preferences persist and upright-only card draw respects setting",a
   await expect(page.getByLabel("Урвуу карт оруулах")).not.toBeChecked();
   await expect(page.locator("#back-style")).toHaveValue("moon");
 });
+
+test("legacy account JSON can be imported locally without a backend request",async({page})=>{
+  const external=[];
+  page.on("request",req=>{
+    if(req.url().includes("/api/"))external.push(req.url());
+  });
+  await page.goto("/");
+  await openView(page,"Миний түүх");
+  page.on("dialog",dialog=>void dialog.accept());
+  const payload={readings:[{
+    id:"old17",cardId:6,cardName:"The Lovers",cardMeaning:"Хуучин картын тайлал",
+    question:"Миний хуучин асуулт",notes:"Өмнөх тэмдэглэл",isFavorite:true,
+    readingDate:"2024-05-02T13:40:00.000Z"
+  }]};
+  await page.locator('input[aria-label="Хуучин account export JSON"]').setInputFiles({
+    name:"legacy.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(payload))
+  });
+  await expect(page.getByText(/1 хуучин уншилт импортлогдлоо/)).toBeVisible();
+  await expect(page.getByText("Миний хуучин асуулт")).toBeVisible();
+  await expect(page.getByText("Нийт уншилт")).toBeVisible();
+  expect(external).toEqual([]);
+});
