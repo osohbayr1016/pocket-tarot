@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { makeCustomSpread } from "../src/app/lib/customSpread.ts";
 import { createContextualReading, detectReadingTopic } from "../src/app/lib/readingIntelligence.ts";
 import { tarotCards } from "../src/app/data/tarotCards.ts";
 import { tarotSpreads } from "../src/app/data/tarotSpreads.ts";
@@ -70,4 +71,17 @@ test("ascendant and planetary aspects produce bounded geometry",()=>{
   ]);
   assert.ok(aspects.some(item=>item.type==="Квадрат"));
   assert.ok(aspects.some(item=>item.type==="Эсрэгцэл"));
+});
+
+test("custom spreads preserve 1–12 positions, labels and validation",()=>{
+  const custom=makeCustomSpread(4,["Одоо","Боломж","  Саад  ",""]); 
+  assert.equal(custom.cardCount,4);
+  assert.deepEqual(custom.positions.map(p=>p.position),[1,2,3,4]);
+  assert.equal(custom.positions[2].name,"Саад");
+  assert.equal(custom.positions[3].name,"4-р карт");
+  const reading=drawSpread(tarotCards,custom,()=>0);
+  assert.equal(reading.length,4);
+  assert.equal(new Set(reading.map(item=>item.card.id)).size,4);
+  assert.throws(()=>makeCustomSpread(13,[]),RangeError);
+  assert.throws(()=>makeCustomSpread(0,[]),RangeError);
 });
