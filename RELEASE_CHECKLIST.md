@@ -1,6 +1,6 @@
 # Pocket Tarot — Release checklist
 
-Updated: 2026-11-13 (bilingual frontend, IndexedDB migration reliability and complete backup v4). Target branch: `feat/offline-tarot-foundation`.
+Updated: 2026-11-13 (bilingual frontend, IndexedDB migration reliability and complete backup v4). Target branch: `main` (Pocket Tarot v2 PR #1 merged at `2630a6366f8aaaa50b57f2d9b65abac46765ed80`; code changes continue under CI).
 
 **Do not describe this release as “100% bug-free”, “100% accurate forecasts”, or “professionally verified astrology.”** These cannot be established by a CI run.
 
@@ -15,7 +15,8 @@ Updated: 2026-11-13 (bilingual frontend, IndexedDB migration reliability and com
 - [x] TypeScript and production build checks
 - [x] Linting checks
 - [x] Playwright Chromium/Firefox/WebKit projects including desktop journeys, local-time astrology, study progress, journal backup, lunar calendar and offline reload on passing commits
-- [ ] **LATEST HEAD** must pass security/unit/lint/build and Chromium/Firefox/WebKit checks after the last commit. Earlier green runs do not authorize a merge.
+- [x] PR #1 source HEAD (`8e8e775`) passed security/unit/lint/build and 101 browser E2E checks (8 skipped).
+- [ ] **CURRENT DEPLOYABLE CODE SHA** must pass security/unit/lint/build and Chromium/Firefox/WebKit tests. Merging code does not complete production authorization.
 
 ## P0 security and operations
 
@@ -83,4 +84,4 @@ Updated: 2026-11-13 (bilingual frontend, IndexedDB migration reliability and com
 
 ## Release decision
 
-Merge and production rollout should wait until newest GitHub Actions result is green, credential rotation is addressed, and manual smoke tests have been documented. Algorithmic calculations can be tested; spiritual/predictive interpretations cannot be scientifically certified.
+Pocket Tarot v2 code is merged into `main` by explicit owner request. **Production rollout still must wait** until current-code CI is green, credentials are rotated, old-user migration is verified, commercial artwork rights and physical-device QA are approved, and an approved preview has passed smoke/rollback tests. GitHub Actions workflow `Pocket Tarot / production promotion gate` records these owner self-attestations without deploying. Algorithmic calculations can be tested; spiritual/predictive interpretations cannot be scientifically certified.

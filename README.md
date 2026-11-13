@@ -65,7 +65,7 @@ The old `back-end/` routes are intentionally **not required by the frontend**; c
 
 ## Production checklist
 
-See [RELEASE_RUNBOOK.md](RELEASE_RUNBOOK.md) for release/rollback steps, [ARTWORK_PROVENANCE.md](ARTWORK_PROVENANCE.md) for image rights checks, and [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for tests still required before merging to `main` and deploying.
+See [RELEASE_RUNBOOK.md](RELEASE_RUNBOOK.md) for release/rollback steps, [ARTWORK_PROVENANCE.md](ARTWORK_PROVENANCE.md) for image rights checks, and [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for tests and owner sign-offs required before production promotion.
 
 ## Project map
 
