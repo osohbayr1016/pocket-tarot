@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import {
-  loadReadings, deleteReading, clearReadings, exportReadings, importReadings, updateReadingNotes,
+  loadReadings, deleteReading, clearReadings, exportReadings, importReadings, updateReadingNotes, setReadingFavorite, HISTORY_KEY,
   type SavedReading
 } from "../lib/readingHistory";
 import { tarotCards } from "../data/tarotCards";
@@ -17,23 +17,28 @@ function saveAsFile(content:string,name:string,mime:string){
 export default function ReadingHistory(){
   const [items,setItems]=useState<SavedReading[]>([]);
   const [selected,setSelected]=useState<string|null>(null);
+  const [search,setSearch]=useState("");
+  const [favoritesOnly,setFavoritesOnly]=useState(false);
   const [draftNotes,setDraftNotes]=useState("");
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
   const fileRef=useRef<HTMLInputElement>(null);
   useEffect(()=>{
     // Read device-local storage after hydration; never read it during SSR.
-    const frame=requestAnimationFrame(()=>setItems(loadReadings()));
+    const frame=requestAnimationFrame(()=>{
+      try{setItems(loadReadings());}
+      catch(cause){setError(cause instanceof Error?cause.message:"Түүхийг уншиж чадсангүй.");}
+    });
     return ()=>cancelAnimationFrame(frame);
   },[]);
   const onDelete=(id:string)=>{
     if(!window.confirm("Энэ уншилтыг бүр мөсөн арилгах уу?"))return;
-    try{setItems(deleteReading(id));setSelected(null);setMessage("Уншилт устлаа.");}
+    try{setItems(deleteReading(id));setSelected(null);setError("");setMessage("Уншилт устлаа.");}
     catch{setError("Устгаж чадсангүй.");}
   };
   const clear=()=>{
     if(!window.confirm("Энэ төхөөрөмж дээрх БҮХ уншилтыг арилгах уу?"))return;
-    try{clearReadings();setItems([]);setSelected(null);setMessage("Түүхийг арилгалаа.");}
+    try{clearReadings();setItems([]);setSelected(null);setError("");setMessage("Түүхийг арилгалаа.");}
     catch{setError("Түүх арилгахад алдаа гарлаа.");}
   };
   const readImport=async(file:File|undefined)=>{
@@ -45,6 +50,17 @@ export default function ReadingHistory(){
     if(fileRef.current)fileRef.current.value="";
   };
   const active=items.find(item=>item.id===selected);
+  const searched=search.trim().toLocaleLowerCase();
+  const visible=items.filter(item=>{
+    if(favoritesOnly&&!item.favorite)return false;
+    if(!searched)return true;
+    const cardNames=item.cards.flatMap(entry=>{
+      const card=tarotCards.find(c=>c.id===entry.id);
+      return card?[card.name,card.englishName]:[];
+    }).join(" ");
+    return [item.spread,item.question,item.notes,cardNames,item.date]
+      .join(" ").toLocaleLowerCase().includes(searched);
+  });
   return (
     <section className="mx-auto max-w-4xl px-3 pb-20">
       <header className="mb-9 text-center">
@@ -56,7 +72,10 @@ export default function ReadingHistory(){
         </p>
       </header>
       <div className="mb-8 flex flex-wrap justify-center gap-3">
-        <button type="button" onClick={()=>saveAsFile(exportReadings(),"pocket-tarot-readings.json","application/json")}
+        <button type="button" onClick={()=>{
+          try{saveAsFile(exportReadings(),"pocket-tarot-readings.json","application/json");setError("");}
+          catch(cause){setError(cause instanceof Error?cause.message:"Export алдаа гарлаа.");}
+        }}
           className="rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200">
           JSON export
         </button>
@@ -66,12 +85,33 @@ export default function ReadingHistory(){
           className="rounded-full border border-amber-300/30 px-5 py-3 text-sm text-amber-100 hover:border-amber-300">
           JSON import
         </button>
-        <button type="button" disabled={!items.length} onClick={clear}
+        <button type="button" disabled={!items.length&&!error} onClick={clear}
           className="rounded-full border border-red-300/40 px-5 py-3 text-sm text-red-200 hover:border-red-300">
           Бүгдийг арилгах
         </button>
       </div>
       {error&&<p role="alert" className="my-3 text-center text-sm text-red-300">{error}</p>}
+      {error&&<button type="button" onClick={()=>{
+        try{
+          const raw=localStorage.getItem(HISTORY_KEY);
+          if(!raw)throw new Error("Хадгалсан мэдээлэл байхгүй байна.");
+          saveAsFile(raw,"pocket-tarot-recovery-raw.json","application/json");
+        }catch(cause){setMessage(cause instanceof Error?cause.message:"Raw backup үүсгэж чадсангүй.");}
+      }} className="mb-4 rounded-full border border-amber-300/30 px-5 py-2 text-sm text-amber-100">
+        Өмнө нь raw backup татах
+      </button>}
+      <div className="mb-7 flex flex-col items-start justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center">
+        <label className="w-full max-w-md text-sm text-amber-100">
+          Уншилт хайх
+          <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
+            placeholder="Асуулт, карт, тэмдэглэл, огноо..."
+            className="mt-2 w-full rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-white"/>
+        </label>
+        <label className="flex min-h-11 items-center gap-2 text-sm text-slate-200">
+          <input type="checkbox" checked={favoritesOnly} onChange={event=>setFavoritesOnly(event.target.checked)}/>
+          Зөвхөн дуртай уншилт
+        </label>
+      </div>
       {message&&<p role="status" className="my-3 text-center text-sm text-emerald-200">{message}</p>}
       {!items.length&&(
         <div className="rounded-2xl border border-white/10 bg-white/5 px-6 py-14 text-center">
@@ -79,8 +119,9 @@ export default function ReadingHistory(){
           <p className="mt-3 text-sm text-slate-300">Таро дэлгэмлээс карт уншиж, тэмдэглэлээ хадгалаарай.</p>
         </div>
       )}
+      {items.length>0&&visible.length===0&&<p className="mb-4 text-center text-slate-300">Шүүлтүүрт тохирох уншилт олдсонгүй.</p>}
       <div className="space-y-3">
-        {items.map(item=>(
+        {visible.map(item=>(
           <article key={item.id} className="rounded-xl border border-white/10 bg-[#211a34] p-4 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -89,6 +130,14 @@ export default function ReadingHistory(){
                 {item.question&&<p className="mt-3 text-sm text-slate-200">{item.question}</p>}
               </div>
               <div className="flex flex-wrap gap-2">
+                <button type="button" aria-pressed={Boolean(item.favorite)}
+                  aria-label={item.favorite?"Дуртайгаас хасах":"Дуртайд нэмэх"}
+                  onClick={()=>{
+                    try{setItems(setReadingFavorite(item.id,!item.favorite));setError("");}
+                    catch(cause){setError(cause instanceof Error?cause.message:"Хадгалж чадсангүй.");}
+                  }} className="rounded-full border border-amber-300/30 px-4 py-2 text-sm text-amber-100">
+                  {item.favorite?"★":"☆"}
+                </button>
                 <button type="button" aria-expanded={selected===item.id} onClick={()=>{ const next=selected===item.id?null:item.id;setSelected(next);setDraftNotes(next?item.notes:""); }}
                   className="rounded-full border border-amber-300/40 px-4 py-2 text-sm text-amber-100 hover:border-amber-300">
                   {selected===item.id?"Хураах":"Дэлгэрэнгүй"}
