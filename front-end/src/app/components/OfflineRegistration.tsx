@@ -1,10 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
+import {getReadingPreferences,applyReadingPreferences} from "../lib/readingPreferences";
 
 /** Register update-aware offline worker only in production. */
 export default function OfflineRegistration() {
   const [updateReady,setUpdateReady]=useState(false);
   useEffect(()=>{
+    applyReadingPreferences(getReadingPreferences());
     if(process.env.NODE_ENV!=="production"||!("serviceWorker" in navigator))return;
     const hadWorker=!!navigator.serviceWorker.controller;
     const onControllerChange=()=>{
