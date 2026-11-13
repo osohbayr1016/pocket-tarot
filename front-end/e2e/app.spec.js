@@ -395,3 +395,30 @@ test("natal calculation exposes offline transit positions for selected date",asy
   await expect(page.getByText(/Нарны цаг: 2024-07-01T12:00:00.000Z/)).toBeVisible();
   await expect(page.getByRole("region",{name:"Натал ба транзитын харьцуулалт"}).locator("table tbody tr")).toHaveCount(10);
 });
+
+test("legacy journal migrates 85 items atomically, and later notes survive reload",async({page})=>{
+  const historical=Array.from({length:85},(_,index)=>({
+    id:"legacy-seeded-"+String(index).padStart(3,"0"),
+    date:new Date(Date.UTC(2024,4,1,12,index%60)).toISOString(),
+    spread:"Migration fixture",question:"Question "+index,
+    reading:"Local reading fixture",notes:"Original saved note "+index,
+    favorite:index===0,cards:[{id:index%78,reversed:false,position:1}]
+  }));
+  await page.addInitScript(({records})=>{
+    localStorage.setItem("pocket-tarot-offline-readings-v1",JSON.stringify(records));
+  },{records:historical});
+  await page.goto("/?view=history");
+  await expect(page.getByText("85", {exact:true})).toBeVisible();
+  await expect(page.getByText(/1 \/ 5 хуудас/)).toBeVisible();
+  await page.getByRole("button",{name:"Дэлгэрэнгүй"}).first().click();
+  const field=page.getByRole("textbox",{name:"Тэмдэглэл засах"});
+  await field.fill("Migration safe edit that survives reload");
+  await page.getByRole("button",{name:"Тэмдэглэл хадгалах"}).click();
+  await expect(page.getByText("Тэмдэглэл хадгалагдлаа.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("85",{exact:true})).toBeVisible();
+  await page.getByRole("button",{name:"Дэлгэрэнгүй"}).first().click();
+  await expect(page.getByRole("textbox",{name:"Тэмдэглэл засах"}))
+    .toHaveValue("Migration safe edit that survives reload");
+  await expect(page.getByText(/1 \/ 5 хуудас/)).toBeVisible();
+});
