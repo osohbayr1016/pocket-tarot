@@ -1,3 +1,4 @@
+import {calculateTransits} from "../src/app/lib/astroTransits.ts";
 import {encryptBackup,decryptBackup,isEncryptedBackup} from "../src/app/lib/encryptedBackup.ts";
 import {moonSnapshot,getMoonMonth,closestLunation,getExactMoonEvents} from "../src/app/lib/lunarCalendar.ts";
 import {reviewCard,pickStudyCard,learningStats,validateStudyProgress} from "../src/app/lib/studyProgress.ts";
@@ -284,4 +285,14 @@ test("exact new/full Moon timestamps agree with eclipse reference dates",()=>{
   assert.ok(lunar);
   assert.ok(Math.abs(Date.parse(lunar.utc)-Date.parse("2024-03-25T07:00:00Z"))<20*60_000);
   assert.ok(lunar.local.length>5);
+});
+
+test("offline planetary transits use bounded longitude and natal aspect angles",()=>{
+  const birth=computeNatalChart({birthDate:"2000-01-01",birthTime:"12:00",utcOffsetHours:0,
+    latitude:51.5,longitude:-0.12});
+  const report=calculateTransits(birth,new Date("2024-07-01T12:00:00Z"));
+  assert.equal(report.bodies.length,10);
+  assert.ok(report.bodies.every(body=>body.longitude>=0&&body.longitude<360));
+  assert.ok(report.aspects.every(aspect=>aspect.orb>=0&&aspect.orb<=2.5));
+  assert.equal(report.utc,"2024-07-01T12:00:00.000Z");
 });
