@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import {useLanguage} from "../lib/LanguageProvider";
+import {englishCardMeaning} from "../lib/englishTarot";
 import type { TarotCard as TarotCardType } from "../data/tarotCards";
 
 interface TarotCardProps {
@@ -17,6 +19,7 @@ export default function TarotCard({
   card, isRevealed = false, onClick, userQuestion,
   isReversed = false, size = "lg",
 }: TarotCardProps) {
+  const {locale}=useLanguage();
   const [failedImage, setFailedImage] = useState<string | null>(null);
   const imageError = failedImage === card.image;
   const widthClass = sizes[size];
@@ -59,10 +62,10 @@ export default function TarotCard({
         )}
       </div>
       <figcaption className="pt-3">
-        <h3 className="text-center text-sm font-semibold leading-snug text-amber-100">{card.name}</h3>
+        <h3 className="text-center text-sm font-semibold leading-snug text-amber-100">{locale==="en"?card.englishName:card.name}</h3>
         {userQuestion && <p className="mt-1 text-center text-xs text-slate-300">{userQuestion}</p>}
         <p className="mt-2 text-sm leading-relaxed text-slate-200">
-          {isReversed ? card.reversedMeaning : card.meaning}
+          {locale==="en"?englishCardMeaning(card,isReversed):isReversed ? card.reversedMeaning : card.meaning}
         </p>
       </figcaption>
     </figure>
