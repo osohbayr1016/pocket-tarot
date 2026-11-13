@@ -3,11 +3,13 @@ import { useEffect, useState } from "react";
 import { tarotCards } from "../data/tarotCards";
 import { secureRandomInt } from "../lib/offlineEngine";
 import {loadStudyProgress,saveStudyProgress,reviewCard,learningStats,pickStudyCard,type CardProgress} from "../lib/studyProgress";
+import {TAROT_LESSONS,lessonMetrics} from "../lib/tarotCurriculum";
 
 type Question = {id:number; options:number[]};
 type QuizPool = "major" | "minor" | "all";
-function nextQuestion(pool: QuizPool,progress:CardProgress[],lastId:number|null,dueOnly:boolean):Question|null{
-  const cards=pool==="all"?tarotCards:tarotCards.filter(card=>card.arcana===pool);
+function nextQuestion(pool: QuizPool,progress:CardProgress[],lastId:number|null,dueOnly:boolean,lessonIds?:readonly number[]):Question|null{
+  const cards=lessonIds?tarotCards.filter(c=>lessonIds.includes(c.id)):pool==="all"?tarotCards:tarotCards.filter(card=>card.arcana===pool);
+  if(cards.length<4)throw new Error("Дасгалд дор хаяж 4 карт байх ёстой.");
   const chosen=pickStudyCard(cards.map(c=>c.id),progress,lastId,secureRandomInt,Date.now(),dueOnly);
   if(chosen===null)return null;
   const correct=cards.find(c=>c.id===chosen);
@@ -30,13 +32,16 @@ export default function LearnTarot(){
   const [attempts,setAttempts]=useState(0);
   const [error,setError]=useState("");
   const [pool,setPool]=useState<QuizPool>("major");
+  const [lessonId,setLessonId]=useState<string|null>(null);
   const [dueOnly,setDueOnly]=useState(false);
   const [progress,setProgress]=useState<CardProgress[]>([]);
   const [priorCard,setPriorCard]=useState<number|null>(null);
   const [isReady,setIsReady]=useState(false);
   const [now,setNow]=useState(0);
   const stats=learningStats(progress,now);
-  const poolIds=(pool==="all"?tarotCards:tarotCards.filter(card=>card.arcana===pool)).map(c=>c.id);
+  const activeLesson=TAROT_LESSONS.find(lesson=>lesson.id===lessonId);
+  const poolIds=activeLesson?activeLesson.cardIds:
+    (pool==="all"?tarotCards:tarotCards.filter(card=>card.arcana===pool)).map(c=>c.id);
   const dueInPool=progress.filter(p=>poolIds.includes(p.id)&&p.dueAt<=now).length;
   useEffect(()=>{
     const frame=requestAnimationFrame(()=>{
@@ -56,7 +61,7 @@ export default function LearnTarot(){
   },[]);
   const begin=()=>{
     try{
-      const next=nextQuestion(pool,progress,priorCard,dueOnly);
+      const next=nextQuestion(pool,progress,priorCard,dueOnly,activeLesson?.cardIds);
       setQuestion(next);setAnswer(null);setError("");
       if(next)setPriorCard(next.id);
     }catch(cause){setError(cause instanceof Error?cause.message:"Санамсаргүй карт сонгох боломжгүй байна.");}
@@ -85,6 +90,38 @@ export default function LearnTarot(){
         <div><span className="block text-lg font-semibold text-amber-100">{stats.mastered}</span><span className="text-xs text-slate-300">Тогтсон карт</span></div>
       </div>
     </header>
+    <section aria-label="Таро сургалтын шаталсан хөтөлбөр" className="mb-8 rounded-2xl border border-amber-300/20 bg-[#211a34] p-5 sm:p-7">
+      <h2 className="font-serif text-2xl text-amber-100">7 шаттай сургалтын замнал</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-300">
+        Эхлээд Их Арканын бэлгэдлийг таньж, дараа нь дөрвөн бүлэг болон бүх 78 картад шилжинэ.
+        Карт бүрт хоёр удаа дараалан зөв хариулбал тухайн хичээлийн ахиц нэмэгдэнэ.
+      </p>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        {TAROT_LESSONS.map(lesson=>{
+          const metrics=lessonMetrics(lesson,progress);
+          const active=lessonId===lesson.id;
+          return <article key={lesson.id} className={"rounded-xl border p-4 "+
+            (active?"border-amber-300/65 bg-amber-300/10":"border-white/10 bg-white/5")}>
+            <h3 className="font-semibold text-amber-100">{lesson.title}</h3>
+            <p className="mt-1 text-xs leading-5 text-slate-300">{lesson.description}</p>
+            <div role="progressbar" aria-label={lesson.title+" ахиц"} aria-valuemin={0} aria-valuemax={100}
+              aria-valuenow={metrics.completion}
+              className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+              <div className="h-full rounded-full bg-amber-300" style={{width:metrics.completion+"%"}}/>
+            </div>
+            <p className="mt-2 text-xs text-slate-300">
+              {metrics.started}/{metrics.total} үзсэн · {metrics.confident}/{metrics.total} танил карт
+            </p>
+            <button type="button" aria-pressed={active} onClick={()=>{
+              setLessonId(lesson.id);setDueOnly(false);
+              setQuestion(null);setAnswer(null);setScore(0);setAttempts(0);
+            }} className="mt-3 min-h-11 rounded-full border border-amber-300/40 px-4 py-2 text-xs text-amber-100">
+              {active?"Сонгосон хичээл":"Энэ хичээлийг сурах"}
+            </button>
+          </article>;
+        })}
+      </div>
+    </section>
     <fieldset className="mx-auto mb-7 max-w-xl">
       <legend className="mb-3 text-sm text-amber-100">Суралцах картын хүрээ</legend>
       <div className="flex flex-wrap justify-center gap-2">
@@ -93,8 +130,8 @@ export default function LearnTarot(){
           ["minor","Бага Аркан (56)"],
           ["all","Бүгд (78)"]
         ] as const).map(([value,label])=>(
-          <button type="button" key={value} aria-pressed={pool===value}
-            onClick={()=>{setPool(value);setQuestion(null);setAnswer(null);setScore(0);setAttempts(0);}}
+          <button type="button" key={value} aria-pressed={pool===value&&lessonId===null}
+            onClick={()=>{setPool(value);setLessonId(null);setQuestion(null);setAnswer(null);setScore(0);setAttempts(0);}}
             className={"rounded-full border px-4 py-2 text-sm transition-colors "+
               (pool===value?"border-amber-300 bg-amber-300 text-[#171127]":"border-white/25 text-slate-200 hover:border-amber-300/50")}>
             {label}
