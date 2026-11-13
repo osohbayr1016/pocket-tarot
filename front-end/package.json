@@ -7,11 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "jest --runInBand",
+    "test": "node --experimental-strip-types --test tests/offline.test.mjs",
     "assets:sync": "node scripts/download-rws.mjs",
     "prebuild": "npm run assets:sync",
     "predev": "npm run assets:sync",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:legacy": "jest --runInBand"
   },
   "dependencies": {
     "axios": "^1.10.0",
