@@ -38,7 +38,7 @@ export default function OfflineDeckManager(){
       void refresh().catch(()=>setError(en?"Could not read cached images.":"Cache мэдээллийг уншиж чадсангүй."));
     });
     return ()=>{cancelled.current=true;cancelAnimationFrame(frame);};
-  },[]);
+  },[en]);
   const download=async()=>{
     cancelled.current=false;
     setWorking(true);setError("");setStatus(en?"Downloading card images...":"Картын зургуудыг татаж байна...");
