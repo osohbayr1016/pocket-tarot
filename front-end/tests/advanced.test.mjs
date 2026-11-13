@@ -1,3 +1,4 @@
+import {parseCompleteBackup,BACKUP_FORMAT} from "../src/app/lib/offlineBackup.ts";
 import {calculateReadingStats} from "../src/app/lib/readingStats.ts";
 import {normalizeReadingPreferences} from "../src/app/lib/readingPreferences.ts";
 import {convertLegacyReadings} from "../src/app/lib/legacyMigration.ts";
@@ -181,4 +182,16 @@ test("reading statistics stay local and handle favorites and repeated cards",()=
   const stats=calculateReadingStats(rows,now);
   assert.deepEqual([stats.total,stats.favorites,stats.distinctCards,stats.topCardId,stats.topCardDraws,stats.last30Days],
     [2,1,2,0,2,1]);
+});
+
+test("complete offline backup validates all journal/template/preferences before replacement",()=>{
+  const valid={
+    format:BACKUP_FORMAT,version:1,exportedAt:"2024-11-01T00:00:00Z",
+    readings:[],spreads:[],preferences:{allowReversed:false,reduceMotion:true,cardBack:"moon"}
+  };
+  assert.equal(parseCompleteBackup(JSON.stringify(valid)).preferences.cardBack,"moon");
+  assert.throws(()=>parseCompleteBackup(JSON.stringify({...valid,version:99})),/формат/);
+  assert.throws(()=>parseCompleteBackup(JSON.stringify({...valid,preferences:{cardBack:"bad"}})),/preferences/);
+  assert.throws(()=>parseCompleteBackup(JSON.stringify({...valid,readings:[{}]})),/уншилт/);
+  assert.throws(()=>parseCompleteBackup(JSON.stringify({...valid,spreads:[{}]})),/дэлгэмэл|бүтэц/);
 });
