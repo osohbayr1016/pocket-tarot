@@ -24,7 +24,7 @@ const sections: {id: Section; label: string}[] = [
 
 export default function Home() {
   const [section,setSection] = useState<Section>("reading");
-  const [selected,setSelected] = useState<TarotCard|null>(null);
+  const [selected,setSelected] = useState<{ card: TarotCard; isReversed: boolean }|null>(null);
   const [error,setError] = useState("");
   const [query,setQuery] = useState("");
   const [arcana,setArcana] = useState<"all"|"major"|"minor">("all");
@@ -37,7 +37,7 @@ export default function Home() {
   const drawSingleCard = () => {
     try {
       const index = secureRandomInt(tarotCards.length);
-      setSelected(tarotCards[index]);
+      setSelected({card:tarotCards[index],isReversed:secureRandomInt(2)===0});
       setError("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Карт сугалж чадсангүй.");
@@ -93,7 +93,7 @@ export default function Home() {
                   Санамсаргүй нэг карт сугалах
                 </button>
               </div>
-            ) : <div className="mt-10"><CardReading card={selected} onReset={()=>setSelected(null)}/></div>}
+            ) : <div className="mt-10"><CardReading card={selected.card} isReversed={selected.isReversed} onReset={()=>setSelected(null)}/></div>}
             {error&&<p role="alert" className="mt-5 text-sm text-red-300">{error}</p>}
           </section>
         )}
