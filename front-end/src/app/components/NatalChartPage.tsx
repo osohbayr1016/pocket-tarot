@@ -89,7 +89,7 @@ export default function NatalChartPage(){
         <div className="space-y-4">
           <div>
             <label htmlFor="natal-city" className="mb-2 block text-sm text-amber-100">
-              Төрсөн хот / цагийн бүс
+              {(locale==="en"?"Birth city / time zone":"Төрсөн хот / цагийн бүс")}
             </label>
             <select id="natal-city" value={city} onChange={event=>{
               const id=event.target.value;
@@ -126,7 +126,7 @@ export default function NatalChartPage(){
         </p>
         <button type="button" onClick={calculate}
           className="mt-5 w-full rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200">
-          Тэнгэрийн зураг тооцоолох
+          {(locale==="en"?"Calculate birth chart":"Тэнгэрийн зураг тооцоолох")}
         </button>
         {error&&<p role="alert" className="mt-4 text-sm text-red-300">{error}</p>}
       </div>
