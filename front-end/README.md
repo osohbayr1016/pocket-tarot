@@ -10,7 +10,7 @@ The current frontend is an **offline-first Next.js 16 + React 19** application. 
 - **Private journal**: IndexedDB archival storage, legacy localStorage migration, 20-record pages, search, tags, moods, favorites, full export/import, print/PDF, PNG, privacy-first Instagram story/square exports.
 - **Offline astronomy**: 10-body tropical natal chart, Whole Sign houses, simple aspects, transit comparisons, IANA city time zones and calendar with computed new/full Moon instants.
 - **Reflection**: optional daily card, deterministic daily themes, dream-symbol keywords (Mongolian + selected Latin Mongolian), reflection prompts.
-- **Privacy and personalization**: encrypted portable JSON backups (AES-256-GCM; passphrase not stored), optional feedback sounds/haptics, reduced-motion support, themes, partial EN localization and PWA installation guidance.
+- **Privacy and personalization**: encrypted portable **v4** JSON backups (AES-256-GCM; passphrase not stored, includes private drafts and locale; reads v1–v3), optional feedback sounds/haptics, reduced-motion support, themes, bilingual MN/EN primary screens and PWA installation guidance.
 
 Tarot and astrology **do not scientifically predict events**. Astro coordinate calculations are astronomical geometry, not an assurance about a person's life.
 
@@ -38,7 +38,7 @@ The GitHub Actions workflows also validate legacy API lockdown and scan tracked 
 
 ## Private data
 
-User reading history is primarily saved in IndexedDB; old localStorage journal records are copied on initial migration without deleting originals. Learning progress and preferences remain in localStorage. These stores are **not encrypted at rest**. Export encrypted portable backups and keep the passphrase safe. Browser cleanup or storage eviction can destroy local data, so export regularly.
+User reading history is primarily saved in IndexedDB; old localStorage journal records are copied via one atomic, idempotent migration transaction without deleting originals. Learning progress and preferences remain in localStorage. These stores are **not encrypted at rest**. Export encrypted portable backups and keep the passphrase safe. Browser cleanup or storage eviction can destroy local data, so export regularly.
 
 An encrypted backup cannot be restored without its passphrase. Plaintext JSON export is still optionally available for older workflows. Neither backup workflow uses a server.
 
@@ -48,10 +48,10 @@ The 78 RWS images came from [mixvlad/TarotCards](https://github.com/mixvlad/Taro
 
 ## Current limitations
 
-- Mongolian-to-English UI translation is **partial**; Tarot card meanings have independent English texts but some astronomy, journal and help sections remain in Mongolian.
+- MN/EN translations cover primary Tarot, Academy, daily, dream, journal, settings, PWA and astrology screens. Some rarely reached error, help and legacy-content strings can remain Mongolian; native-language editorial review is pending.
 - Ephemeris and historical local time must be independently checked, especially unusual DST histories. Only Whole Sign houses are implemented.
 - RWS art/licensing, translations, and spiritual interpretations have not received full external domain/legal review.
-- Automated Chromium/Firefox/WebKit runs do not replace real iPhone/Android Safari/Chrome, screen reader, low-memory, service worker upgrade or offline eviction QA.
+- Automated Chromium/Firefox/WebKit and mobile emulator runs do not replace real iPhone/Android Safari/Chrome, screen reader, low-memory, service worker upgrade or offline eviction QA.
 - Main-to-production rollout and credential rotation are owner-controlled and must not be assumed completed.
 
 See [../RELEASE_CHECKLIST.md](../RELEASE_CHECKLIST.md), [../SECURITY.md](../SECURITY.md) and [../README.md](../README.md).
