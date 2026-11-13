@@ -251,3 +251,29 @@ test("complete offline backup can export and restore settings without network ca
   await expect(page.getByLabel("Урвуу карт оруулах")).not.toBeChecked();
   await expect(page.locator("#back-style")).toHaveValue("moon");
 });
+
+test("spaced-repetition quiz persists study progress and complete backup v2",async({page})=>{
+  await page.goto("/");
+  await openView(page,"Таро сурах");
+  await page.getByRole("button",{name:"Дасгал эхлүүлэх"}).click();
+  await expect(page.getByText("Энэ ямар карт вэ?")).toBeVisible();
+  const candidates=page.locator("section .grid button");
+  await expect(candidates).toHaveCount(4);
+  await candidates.first().click();
+  await expect(page.getByText(/Энэ удаагийн оноо: [01] \/ 1/)).toBeVisible();
+  const progress=await page.evaluate(()=>JSON.parse(localStorage.getItem("pocket-tarot-study-v1")||"[]"));
+  expect(progress).toHaveLength(1);
+  expect(progress[0].seen).toBe(1);
+  await page.reload();
+  await openView(page,"Таро сурах");
+  await expect(page.getByText("1/78")).toBeVisible();
+  await openView(page,"Хувийн тохиргоо");
+  const downloadPromise=page.waitForEvent("download");
+  await page.getByRole("button",{name:"Бүх data export"}).click();
+  const download=await downloadPromise;
+  const file=await download.path();
+  const buffer=require("node:fs").readFileSync(file,"utf8");
+  const backup=JSON.parse(buffer);
+  expect(backup.version).toBe(2);
+  expect(backup.study).toHaveLength(1);
+});
