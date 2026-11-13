@@ -1,4 +1,4 @@
-import { createContextualReading, type ReadingTopic } from "./readingIntelligence";
+import { createContextualReading, type ReadingTopic } from "./readingIntelligence.ts";
 import type { TarotCard } from "../data/tarotCards";
 import type { TarotSpread } from "../data/tarotSpreads";
 
