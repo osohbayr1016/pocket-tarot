@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
-import {createCompleteBackupV3,restoreCompleteBackupV3} from "../lib/offlineBackup";
+import {createCompleteBackupV4,restoreCompleteBackupV3} from "../lib/offlineBackup";
 import {encryptBackup,decryptBackup,isEncryptedBackup} from "../lib/encryptedBackup";
 import {useLanguage} from "../lib/LanguageProvider";
 import {
@@ -9,7 +9,7 @@ import {
 } from "../lib/readingPreferences";
 
 export default function PreferencesPanel(){
-  const {locale}=useLanguage();
+  const {locale,setLocale}=useLanguage();
   const en=locale==="en";
   const [prefs,setPrefs]=useState<ReadingPreferences>(defaultReadingPreferences);
   const backupInput=useRef<HTMLInputElement>(null);
@@ -35,7 +35,7 @@ export default function PreferencesPanel(){
     try{
       if(encryptFile&&(backupPassword.length<12||backupPassword!==passwordConfirmation))
         throw new Error(en?"Use a password of 12+ characters and confirm it exactly.":"Нууц үг 12+ тэмдэгттэй бөгөөд давтан оруулсан нууц үгтэй ижил байх ёстой.");
-      const raw=await createCompleteBackupV3();
+      const raw=await createCompleteBackupV4();
       const json=encryptFile?await encryptBackup(raw,backupPassword):raw;
       const blob=new Blob([json],{type:"application/json"});
       const href=URL.createObjectURL(blob),link=document.createElement("a");
@@ -50,7 +50,7 @@ export default function PreferencesPanel(){
   const importAll=async(file:File|undefined)=>{
     if(!file)return;
     if(backupInput.current)backupInput.current.value="";
-    if(!window.confirm(en?"This will REPLACE your journal, saved spreads, study progress, and preferences. Have you exported your current data?":"Энэ төхөөрөмж дээрх journal, custom spread, сургалтын ахиц болон тохиргоо бүгд шинэ backup-ээр СОЛИГДОНО. Одоогийн data-г эхлээд export хийсэн үү?"))return;
+    if(!window.confirm(en?"This will REPLACE your journal, saved spreads, unsaved drafts, study progress and preferences. Have you exported your current data?":"Энэ төхөөрөмж дээрх journal, custom spread, түр draft, сургалтын ахиц болон тохиргоо бүгд шинэ backup-ээр СОЛИГДОНО. Одоогийн data-г эхлээд export хийсэн үү?"))return;
     try{
       if(file.size>20_000_000)throw new Error("Backup файл 20 MB-ээс бага байх ёстой.");
       const raw=await file.text();
@@ -58,6 +58,7 @@ export default function PreferencesPanel(){
       const restored=await restoreCompleteBackupV3(text);
       setBackupPassword("");setPasswordConfirmation("");
       setPrefs(restored.preferences);
+      if(restored.locale)setLocale(restored.locale);
       setMessage(en?`${restored.readings.length} readings, ${restored.spreads.length} spreads, ${restored.study.length} studied cards and preferences restored. Open the other sections to refresh.`:
         restored.readings.length+" уншилт, "+restored.spreads.length+" дэлгэмэл, "+restored.study.length+" сурсан карт болон тохиргоо сэргээгдлээ. Бусад хэсэг рүү орж шинэ мэдээллээ хараарай.");
       setError("");
@@ -125,8 +126,8 @@ export default function PreferencesPanel(){
     <div className="mt-8 rounded-2xl border border-amber-300/25 bg-[#211a34] p-6 sm:p-9">
       <h2 className="font-serif text-2xl text-amber-100">{en?"Complete data backup":"Бүх мэдээллийн backup"}</h2>
       <p className="mt-3 text-sm leading-7 text-slate-300">
-        {en?"Export your journal, favorites, saved spreads, study progress and preferences into a portable JSON file. Backup v3 includes up to 5,000 IndexedDB readings. This file contains private notes; protect it carefully.":
-        "Journal, дуртай уншилт, custom spread, Tarot сургалтын ахиц болон тохиргоогоо нэг JSON файлд экспортолж өөр төхөөрөмж рүү зөөж болно. Бүрэн backup v3 нь IndexedDB-д хадгалсан 5000 хүртэлх уншилтыг багтаана. JSON файл таны хувийн тэмдэглэлийг агуулдаг тул бусдад бүү илгээгээрэй."}
+        {en?"Export your journal, favorites, saved spreads, study progress and preferences into a portable JSON file. Backup v4 includes up to 5,000 IndexedDB readings, unsaved drafts and language preference. This file contains private notes; protect it carefully.":
+        "Journal, дуртай уншилт, custom spread, Tarot сургалтын ахиц болон тохиргоогоо нэг JSON файлд экспортолж өөр төхөөрөмж рүү зөөж болно. Бүрэн backup v4 нь IndexedDB-ийн 5000 хүртэлх уншилт, хадгалаагүй draft тэмдэглэл, хэлний сонголтыг багтаана. JSON файл таны хувийн тэмдэглэлийг агуулдаг тул бусдад бүү илгээгээрэй."}
       </p>
       <label className="mt-5 flex items-start gap-3 text-sm text-amber-100">
         <input type="checkbox" checked={encryptFile} onChange={event=>setEncryptFile(event.target.checked)}
