@@ -37,3 +37,39 @@ jobs:
         run: |
           npm run build
           test "$(find public/tarot/rws -maxdepth 1 -name '*.jpg' | wc -l)" -eq 78
+
+  browser-e2e:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: front-end/package-lock.json
+      - name: Install application
+        working-directory: front-end
+        run: npm ci --legacy-peer-deps
+      - name: Install pinned browser test runner
+        working-directory: front-end
+        run: npm install --no-save --package-lock=false --legacy-peer-deps @playwright/test@1.65.0
+      - name: Install Chromium
+        working-directory: front-end
+        run: npx playwright install --with-deps chromium
+      - name: Build application
+        working-directory: front-end
+        run: npm run build
+      - name: Run browser smoke and offline tests
+        working-directory: front-end
+        run: npx playwright test
+      - name: Upload browser report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pocket-tarot-e2e
+          path: |
+            front-end/test-results/
+            front-end/playwright-report/
+          if-no-files-found: ignore
