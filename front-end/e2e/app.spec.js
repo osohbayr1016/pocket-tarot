@@ -1,0 +1,82 @@
+const {test,expect} = require("@playwright/test");
+
+test("offline-first tarot: three-card spread, sequential reveal and history",async({page})=>{
+  const external=[];
+  page.on("request",req=>{
+    if(/onrender\.com|generativelanguage\.googleapis\.com|api\.openai\.com/.test(req.url()))external.push(req.url());
+  });
+  await page.goto("/");
+  await expect(page.getByRole("heading",{name:"Уламжлалт таро"})).toBeVisible();
+  await page.locator("button").filter({hasText:"Өнгөрсөн • Одоо • Боломжит чиглэл"}).click();
+  await page.getByRole("button",{name:/Хольж, хөзөр сугалах/}).click();
+  for(let i=0;i<3;i++){
+    await page.getByRole("button",{name:/Дараагийн картыг нээх/}).click();
+  }
+  await expect(page.getByRole("heading",{name:"Таны уншилтын тайлал"})).toBeVisible();
+  await expect(page.getByText(/Картуудын холбоо/)).toBeVisible();
+  await page.locator("#reading-notes").fill("E2E тэмдэглэл");
+  await page.getByRole("button",{name:/Төхөөрөмж дээр хадгалах/}).click();
+  await expect(page.getByText(/энэ төхөөрөмж дээр уншилтыг хадгаллаа/i)).toBeVisible();
+  await page.getByRole("button",{name:"Миний түүх"}).click();
+  await expect(page.getByRole("heading",{name:"Уншилтын түүх"})).toBeVisible();
+  await page.getByRole("button",{name:"Дэлгэрэнгүй"}).first().click();
+  await expect(page.getByText("E2E тэмдэглэл")).toBeVisible();
+  expect(external).toEqual([]);
+});
+test("all 78 local card images are discoverable",async({page})=>{
+  await page.goto("/");
+  await page.getByRole("button",{name:"78 карт"}).click();
+  await expect(page.locator("main button img[alt]")).toHaveCount(78);
+  await page.getByRole("button",{name:/The Fool/}).first().click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("button",{name:"Хаах"}).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+test("one-card draw, date zodiac and dream reflection work without API",async({page})=>{
+  await page.goto("/");
+  await page.getByRole("button",{name:"Нэг карт",exact:true}).click();
+  await page.getByRole("button",{name:"Санамсаргүй нэг карт сугалах"}).click();
+  await expect(page.getByRole("heading",{name:"Эргэцүүлэх тайлал"})).toBeVisible();
+  await page.getByRole("button",{name:"Орд",exact:true}).click();
+  await page.locator("#horoscope-birth-date").fill("2024-02-29");
+  await page.getByRole("button",{name:"Ордны тайлбар харах"}).click();
+  await expect(page.getByText(/Загас \(Ус\)/)).toBeVisible();
+  await page.getByRole("button",{name:"Зүүд",exact:true}).click();
+  await page.locator("#dream-text").fill("Би далайд сэлж байсан");
+  await page.getByRole("button",{name:"Бэлгэдлийг тайлбарлах"}).click();
+  await expect(page.getByText(/Ус нь зарим уламжлалд/)).toBeVisible();
+});
+test("natal chart computes 10 bodies, ascendant and whole-sign houses locally",async({page})=>{
+  await page.goto("/");
+  await page.getByRole("button",{name:"Төрсөн үеийн тэнгэр"}).click();
+  await page.locator("#natal-date").fill("2024-03-20");
+  await page.locator("#natal-time").fill("11:06");
+  await page.locator("#natal-offset").fill("8");
+  await page.locator("#natal-lat").fill("47.9");
+  await page.locator("#natal-lon").fill("106.9");
+  await page.getByRole("button",{name:"Тэнгэрийн зураг тооцоолох"}).click();
+  await expect(page.locator("table tbody tr")).toHaveCount(10);
+  await expect(page.getByText(/Whole Sign Houses/)).toBeVisible();
+  await expect(page.getByText(/Ascendant:/)).toBeVisible();
+});
+test("mobile navigation reaches daily card and learning mode",async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto("/");
+  await page.getByRole("button",{name:"Өдрийн карт"}).click();
+  await expect(page.getByRole("heading",{name:"Өнөөдрийн карт"})).toBeVisible();
+  await page.getByRole("button",{name:"Таро сурах"}).click();
+  await expect(page.getByRole("heading",{name:"Таро сурах"})).toBeVisible();
+  await page.getByRole("button",{name:"Дасгал эхлүүлэх"}).click();
+  await expect(page.getByText("Энэ ямар карт вэ?")).toBeVisible();
+});
+test("PWA reloads the app shell with networking disabled after first install",async({page,context})=>{
+  await page.goto("/");
+  await page.evaluate(async()=>{
+    if(!("serviceWorker" in navigator))throw new Error("PWA not supported");
+    await navigator.serviceWorker.ready;
+  });
+  await context.setOffline(true);
+  await page.reload({waitUntil:"domcontentloaded"});
+  await expect(page.getByRole("heading",{name:"Уламжлалт таро"})).toBeVisible();
+  await context.setOffline(false);
+});
