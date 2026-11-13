@@ -8,6 +8,7 @@ import { tarotSpreads, type TarotSpread } from "../data/tarotSpreads";
 import { drawSpread, interpretReading, type DrawnCard } from "../lib/offlineEngine";
 import TarotCard from "./TarotCard";
 import { makeCustomSpread } from "../lib/customSpread";
+import {getReadingPreferences} from "../lib/readingPreferences";
 import {loadSavedSpreads,saveCustomSpread,deleteCustomSpread,savedToSpread,type SavedSpread} from "../lib/savedCustomSpreads";
 
 interface Props {
@@ -60,7 +61,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
   const makeReading = () => {
     if (!spread) return;
     try {
-      const cards = drawSpread(tarotCards, spread);
+      const cards = drawSpread(tarotCards,spread,undefined,{allowReversed:getReadingPreferences().allowReversed});
       setDrawn(cards);
       setVisibleCount(0);
       setNotes("");
