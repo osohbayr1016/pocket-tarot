@@ -1,4 +1,17 @@
 const {test,expect} = require("@playwright/test");
+const groupFor={
+  "Таро дэлгэмэл":"Таро","Нэг карт":"Таро","78 карт":"Таро","Таро сурах":"Таро",
+  "Орд":"Зурхай","Төрсөн үеийн тэнгэр":"Зурхай",
+  "Өдрийн карт":"Өдөр тутам","Өдрийн санаа":"Өдөр тутам","Зүүд":"Өдөр тутам","Удирдамж":"Өдөр тутам",
+  "Миний түүх":"Тэмдэглэл","Offline карт":"Офлайн",
+};
+async function openView(page,name){
+  const group=groupFor[name];
+  if(!group)throw new Error("Unknown view: "+name);
+  await page.getByRole("button",{name:group,exact:true}).click();
+  await page.getByRole("button",{name,exact:true}).click();
+}
+
 
 test("offline-first tarot: three-card spread, sequential reveal and history",async({page})=>{
   const external=[];
@@ -17,7 +30,7 @@ test("offline-first tarot: three-card spread, sequential reveal and history",asy
   await page.locator("#reading-notes").fill("E2E тэмдэглэл");
   await page.getByRole("button",{name:/Төхөөрөмж дээр хадгалах/}).click();
   await expect(page.getByText(/энэ төхөөрөмж дээр уншилтыг хадгаллаа/i)).toBeVisible();
-  await page.getByRole("button",{name:"Миний түүх"}).click();
+  await openView(page,"Миний түүх");
   await expect(page.getByRole("heading",{name:"Уншилтын түүх"})).toBeVisible();
   await page.getByRole("button",{name:"Дэлгэрэнгүй"}).first().click();
   await expect(page.getByRole("textbox",{name:"Тэмдэглэл засах"})).toHaveValue("E2E тэмдэглэл");
@@ -28,7 +41,7 @@ test("offline-first tarot: three-card spread, sequential reveal and history",asy
 });
 test("all 78 local card images are discoverable",async({page})=>{
   await page.goto("/");
-  await page.getByRole("button",{name:"78 карт"}).click();
+  await openView(page,"78 карт");
   await expect(page.locator("main button img[alt]")).toHaveCount(78);
   await page.getByRole("button",{name:/The Fool/}).first().click();
   await expect(page.getByRole("dialog")).toBeVisible();
@@ -37,21 +50,21 @@ test("all 78 local card images are discoverable",async({page})=>{
 });
 test("one-card draw, date zodiac and dream reflection work without API",async({page})=>{
   await page.goto("/");
-  await page.getByRole("button",{name:"Нэг карт",exact:true}).click();
+  await openView(page,"Нэг карт");
   await page.getByRole("button",{name:"Санамсаргүй нэг карт сугалах"}).click();
   await expect(page.getByRole("heading",{name:"Эргэцүүлэх тайлал"})).toBeVisible();
-  await page.getByRole("button",{name:"Орд",exact:true}).click();
+  await openView(page,"Орд");
   await page.locator("#horoscope-birth-date").fill("2024-02-29");
   await page.getByRole("button",{name:"Ордны тайлбар харах"}).click();
   await expect(page.getByText(/Загас \(Ус\)/)).toBeVisible();
-  await page.getByRole("button",{name:"Зүүд",exact:true}).click();
+  await openView(page,"Зүүд");
   await page.locator("#dream-text").fill("Би далайд сэлж байсан");
   await page.getByRole("button",{name:"Бэлгэдлийг тайлбарлах"}).click();
   await expect(page.getByText(/Ус: мэдрэмж/)).toBeVisible();
 });
 test("natal chart computes 10 bodies, ascendant and whole-sign houses locally",async({page})=>{
   await page.goto("/");
-  await page.getByRole("button",{name:"Төрсөн үеийн тэнгэр"}).click();
+  await openView(page,"Төрсөн үеийн тэнгэр");
   await page.locator("#natal-date").fill("2024-03-20");
   await page.locator("#natal-time").fill("11:06");
   await page.locator("#natal-offset").fill("8");
@@ -65,9 +78,9 @@ test("natal chart computes 10 bodies, ascendant and whole-sign houses locally",a
 test("mobile navigation reaches daily card and learning mode",async({page})=>{
   await page.setViewportSize({width:390,height:844});
   await page.goto("/");
-  await page.getByRole("button",{name:"Өдрийн карт"}).click();
+  await openView(page,"Өдрийн карт");
   await expect(page.getByRole("heading",{name:"Өнөөдрийн карт"})).toBeVisible();
-  await page.getByRole("button",{name:"Таро сурах"}).click();
+  await openView(page,"Таро сурах");
   await expect(page.getByRole("heading",{name:"Таро сурах"})).toBeVisible();
   await page.getByRole("button",{name:"Дасгал эхлүүлэх"}).click();
   await expect(page.getByText("Энэ ямар карт вэ?")).toBeVisible();
@@ -101,16 +114,31 @@ test("custom tarot spread uses user's card count and labeled positions",async({p
 test("opt-in offline card pack saves all 78 images and survives an offline library visit",async({page,context})=>{
   test.setTimeout(90000);
   await page.goto("/");
-  await page.getByRole("button",{name:"Offline карт"}).click();
+  await openView(page,"Offline карт");
   await expect(page.getByRole("heading",{name:"Офлайн картын сан"})).toBeVisible();
   await page.getByRole("button",{name:"78 зураг offline татах"}).click();
   await expect(page.getByRole("progressbar",{name:"Offline карт таталтын явц"}))
     .toHaveAttribute("aria-valuenow","78",{timeout:70000});
   await expect(page.getByText("78 / 78")).toBeVisible();
   await context.setOffline(true);
-  await page.getByRole("button",{name:"78 карт"}).click();
+  await openView(page,"78 карт");
   await expect(page.locator("main button img")).toHaveCount(78);
   const first=page.locator("main button img").first();
   await expect.poll(()=>first.evaluate(img=>img.complete && img.naturalWidth>0)).toBe(true);
   await context.setOffline(false);
+});
+
+test("deep links and browser back restore the correct grouped view",async({page})=>{
+  await page.goto("/?view=natal");
+  await expect(page.getByRole("heading",{name:"Төрсөн үеийн тэнгэрийн зураг"})).toBeVisible();
+  await openView(page,"78 карт");
+  await expect(page).toHaveURL(/view=library/);
+  await expect(page.getByRole("heading",{name:"78 картын сан"})).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/view=natal/);
+  await expect(page.getByRole("heading",{name:"Төрсөн үеийн тэнгэрийн зураг"})).toBeVisible();
+  await page.goForward();
+  await expect(page.getByRole("heading",{name:"78 картын сан"})).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading",{name:"78 картын сан"})).toBeVisible();
 });
