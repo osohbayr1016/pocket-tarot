@@ -9,6 +9,7 @@ import { drawSpread, interpretReading, type DrawnCard } from "../lib/offlineEngi
 import TarotCard from "./TarotCard";
 import { makeCustomSpread } from "../lib/customSpread";
 import {getReadingPreferences} from "../lib/readingPreferences";
+import {useLocalDraft} from "../lib/useLocalDraft";
 import {loadSavedSpreads,saveCustomSpread,deleteCustomSpread,savedToSpread,type SavedSpread} from "../lib/savedCustomSpreads";
 
 interface Props {
@@ -20,7 +21,9 @@ interface Props {
 
 export default function TraditionalTarotReading({ onReset, userQuestion = "" }: Props) {
   const [spread, setSpread] = useState<TarotSpread | null>(null);
-  const [question, setQuestion] = useState(userQuestion);
+  const questionDraft=useLocalDraft("traditional-question",userQuestion);
+  const question=questionDraft.text;
+  const setQuestion=questionDraft.setText;
   const [customCount,setCustomCount] = useState(3);
   const [customName,setCustomName] = useState("Миний дэлгэмэл");
   const [savedSpreads,setSavedSpreads] = useState<SavedSpread[]>([]);
@@ -29,7 +32,9 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
   const [topic,setTopic] = useState<ReadingTopic|"auto">("auto");
   const [drawn, setDrawn] = useState<DrawnCard[]>([]);
   const [visibleCount, setVisibleCount] = useState(0);
-  const [notes, setNotes] = useState("");
+  const notesDraft=useLocalDraft("traditional-notes");
+  const notes=notesDraft.text;
+  const setNotes=notesDraft.setText;
   const [savedMessage, setSavedMessage] = useState("");
   const [error, setError] = useState("");
   const [history, setHistory] = useState<{id:string; date:string; spread:string; question:string; reading:string}[]>([]);
@@ -54,12 +59,18 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
     try{setHistory(loadReadings().slice(0,20));}
     catch(cause){setError(cause instanceof Error?cause.message:"Уншилтын түүхийг уншиж чадсангүй.");}
   };
+  const confirmDiscard=()=>{
+    if(notes.trim()&&!savedMessage)
+      return window.confirm("Хадгалаагүй тэмдэглэл түр хадгалагдсан. Шинэ уншилт эхлүүлж, энэ тэмдэглэлийг арилгах уу?");
+    return true;
+  };
   const chooseSpread = (next: TarotSpread) => {
+    if(!confirmDiscard())return;
     setSpread(next); setDrawn([]); setVisibleCount(0); setError(""); setSavedMessage(""); setNotes("");
     refreshHistory();
   };
   const makeReading = () => {
-    if (!spread) return;
+    if (!spread || !confirmDiscard()) return;
     try {
       const cards = drawSpread(tarotCards,spread,undefined,{allowReversed:getReadingPreferences().allowReversed});
       setDrawn(cards);
@@ -71,7 +82,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
     }
   };
   const save = () => {
-    if (!spread || !drawn.length || visibleCount !== drawn.length) return;
+    if (!spread || !drawn.length || visibleCount !== drawn.length || !notesDraft.ready || !questionDraft.ready || savedMessage) return;
     try {
       addReading({
         id:crypto.randomUUID(),
@@ -82,6 +93,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
         notes:notes.trim().slice(0,2000),
         cards:drawn.map(entry=>({id:entry.card.id,reversed:entry.isReversed,position:entry.position})),
       });
+      setNotes("");
       setSavedMessage("Энэ төхөөрөмж дээр уншилтыг хадгаллаа.");
       refreshHistory();
     } catch {
@@ -99,6 +111,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
     }
   };
   const startAgain = () => {
+    if(!confirmDiscard())return;
     setSpread(null);setDrawn([]);setVisibleCount(0);setError("");setSavedMessage("");setNotes("");
   };
   return (
@@ -290,7 +303,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
                   <h4 className="font-serif text-2xl text-amber-100">Таны уншилтын тайлал</h4>
                   <pre className="mt-5 whitespace-pre-wrap break-words font-sans text-sm leading-7 text-slate-100">{result}</pre>
                   <label className="mt-8 block text-sm font-medium text-amber-100" htmlFor="reading-notes">Хувийн тэмдэглэл</label>
-                  <textarea id="reading-notes" value={notes} onChange={(event)=>setNotes(event.target.value)}
+                  <textarea id="reading-notes" disabled={!notesDraft.ready} value={notes} onChange={(event)=>{setNotes(event.target.value);setSavedMessage("");}}
                     maxLength={2000} rows={3} placeholder="Өөрийн бодож мэдэрсэн зүйлээ энд бич..."
                     className="mt-2 w-full rounded-lg border border-white/20 bg-white/5 p-4 text-sm text-white placeholder:text-slate-400 focus:border-amber-300 focus:outline-none"/>
                   <div className="mt-4 flex flex-wrap gap-3">
@@ -308,7 +321,9 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
               )}
             </>
           )}
-          {error && <p role="alert" className="mt-6 text-center text-red-300">{error}</p>}
+          {notesDraft.error&&<p role="alert" className="mt-4 text-sm text-red-300">{notesDraft.error}</p>}
+      {questionDraft.error&&<p role="alert" className="mt-4 text-sm text-red-300">{questionDraft.error}</p>}
+      {error && <p role="alert" className="mt-6 text-center text-red-300">{error}</p>}
           {history.length > 0 && (
             <details className="mx-auto mt-10 max-w-3xl rounded-xl border border-white/10 p-5 text-sm text-slate-200">
               <summary className="cursor-pointer text-amber-200">Өмнөх уншилтууд ({history.length})</summary>
