@@ -4,7 +4,7 @@
  * through an independently authenticated service/admin process.
  */
 import type { SavedReading } from "./readingHistory";
-import { tarotCards } from "../data/tarotCards";
+import { tarotCards } from "../data/tarotCards.ts";
 
 function getRows(raw:unknown):unknown[]{
   if(Array.isArray(raw))return raw;
