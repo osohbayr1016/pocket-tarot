@@ -52,3 +52,21 @@ html[data-reduce-motion="true"] *::after {
   transition-duration: .01ms !important;
   scroll-behavior: auto !important;
 }
+
+
+/* Premium themes preserve dark contrast and reduced-motion preferences. */
+html[data-theme="ocean"] .pocket-shell {
+  background: linear-gradient(180deg,#0b2435 0%,#0a1b2e 55%,#081421 100%) !important;
+}
+html[data-theme="midnight"] .pocket-shell {
+  background: linear-gradient(180deg,#05050b 0%,#0b0a13 65%,#040408 100%) !important;
+}
+@keyframes pocket-card-reveal {
+  0% {opacity:.35;transform:perspective(600px) rotateY(-80deg) scale(.94);}
+  55% {opacity:1;transform:perspective(600px) rotateY(10deg) scale(1.015);}
+  100% {opacity:1;transform:perspective(600px) rotateY(0deg) scale(1);}
+}
+.tarot-reveal-enter {animation:pocket-card-reveal .42s cubic-bezier(.16,.85,.2,1) both;}
+@media (prefers-reduced-motion: reduce) {
+  .tarot-reveal-enter {animation:none !important;}
+}
