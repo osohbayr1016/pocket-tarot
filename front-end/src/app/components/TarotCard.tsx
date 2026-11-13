@@ -28,7 +28,7 @@ export default function TarotCard({
       <button
         type="button"
         onClick={onClick}
-        aria-label="Таро карт илчлэх"
+        aria-label={locale==="en"?"Reveal Tarot card":"Таро карт илчлэх"}
         className={widthClass + " tarot-card-back relative aspect-[2/3] rounded-xl overflow-hidden border border-amber-300/50 bg-[#17112c] shadow-[0_16px_36px_rgba(0,0,0,0.3)] transition-transform duration-300 hover:-translate-y-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200"}
       >
         <div className="absolute inset-2 rounded-lg border border-amber-500/60" />
@@ -38,7 +38,7 @@ export default function TarotCard({
             <span className="back-icon-star">✦</span><span className="back-icon-moon">☾</span>
           </div>
           <span className="mt-3 tracking-[0.3em] text-[10px] uppercase">Pocket Tarot</span>
-          <span className="mt-2 text-[11px] opacity-70">Илчлэх</span>
+          <span className="mt-2 text-[11px] opacity-70">{locale==="en"?"Reveal":"Илчлэх"}</span>
         </div>
       </button>
     );
@@ -48,7 +48,7 @@ export default function TarotCard({
       <div className="relative aspect-[2/3] overflow-hidden rounded-xl border-2 border-amber-400/60 bg-[#f5e6c4] shadow-[0_16px_45px_rgba(0,0,0,0.35)]">
         <img
           src={imageError ? "/tarot/card-placeholder.svg" : card.image}
-          alt={card.englishName + (isReversed ? " — урвуу" : "")}
+          alt={card.englishName + (isReversed ? (locale==="en"?" — reversed":" — урвуу") : "")}
           width={480}
           height={800}
           loading="lazy"
@@ -57,7 +57,7 @@ export default function TarotCard({
         />
         {isReversed && (
           <span className="absolute right-2 top-2 rounded bg-[#16132b]/85 px-2 py-1 text-[11px] font-medium text-amber-100">
-            Урвуу
+            {locale==="en"?"Reversed":"Урвуу"}
           </span>
         )}
       </div>
