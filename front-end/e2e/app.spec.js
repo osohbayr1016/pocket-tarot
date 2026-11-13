@@ -295,3 +295,19 @@ test("offline lunar calendar renders a month and changes months without API call
   await expect(page.getByText(/Ойролцоох гэрэлтэлт:/)).toBeVisible();
   expect(api).toEqual([]);
 });
+
+test("tarot library filters all 56 minors by suit and shows educational details",async({page})=>{
+  await page.goto("/");
+  await openView(page,"78 карт");
+  await page.locator("#library-suit").selectOption("Cups");
+  await expect(page.getByText("Нийт 14 / 78 карт харагдаж байна.")).toBeVisible();
+  await expect(page.locator("main button img[alt]")).toHaveCount(14);
+  await page.locator("#library-element").selectOption("Ус");
+  await expect(page.locator("main button img[alt]")).toHaveCount(14);
+  await page.locator("main button").filter({has:page.locator("img[alt]")}).first().click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("term",{name:"Элемент"})).toBeVisible();
+  await page.getByRole("button",{name:"Хаах"}).click();
+  await page.getByRole("button",{name:"Шүүлтүүр цэвэрлэх"}).click();
+  await expect(page.locator("main button img[alt]")).toHaveCount(78);
+});
