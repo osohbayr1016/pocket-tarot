@@ -234,3 +234,20 @@ test("lazy-loaded natal chart works without internet after full PWA shell instal
   await expect(page.locator("table tbody tr")).toHaveCount(10);
   await context.setOffline(false);
 });
+
+test("complete offline backup can export and restore settings without network calls",async({page})=>{
+  await page.goto("/");
+  await openView(page,"Хувийн тохиргоо");
+  await page.getByLabel("Урвуу карт оруулах").uncheck();
+  await page.locator("#back-style").selectOption("moon");
+  const downloadPromise=page.waitForEvent("download");
+  await page.getByRole("button",{name:"Бүх data export"}).click();
+  const download=await downloadPromise;
+  const backupFile=await download.path();
+  await page.getByLabel("Урвуу карт оруулах").check();
+  await page.locator("#back-style").selectOption("star");
+  page.on("dialog",dialog=>void dialog.accept());
+  await page.locator('input[aria-label="Бүх data import JSON"]').setInputFiles(backupFile);
+  await expect(page.getByLabel("Урвуу карт оруулах")).not.toBeChecked();
+  await expect(page.locator("#back-style")).toHaveValue("moon");
+});
