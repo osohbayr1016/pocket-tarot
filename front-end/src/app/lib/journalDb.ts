@@ -5,7 +5,7 @@
  */
 import {
   loadReadings,parseReadings,addReading,deleteReading,clearReadings,
-  updateReadingNotes,setReadingFavorite,type SavedReading
+  updateReadingNotes,setReadingFavorite,type SavedReading,type ReadingMood
 } from "./readingHistory.ts";
 
 const DB_NAME="pocket-tarot-journal";
@@ -195,4 +195,18 @@ export async function importJournalJSON(text:string):Promise<number>{
     throw new Error("5000-аас олон уншилт нэг архивд багтахгүй.");
   await importJournal(incoming);
   return incoming.length;
+}
+
+export async function changeJournalMetadata(id:string,tags:string[],mood:ReadingMood):Promise<void>{
+  if(!Array.isArray(tags)||tags.length>6||
+     tags.some(tag=>typeof tag!=="string"||tag.length>32)||!["neutral","calm","hopeful","uncertain","anxious"].includes(mood))
+    throw new Error("Тэмдэглэгээ 6-аас ихгүй, тус бүр 32 тэмдэгттэй байна.");
+  if(!withIndexedDb()){
+    const current=loadReadings();
+    const target=current.find(item=>item.id===id);
+    if(!target)throw new Error("Уншилт олдсонгүй.");
+    addReading({...target,tags,mood});
+    return;
+  }
+  await updateJournal(id,record=>({...record,tags,mood}));
 }
