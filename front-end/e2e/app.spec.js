@@ -382,3 +382,16 @@ test("daily journal note draft survives leaving the section",async({page})=>{
   const keys=await page.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith("pocket-tarot-draft-v1:daily-")));
   expect(keys).toHaveLength(1);
 });
+
+test("natal calculation exposes offline transit positions for selected date",async({page})=>{
+  await page.goto("/");
+  await openView(page,"Төрсөн үеийн тэнгэр");
+  await page.locator("#natal-city").selectOption("ulaanbaatar");
+  await page.locator("#natal-date").fill("2000-01-01");
+  await page.locator("#natal-time").fill("12:00");
+  await page.getByRole("button",{name:"Тэнгэрийн зураг тооцоолох"}).click();
+  await page.locator("#transit-date").fill("2024-07-01");
+  await page.getByRole("button",{name:"Транзит тооцоолох"}).click();
+  await expect(page.getByText(/Нарны цаг: 2024-07-01T12:00:00.000Z/)).toBeVisible();
+  await expect(page.getByRole("region",{name:"Натал ба транзитын харьцуулалт"}).locator("table tbody tr")).toHaveCount(10);
+});
