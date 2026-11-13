@@ -26,12 +26,14 @@ export default function TarotCard({
         type="button"
         onClick={onClick}
         aria-label="Таро карт илчлэх"
-        className={widthClass + " relative aspect-[2/3] rounded-xl overflow-hidden border border-amber-300/50 bg-[#17112c] shadow-[0_16px_36px_rgba(0,0,0,0.3)] transition-transform duration-300 hover:-translate-y-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200"}
+        className={widthClass + " tarot-card-back relative aspect-[2/3] rounded-xl overflow-hidden border border-amber-300/50 bg-[#17112c] shadow-[0_16px_36px_rgba(0,0,0,0.3)] transition-transform duration-300 hover:-translate-y-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200"}
       >
         <div className="absolute inset-2 rounded-lg border border-amber-500/60" />
         <div className="absolute inset-4 rounded-md border border-amber-500/30" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-amber-100">
-          <div className="text-6xl font-serif" aria-hidden="true">✦</div>
+          <div className="text-6xl font-serif" aria-hidden="true">
+            <span className="back-icon-star">✦</span><span className="back-icon-moon">☾</span>
+          </div>
           <span className="mt-3 tracking-[0.3em] text-[10px] uppercase">Pocket Tarot</span>
           <span className="mt-2 text-[11px] opacity-70">Илчлэх</span>
         </div>
