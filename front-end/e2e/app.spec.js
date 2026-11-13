@@ -85,8 +85,8 @@ test("mobile navigation reaches daily card and learning mode",async({page})=>{
   await page.getByRole("button",{name:"Дасгал эхлүүлэх"}).click();
   await expect(page.getByText("Энэ ямар карт вэ?")).toBeVisible();
 });
-test("PWA reloads the app shell with networking disabled after first install",async({page,context})=>{
-  test.skip(({browserName})=>browserName!=="chromium","Service worker offline integration is validated by Chromium; other browsers run online smoke tests.");
+test("PWA reloads the app shell with networking disabled after first install",async({page,context,browserName})=>{
+  test.skip(browserName!=="chromium","Service worker offline integration is validated by Chromium; other browsers run online smoke tests.");
   await page.goto("/");
   await page.evaluate(async()=>{
     if(!("serviceWorker" in navigator))throw new Error("PWA not supported");
@@ -112,8 +112,8 @@ test("custom tarot spread uses user's card count and labeled positions",async({p
   await expect(page.getByText(/Боломж —/)).toBeVisible();
 });
 
-test("opt-in offline card pack saves all 78 images and survives an offline library visit",async({page,context})=>{
-  test.skip(({browserName})=>browserName!=="chromium","Cache Storage integration is validated by Chromium; other browsers run online smoke tests.");
+test("opt-in offline card pack saves all 78 images and survives an offline library visit",async({page,context,browserName})=>{
+  test.skip(browserName!=="chromium","Cache Storage integration is validated by Chromium; other browsers run online smoke tests.");
   test.setTimeout(90000);
   await page.goto("/");
   await openView(page,"Offline карт");
@@ -169,7 +169,7 @@ test("journal favorites filter and search work on saved readings",async({page})=
   await page.getByLabel("Зөвхөн дуртай уншилт").check();
   await page.getByRole("searchbox",{name:"Уншилт хайх"}).fill("Unique favorite journal");
   await page.getByRole("button",{name:"Дэлгэрэнгүй"}).click();
-  await expect(page.getByText("Unique favorite journal search token")).toBeVisible();
+  await expect(page.getByRole("textbox",{name:"Тэмдэглэл засах"})).toHaveValue("Unique favorite journal search token");
   await page.getByRole("searchbox",{name:"Уншилт хайх"}).fill("no such result anywhere");
   await expect(page.getByText("Шүүлтүүрт тохирох уншилт олдсонгүй.")).toBeVisible();
 });
