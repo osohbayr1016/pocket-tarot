@@ -31,7 +31,8 @@ export interface DrawnCard {
 export function drawSpread(
   cards: readonly TarotCard[],
   spread: TarotSpread,
-  randomInt: (max: number) => number = secureRandomInt
+  randomInt: (max: number) => number = secureRandomInt,
+  options: {allowReversed?:boolean} = {}
 ): DrawnCard[] {
   if (!spread || spread.cardCount < 1 || spread.cardCount > cards.length ||
       spread.positions.length !== spread.cardCount) {
@@ -53,7 +54,7 @@ export function drawSpread(
     position: position.position,
     positionName: position.name,
     positionDescription: position.description,
-    isReversed: randomInt(2) === 0,
+    isReversed: options.allowReversed===false ? false : randomInt(2) === 0,
   }));
 }
 export function interpretReading(
