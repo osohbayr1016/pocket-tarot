@@ -57,7 +57,7 @@ test("natal chart computes 10 bodies, ascendant and whole-sign houses locally",a
   await page.getByRole("button",{name:"Тэнгэрийн зураг тооцоолох"}).click();
   await expect(page.locator("table tbody tr")).toHaveCount(10);
   await expect(page.getByText(/Whole Sign Houses/)).toBeVisible();
-  await expect(page.getByText(/Ascendant:/)).toBeVisible();
+  await expect(page.locator("p").filter({hasText:/Ascendant:/}).first()).toBeVisible();
 });
 test("mobile navigation reaches daily card and learning mode",async({page})=>{
   await page.setViewportSize({width:390,height:844});
