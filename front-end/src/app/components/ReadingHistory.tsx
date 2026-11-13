@@ -6,6 +6,7 @@ import {
 } from "../lib/readingHistory";
 import { tarotCards } from "../data/tarotCards";
 import { exportReadingPng } from "../lib/exportReadingPng";
+import { convertLegacyReadings } from "../lib/legacyMigration";
 
 function saveAsFile(content:string,name:string,mime:string){
   const blob=new Blob([content],{type:mime});
@@ -23,6 +24,7 @@ export default function ReadingHistory(){
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
   const fileRef=useRef<HTMLInputElement>(null);
+  const legacyRef=useRef<HTMLInputElement>(null);
   useEffect(()=>{
     // Read device-local storage after hydration; never read it during SSR.
     const frame=requestAnimationFrame(()=>{
@@ -49,6 +51,22 @@ export default function ReadingHistory(){
     }catch(cause){setError(cause instanceof Error?cause.message:"Импорт амжилтгүй.");setMessage("");}
     if(fileRef.current)fileRef.current.value="";
   };
+  const readLegacy=async(file:File|undefined)=>{
+    if(!file)return;
+    if(!window.confirm("Зөвхөн өөрийн хуучин Pocket Tarot account-аас албан ёсоор экспортолсон JSON-ийг импортлохыг баталгаажуулна уу.")){
+      if(legacyRef.current)legacyRef.current.value="";
+      return;
+    }
+    try{
+      if(file.size>2_000_000)throw new Error("Legacy файл 2 MB-ээс бага байх ёстой.");
+      const legacy=convertLegacyReadings(JSON.parse(await file.text()));
+      const payload=JSON.stringify({format:"pocket-tarot-readings",version:1,readings:legacy});
+      setItems(importReadings(payload));
+      setMessage(legacy.length+" хуучин уншилт импортлогдлоо. Хуучин серверийн өгөгдөл устгагдаагүй.");
+      setError("");
+    }catch(cause){setError(cause instanceof Error?cause.message:"Legacy import амжилтгүй.");}
+    if(legacyRef.current)legacyRef.current.value="";
+  };
   const active=items.find(item=>item.id===selected);
   const searched=search.trim().toLocaleLowerCase();
   const visible=items.filter(item=>{
@@ -69,6 +87,7 @@ export default function ReadingHistory(){
         <p className="mt-4 text-sm leading-relaxed text-slate-300">
           Таны тэмдэглэл энэ төхөөрөмж дээр хадгалагдана. Серверт илгээхгүй.
           Browser-ийн мэдээллийг устгавал export хийгээгүй тэмдэглэлүүд алдагдана.
+          Хуучин account import-д өөрийн account-аас эрхтэйгээр татсан JSON хэрэгтэй; апп хуучин сервертэй холбогдохгүй.
         </p>
       </header>
       <div className="mb-8 flex flex-wrap justify-center gap-3">
@@ -84,6 +103,12 @@ export default function ReadingHistory(){
         <button type="button" onClick={()=>fileRef.current?.click()}
           className="rounded-full border border-amber-300/30 px-5 py-3 text-sm text-amber-100 hover:border-amber-300">
           JSON import
+        </button>
+        <input ref={legacyRef} type="file" accept=".json,application/json" className="sr-only"
+          aria-label="Хуучин account export JSON" onChange={event=>void readLegacy(event.target.files?.[0])}/>
+        <button type="button" onClick={()=>legacyRef.current?.click()}
+          className="rounded-full border border-amber-300/30 px-5 py-3 text-sm text-amber-100">
+          Хуучин account import
         </button>
         <button type="button" disabled={!items.length&&!error} onClick={clear}
           className="rounded-full border border-red-300/40 px-5 py-3 text-sm text-red-200 hover:border-red-300">
