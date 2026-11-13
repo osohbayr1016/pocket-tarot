@@ -44,6 +44,28 @@ export default function CardDetailsDialog({card,onClose}:Props){
           <p><strong className="text-amber-200">Эгц:</strong> {card.meaning}</p>
           <p><strong className="text-amber-200">Урвуу:</strong> {card.reversedMeaning}</p>
           <p className="text-xs text-slate-400">{card.englishName} · {card.arcana==="major"?"Их Аркан":"Бага Аркан"}</p>
+          <dl className="mt-6 grid grid-cols-2 gap-3 rounded-xl border border-white/10 bg-white/5 p-4 text-sm">
+            {([
+              ["Аркана",card.arcana==="major"?"Их Аркан":"Бага Аркан"],
+              ["Элемент",card.element],
+              ["Бүлэг",card.suit||"Их Аркан"],
+              ["Уламжлалт тоо",String(card.numerology)],
+              ...(card.planet?[["Холбоотой гараг",card.planet]]:[]),
+              ...(card.astrologicalSign?[["Уламжлалт орд",card.astrologicalSign]]:[])
+            ] as [string,string][]).map(([label,value])=>(
+              <div key={label}>
+                <dt className="text-xs text-slate-400">{label}</dt>
+                <dd className="mt-1 font-medium text-amber-100">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {card.keywords.map(keyword=><span key={keyword} className="rounded-full border border-amber-300/25 px-3 py-1 text-xs text-amber-100">{keyword}</span>)}
+          </div>
+          <p className="text-xs leading-5 text-slate-400">
+            Орд/гараг/элементийн холбоос нь уламжлалт Tarot correspondences, шинжлэх ухааны зөгнөл биш.
+          </p>
+
         </div>
       </div>
     </div>
