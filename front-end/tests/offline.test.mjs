@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { existsSync, openSync, readSync, closeSync, statSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { tarotCards } from "../src/app/data/tarotCards.ts";
 import { tarotSpreads, getSpreadById } from "../src/app/data/tarotSpreads.ts";
 import {
@@ -17,6 +20,15 @@ test("complete 78-card deck, unique identifiers and local image names",()=>{
   for(const card of tarotCards){
     assert.ok(card.name && card.englishName && card.meaning && card.reversedMeaning);
     assert.ok(card.image.startsWith("/tarot/rws/"));
+    const frontEndDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const imagePath = path.join(frontEndDir, "public", card.image);
+    assert.ok(existsSync(imagePath), "Missing local image: " + card.image);
+    assert.ok(statSync(imagePath).size > 10000, "Image is too small: " + card.image);
+    const fd = openSync(imagePath, "r");
+    const magic = Buffer.alloc(2);
+    readSync(fd, magic, 0, 2, 0);
+    closeSync(fd);
+    assert.equal(magic.toString("hex"), "ffd8", "Not a JPEG: " + card.image);
   }
 });
 test("all spreads have ordered, complete positions",()=>{
