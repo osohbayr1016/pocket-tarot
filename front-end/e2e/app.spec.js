@@ -47,6 +47,20 @@ test("quick three-card entry and privacy-first Story export",async({page})=>{
   await expect(page.getByText(/Хувийн асуулт, тэмдэглэл ороогүй/)).toBeVisible();
 });
 
+test("privacy routes do not overwrite cached offline home",async({page,context,browserName})=>{
+  test.skip(browserName!=="chromium","Service-worker navigation isolation is verified in Chromium.");
+  await page.goto("/");
+  await page.evaluate(()=>navigator.serviceWorker.ready);
+  await page.goto("/privacy");
+  await expect(page.getByRole("heading",{name:"Нууцлал / Privacy"})).toBeVisible();
+  await context.setOffline(true);
+  await page.goto("/");
+  await expect(page.getByRole("heading",{name:"Уламжлалт таро"})).toBeVisible();
+  await page.goto("/terms");
+  await expect(page.getByRole("heading",{name:"Ашиглах нөхцөл / Terms"})).toBeVisible();
+  await context.setOffline(false);
+});
+
 test("offline-first tarot: three-card spread, sequential reveal and history",async({page})=>{
   const external=[];
   page.on("request",req=>{

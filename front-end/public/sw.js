@@ -5,7 +5,8 @@
 const VERSION = "pocket-tarot-v3";
 const SHELL = VERSION + "-shell";
 const ASSETS = "pocket-tarot-art-v1";
-const SHELL_ASSETS = ["/", "/manifest.webmanifest", "/tarot/card-placeholder.svg", "/icon.svg"];
+const SHELL_ASSETS = ["/", "/privacy", "/terms", "/manifest.webmanifest", "/tarot/card-placeholder.svg", "/icon.svg"];
+const SHELL_PAGES = new Set(["/", "/privacy", "/terms"]);
 // Filled by scripts/manifest-sw.mjs after the production build.
 const BUILD_ASSETS = [];
 const ASSET_LIMIT = 140;
@@ -60,16 +61,17 @@ self.addEventListener("fetch",event=>{
       url.pathname.startsWith("/auth-callback") || url.pathname==="/sw.js")return;
   if(req.mode==="navigate"){
     event.respondWith((async()=>{
+      const path=url.pathname.replace(/\/+$/, "") || "/";
+      const cache=await caches.open(SHELL);
       try{
         const response=await fetch(req);
-        if(response.ok){
-          const cache=await caches.open(SHELL);
-          await cache.put("/",response.clone());
-        }
+        // Never overwrite the offline home with HTML from a different route.
+        if(response.ok && SHELL_PAGES.has(path))await cache.put(path,response.clone());
         return response;
       }catch{
-        const cached=await (await caches.open(SHELL)).match("/");
-        return cached || Response.error();
+        const cached=await cache.match(path);
+        // Unknown deep links can safely fall back to the application shell.
+        return cached || await cache.match("/") || Response.error();
       }
     })());
     return;
