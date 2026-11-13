@@ -6,7 +6,7 @@
 import {
   loadReadings,parseReadings,addReading,deleteReading,clearReadings,
   updateReadingNotes,setReadingFavorite,type SavedReading
-} from "./readingHistory";
+} from "./readingHistory.ts";
 
 const DB_NAME="pocket-tarot-journal";
 const DB_VERSION=1;
