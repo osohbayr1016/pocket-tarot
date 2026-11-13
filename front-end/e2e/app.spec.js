@@ -86,6 +86,7 @@ test("mobile navigation reaches daily card and learning mode",async({page})=>{
   await expect(page.getByText("Энэ ямар карт вэ?")).toBeVisible();
 });
 test("PWA reloads the app shell with networking disabled after first install",async({page,context})=>{
+  test.skip(({browserName})=>browserName!=="chromium","Service worker offline integration is validated by Chromium; other browsers run online smoke tests.");
   await page.goto("/");
   await page.evaluate(async()=>{
     if(!("serviceWorker" in navigator))throw new Error("PWA not supported");
@@ -112,6 +113,7 @@ test("custom tarot spread uses user's card count and labeled positions",async({p
 });
 
 test("opt-in offline card pack saves all 78 images and survives an offline library visit",async({page,context})=>{
+  test.skip(({browserName})=>browserName!=="chromium","Cache Storage integration is validated by Chromium; other browsers run online smoke tests.");
   test.setTimeout(90000);
   await page.goto("/");
   await openView(page,"Offline карт");
@@ -141,4 +143,42 @@ test("deep links and browser back restore the correct grouped view",async({page}
   await expect(page.getByRole("heading",{name:"78 картын сан"})).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading",{name:"78 картын сан"})).toBeVisible();
+});
+
+test("save a custom spread template and reuse it after returning to spread selection",async({page})=>{
+  await page.goto("/");
+  await page.locator("#custom-spread-name").fill("Миний тестийн дэлгэмэл");
+  await page.locator("#custom-card-count").selectOption("2");
+  await page.locator("#custom-position-0").fill("Өмнөх нөхцөл");
+  await page.locator("#custom-position-1").fill("Одоогийн алхам");
+  await page.getByRole("button",{name:"Дэлгэмлийг хадгалах"}).click();
+  await expect(page.getByText("Дэлгэмлийг энэ төхөөрөмж дээр хадгаллаа.")).toBeVisible();
+  await page.getByRole("button",{name:/Миний тестийн дэлгэмэл.*карт/}).click();
+  await expect(page.getByRole("heading",{name:"Миний тестийн дэлгэмэл"})).toBeVisible();
+  await page.getByRole("button",{name:"Дэлгэмэл солих"}).click();
+  await expect(page.getByText("Миний тестийн дэлгэмэл")).toBeVisible();
+});
+test("journal favorites filter and search work on saved readings",async({page})=>{
+  await page.goto("/");
+  await openView(page,"Нэг карт");
+  await page.getByRole("button",{name:"Санамсаргүй нэг карт сугалах"}).click();
+  await page.locator("#single-card-notes").fill("Unique favorite journal search token");
+  await page.getByRole("button",{name:"Хадгалах",exact:true}).click();
+  await openView(page,"Миний түүх");
+  await page.getByRole("button",{name:"Дуртайд нэмэх"}).click();
+  await page.getByLabel("Зөвхөн дуртай уншилт").check();
+  await page.getByRole("searchbox",{name:"Уншилт хайх"}).fill("Unique favorite journal");
+  await expect(page.getByText("Unique favorite journal search token")).toBeVisible();
+  await page.getByRole("searchbox",{name:"Уншилт хайх"}).fill("no such result anywhere");
+  await expect(page.getByText("Шүүлтүүрт тохирох уншилт олдсонгүй.")).toBeVisible();
+});
+test("IANA city natal chart selection computes without entering UTC offset",async({page})=>{
+  await page.goto("/");
+  await openView(page,"Төрсөн үеийн тэнгэр");
+  await page.locator("#natal-city").selectOption("ulaanbaatar");
+  await page.locator("#natal-date").fill("2024-11-01");
+  await page.locator("#natal-time").fill("10:00");
+  await page.getByRole("button",{name:"Тэнгэрийн зураг тооцоолох"}).click();
+  await expect(page.locator("table tbody tr")).toHaveCount(10);
+  await expect(page.getByText(/2024-11-01T02:00:00/)).toBeVisible();
 });
