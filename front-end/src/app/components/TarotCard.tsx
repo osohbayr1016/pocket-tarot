@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { TarotCard as TarotCardType } from "../data/tarotCards";
 
 interface TarotCardProps {
@@ -17,8 +17,8 @@ export default function TarotCard({
   card, isRevealed = false, onClick, userQuestion,
   isReversed = false, size = "lg",
 }: TarotCardProps) {
-  const [imageError, setImageError] = useState(false);
-  useEffect(() => setImageError(false), [card.image]);
+  const [failedImage, setFailedImage] = useState<string | null>(null);
+  const imageError = failedImage === card.image;
   const widthClass = sizes[size];
   if (!isRevealed) {
     return (
@@ -47,7 +47,7 @@ export default function TarotCard({
           width={480}
           height={800}
           loading="lazy"
-          onError={() => setImageError(true)}
+          onError={() => setFailedImage(card.image)}
           className={"h-full w-full object-cover transition-transform duration-700 " + (isReversed ? "rotate-180" : "")}
         />
         {isReversed && (
