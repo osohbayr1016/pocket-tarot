@@ -1,0 +1,34 @@
+name: Upgrade vulnerable frontend dependency tree
+on:
+  push:
+    branches: [feat/offline-tarot-foundation]
+    paths:
+      - ".github/workflows/dependency-remediation.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  remediation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Remove Axios and install patched framework
+        working-directory: front-end
+        run: |
+          npm uninstall axios --save --legacy-peer-deps
+          npm install --save-exact --legacy-peer-deps next@16.4.6 react@19.3.1 react-dom@19.3.1
+          npm install --save-dev --save-exact --legacy-peer-deps eslint-config-next@16.4.6
+          npm audit fix --legacy-peer-deps || true
+          npm install --package-lock-only --legacy-peer-deps --ignore-scripts
+      - name: Commit patched dependency tree
+        run: |
+          git add front-end/package.json front-end/package-lock.json
+          if git diff --cached --quiet; then echo "Already patched"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "security(deps): remove Axios and upgrade to patched Next.js 16.4.6"
+          git push
