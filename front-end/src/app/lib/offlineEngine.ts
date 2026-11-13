@@ -1,3 +1,4 @@
+import { createContextualReading, type ReadingTopic } from "./readingIntelligence";
 import type { TarotCard } from "../data/tarotCards";
 import type { TarotSpread } from "../data/tarotSpreads";
 
@@ -57,19 +58,10 @@ export function drawSpread(
 }
 export function interpretReading(
   drawn: readonly DrawnCard[],
-  question = ""
+  question = "",
+  topic?: ReadingTopic
 ): string {
-  if (!drawn.length) return "Эхлээд карт сонгоно уу.";
-  const intro = "Таро нь бодит ирээдүйг баттай таамагладаггүй. Картын уламжлалт бэлгэдэлд тулгуурласан эргэцүүлэл:";
-  const q = question.trim().slice(0, 300);
-  const sections = drawn.map(({card, isReversed, positionName, positionDescription}, index) => {
-    const meaning = isReversed ? card.reversedMeaning : card.meaning;
-    return String(index + 1) + ". " + positionName + " — " + card.name +
-      (isReversed ? " (урвуу)" : " (эгц)") + "\n" +
-      positionDescription + ". " + meaning + ".";
-  });
-  const ending = "Нэг боломжит алхам: Дээрх сэдвээс өөрт хамаатай нэгийг сонгон, баталгаатай мэдээлэлтэй харьцуулж бодит үйлдэл төлөвлө.";
-  return [intro, q ? "Таны асуулт: " + q : "", ...sections, ending].filter(Boolean).join("\n\n");
+  return createContextualReading(drawn, question, topic);
 }
 export interface ZodiacSign {
   id: string;
