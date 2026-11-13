@@ -6,6 +6,7 @@ import { tarotCards, type TarotCard } from "./data/tarotCards";
 import { secureRandomInt } from "./lib/offlineEngine";
 import {getReadingPreferences} from "./lib/readingPreferences";
 import {useLanguage} from "./lib/LanguageProvider";
+import {emitFeedback} from "./lib/feedback";
 import TarotCardView from "./components/TarotCard";
 import CardReading from "./components/CardReading";
 import TraditionalTarotReading from "./components/TraditionalTarotReading";
@@ -61,6 +62,7 @@ export default function Home() {
     try {
       const index = secureRandomInt(tarotCards.length);
       setSelected({card:tarotCards[index],isReversed:getReadingPreferences().allowReversed && secureRandomInt(2)===0});
+      emitFeedback("draw");
       setError("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Карт сугалж чадсангүй.");
@@ -77,7 +79,7 @@ export default function Home() {
     setError("");
   };
   return (
-    <div className="min-h-screen bg-[#100e1e] text-[#f6f1e9]">
+    <div className="pocket-shell min-h-screen bg-[#100e1e] text-[#f6f1e9]">
       <a href="#main-content" className="sr-only rounded-lg bg-amber-300 p-3 font-semibold text-[#171127] focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50">Үндсэн агуулга руу очих</a>
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[580px] bg-[radial-gradient(ellipse_at_50%_0%,rgba(110,75,126,0.26),transparent_65%)]" />
       <header className="relative z-10 border-b border-white/10">
