@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { tarotCards, type TarotCard } from "./data/tarotCards";
 import { secureRandomInt } from "./lib/offlineEngine";
 import {getReadingPreferences} from "./lib/readingPreferences";
+import {useLanguage} from "./lib/LanguageProvider";
 import TarotCardView from "./components/TarotCard";
 import CardReading from "./components/CardReading";
 import TraditionalTarotReading from "./components/TraditionalTarotReading";
@@ -29,6 +30,7 @@ import PreferencesPanel from "./components/PreferencesPanel";
 import NavigationMenu, {isSection, type Section} from "./components/NavigationMenu";
 
 export default function Home() {
+  const {locale}=useLanguage();
   const [section,setSection] = useState<Section>("reading");
   const [selected,setSelected] = useState<{ card: TarotCard; isReversed: boolean }|null>(null);
   const [error,setError] = useState("");
@@ -98,9 +100,9 @@ export default function Home() {
         {section==="single" && (
           <section className="mx-auto max-w-4xl text-center">
             <p className="text-xs uppercase tracking-[0.3em] text-amber-300">One-card ritual</p>
-            <h1 className="mt-3 font-serif text-4xl text-amber-50 sm:text-5xl">Нэг картын уншилт</h1>
+            <h1 className="mt-3 font-serif text-4xl text-amber-50 sm:text-5xl">{locale==="en"?"Single-card reading":"Нэг картын уншилт"}</h1>
             <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-slate-300">
-              78 картын аль нэгийг жигд санамсаргүй сугалж, тухайн картын уламжлалт бэлгэдлийг хараарай.
+              {locale==="en"?"Draw one of 78 cards at random and explore its traditional symbolism.":"78 картын аль нэгийг жигд санамсаргүй сугалж, тухайн картын уламжлалт бэлгэдлийг хараарай."}
             </p>
             {!selected ? (
               <div className="mx-auto mt-10 max-w-md rounded-2xl border border-amber-300/20 bg-white/5 p-9">
@@ -119,25 +121,25 @@ export default function Home() {
           <section className="mx-auto max-w-6xl">
             <header className="mb-10 text-center">
               <p className="text-xs uppercase tracking-[0.3em] text-amber-300">Rider–Waite–Smith • 1909</p>
-              <h1 className="mt-3 font-serif text-4xl text-amber-50 sm:text-5xl">78 картын сан</h1>
-              <p className="mt-4 text-sm text-slate-300">22 Их Аркан, 56 Бага Аркан. Карт дээр дарж утгыг нь үзнэ үү.</p>
+              <h1 className="mt-3 font-serif text-4xl text-amber-50 sm:text-5xl">{locale==="en"?"78-card library":"78 картын сан"}</h1>
+              <p className="mt-4 text-sm text-slate-300">{locale==="en"?"22 Major Arcana and 56 Minor Arcana. Select a card to explore its meaning.":"22 Их Аркан, 56 Бага Аркан. Карт дээр дарж утгыг нь үзнэ үү."}</p>
             </header>
             <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row">
-              <input type="search" aria-label="Карт хайх" placeholder="Картын нэрээр хайх..." value={query}
+              <input type="search" aria-label={locale==="en"?"Search cards":"Карт хайх"} placeholder={locale==="en"?"Search cards by name...":"Картын нэрээр хайх..."} value={query}
                 onChange={(event)=>setQuery(event.target.value)}
                 className="w-full rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-amber-300 focus:outline-none sm:max-w-sm"/>
               <div className="flex flex-wrap gap-2" aria-label="Аркана шүүлтүүр">
                 {(["all","major","minor"] as const).map((value)=>(
                   <button type="button" key={value} aria-pressed={arcana===value} onClick={()=>setArcana(value)}
                     className={"rounded-full px-4 py-2 text-sm " + (arcana===value?"bg-amber-300 text-[#171127]":"border border-white/15 text-slate-200")}>
-                    {value==="all"?"Бүгд (78)":value==="major"?"Их Аркан (22)":"Бага Аркан (56)"}
+                    {value==="all"?(locale==="en"?"All (78)":"Бүгд (78)"):value==="major"?(locale==="en"?"Major (22)":"Их Аркан (22)"):(locale==="en"?"Minor (56)":"Бага Аркан (56)")}
                   </button>
                 ))}
               </div>
             </div>
             <div className="mb-8 flex flex-wrap items-end gap-4 rounded-xl border border-white/10 bg-white/5 p-4">
               <label className="flex-1 text-sm text-amber-100" htmlFor="library-suit">
-                Бүлэг
+                {locale==="en"?"Suit":"Бүлэг"}
                 <select id="library-suit" value={suit} onChange={event=>setSuit(event.target.value as typeof suit)}
                   className="mt-2 block w-full min-w-36 rounded-lg border border-white/20 bg-[#171127] p-3 text-slate-100">
                   <option value="all">Бүх бүлэг</option>
@@ -148,7 +150,7 @@ export default function Home() {
                 </select>
               </label>
               <label className="flex-1 text-sm text-amber-100" htmlFor="library-element">
-                Элемент
+                {locale==="en"?"Element":"Элемент"}
                 <select id="library-element" value={element} onChange={event=>setElement(event.target.value as typeof element)}
                   className="mt-2 block w-full min-w-36 rounded-lg border border-white/20 bg-[#171127] p-3 text-slate-100">
                   <option value="all">Бүх элемент</option>
@@ -164,7 +166,7 @@ export default function Home() {
                 Шүүлтүүр цэвэрлэх
               </button>
               <p role="status" aria-live="polite" className="w-full text-xs text-slate-300">
-                Нийт {filtered.length} / 78 карт харагдаж байна.
+                {locale==="en"?"Showing":"Нийт"} {filtered.length} / 78 {locale==="en"?"cards":"карт харагдаж байна."}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
@@ -175,8 +177,8 @@ export default function Home() {
                     <img src={card.image} onError={(event)=>{event.currentTarget.onerror=null;event.currentTarget.src="/tarot/card-placeholder.svg";}}
                       alt={card.englishName} width={260} height={430} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"/>
                   </div>
-                  <h2 className="mt-3 text-sm font-semibold leading-snug text-amber-100">{card.name}</h2>
-                  <p className="mt-1 text-xs text-slate-400">{card.englishName}</p>
+                  <h2 className="mt-3 text-sm font-semibold leading-snug text-amber-100">{locale==="en"?card.englishName:card.name}</h2>
+                  <p className="mt-1 text-xs text-slate-400">{locale==="en"?card.arcana:card.englishName}</p>
                 </button>
               ))}
             </div>
