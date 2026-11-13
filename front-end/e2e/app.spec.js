@@ -240,12 +240,18 @@ test("complete offline backup can export and restore settings without network ca
   await openView(page,"Хувийн тохиргоо");
   await page.getByLabel("Урвуу карт оруулах").uncheck();
   await page.locator("#back-style").selectOption("moon");
+  await page.locator("#backup-password").fill("Correct Horse Battery 2026");
+  await page.locator("#backup-confirm-password").fill("Correct Horse Battery 2026");
   const downloadPromise=page.waitForEvent("download");
   await page.getByRole("button",{name:"Бүх data export"}).click();
   const download=await downloadPromise;
   const backupFile=await download.path();
+  const envelope=JSON.parse(require("node:fs").readFileSync(backupFile,"utf8"));
+  expect(envelope.format).toBe("pocket-tarot-encrypted-backup");
+  expect(envelope.algorithm).toBe("AES-256-GCM");
   await page.getByLabel("Урвуу карт оруулах").check();
   await page.locator("#back-style").selectOption("star");
+  await page.locator("#backup-password").fill("Correct Horse Battery 2026");
   page.on("dialog",dialog=>void dialog.accept());
   await page.locator('input[aria-label="Бүх data import JSON"]').setInputFiles(backupFile);
   await expect(page.getByLabel("Урвуу карт оруулах")).not.toBeChecked();
@@ -268,6 +274,7 @@ test("spaced-repetition quiz persists study progress and complete backup v3",asy
   await openView(page,"Таро сурах");
   await expect(page.getByText("1/78")).toBeVisible();
   await openView(page,"Хувийн тохиргоо");
+  await page.getByRole("checkbox",{name:/Backup файлыг AES-256-GCM/}).uncheck();
   const downloadPromise=page.waitForEvent("download");
   await page.getByRole("button",{name:"Бүх data export"}).click();
   const download=await downloadPromise;
