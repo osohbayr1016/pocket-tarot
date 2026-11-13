@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { tarotCards } from "../data/tarotCards";
 
-const CACHE_NAME = "pocket-tarot-v3-assets";
+const CACHE_NAME = "pocket-tarot-art-v1";
 const images = tarotCards.map(c=>c.image);
 export default function OfflineDeckManager(){
   const [cached,setCached]=useState(0);
