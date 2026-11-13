@@ -34,13 +34,15 @@ export default function LearnTarot(){
   const [progress,setProgress]=useState<CardProgress[]>([]);
   const [priorCard,setPriorCard]=useState<number|null>(null);
   const [isReady,setIsReady]=useState(false);
-  const stats=learningStats(progress);
+  const [now,setNow]=useState(0);
+  const stats=learningStats(progress,now);
   const poolIds=(pool==="all"?tarotCards:tarotCards.filter(card=>card.arcana===pool)).map(c=>c.id);
-  const dueInPool=progress.filter(p=>poolIds.includes(p.id)&&p.dueAt<=Date.now()).length;
+  const dueInPool=progress.filter(p=>poolIds.includes(p.id)&&p.dueAt<=now).length;
   useEffect(()=>{
     const frame=requestAnimationFrame(()=>{
       try{setProgress(loadStudyProgress());}
       catch(cause){setError(cause instanceof Error?cause.message:"Сургалтын ахицын санг уншиж чадсангүй.");}
+      setNow(Date.now());
       setIsReady(true);
     });
     return()=>cancelAnimationFrame(frame);
@@ -60,6 +62,7 @@ export default function LearnTarot(){
       const next=reviewCard(progress,question.id,value===question.id);
       saveStudyProgress(next);
       setProgress(next);
+      setNow(Date.now());
     }catch(cause){setError(cause instanceof Error?cause.message:"Сургалтын оноо хадгалагдсангүй.");}
   };
   const card=question?tarotCards.find(item=>item.id===question.id):null;
