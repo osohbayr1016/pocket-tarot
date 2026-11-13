@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
 import {createCompleteBackupV3,restoreCompleteBackupV3} from "../lib/offlineBackup";
+import {encryptBackup,decryptBackup,isEncryptedBackup} from "../lib/encryptedBackup";
 import {
   defaultReadingPreferences,getReadingPreferences,saveReadingPreferences,
   type ReadingPreferences
@@ -9,6 +10,9 @@ import {
 export default function PreferencesPanel(){
   const [prefs,setPrefs]=useState<ReadingPreferences>(defaultReadingPreferences);
   const backupInput=useRef<HTMLInputElement>(null);
+  const [encryptFile,setEncryptFile]=useState(true);
+  const [backupPassword,setBackupPassword]=useState("");
+  const [passwordConfirmation,setPasswordConfirmation]=useState("");
   const [message,setMessage]=useState("");
   const [error,setError]=useState("");
   useEffect(()=>{
@@ -26,11 +30,18 @@ export default function PreferencesPanel(){
   }
   const exportAll=async()=>{
     try{
-      const blob=new Blob([await createCompleteBackupV3()],{type:"application/json"});
-      const href=URL.createObjectURL(blob), link=document.createElement("a");
-      link.href=href;link.download="pocket-tarot-complete-backup.json";link.click();
+      if(encryptFile&&(backupPassword.length<12||backupPassword!==passwordConfirmation))
+        throw new Error("Нууц үг 12+ тэмдэгттэй бөгөөд давтан оруулсан нууц үгтэй ижил байх ёстой.");
+      const raw=await createCompleteBackupV3();
+      const json=encryptFile?await encryptBackup(raw,backupPassword):raw;
+      const blob=new Blob([json],{type:"application/json"});
+      const href=URL.createObjectURL(blob),link=document.createElement("a");
+      link.href=href;
+      link.download=encryptFile?"pocket-tarot-private-encrypted.json":"pocket-tarot-complete-backup.json";
+      link.click();
       setTimeout(()=>URL.revokeObjectURL(href),2000);
-      setMessage("Бүх өгөгдлийн JSON backup татагдлаа. Аюулгүй газар хадгалаарай.");setError("");
+      setMessage(encryptFile?"Шифрлэсэн backup татагдлаа. Нууц үгээ мартвал сэргээх боломжгүй.":"JSON backup татагдлаа. Хувийн мэдээлэлтэй файлаа хамгаалаарай.");
+      setBackupPassword("");setPasswordConfirmation("");setError("");
     }catch(cause){setError(cause instanceof Error?cause.message:"Backup үүсгэж чадсангүй.");}
   };
   const importAll=async(file:File|undefined)=>{
@@ -39,7 +50,10 @@ export default function PreferencesPanel(){
     if(!window.confirm("Энэ төхөөрөмж дээрх journal, custom spread, сургалтын ахиц болон тохиргоо бүгд шинэ backup-ээр СОЛИГДОНО. Одоогийн data-г эхлээд export хийсэн үү?"))return;
     try{
       if(file.size>20_000_000)throw new Error("Backup файл 20 MB-ээс бага байх ёстой.");
-      const restored=await restoreCompleteBackupV3(await file.text());
+      const raw=await file.text();
+      const text=isEncryptedBackup(raw)?await decryptBackup(raw,backupPassword):raw;
+      const restored=await restoreCompleteBackupV3(text);
+      setBackupPassword("");setPasswordConfirmation("");
       setPrefs(restored.preferences);
       setMessage(restored.readings.length+" уншилт, "+restored.spreads.length+
         " дэлгэмэл, "+restored.study.length+" сурсан карт болон тохиргоо сэргээгдлээ. Бусад хэсэг рүү орж шинэ мэдээллээ хараарай.");
@@ -89,6 +103,32 @@ export default function PreferencesPanel(){
         Journal, дуртай уншилт, custom spread, Tarot сургалтын ахиц болон тохиргоогоо нэг JSON файлд экспортолж
         өөр төхөөрөмж рүү зөөж болно. Нууц үг эсвэл сервер шаардлагагүй.
         Бүрэн backup v3 нь IndexedDB-д хадгалсан 5000 хүртэлх уншилтыг багтаана. JSON файл таны хувийн тэмдэглэлийг агуулдаг тул бусдад бүү илгээгээрэй.
+      </p>
+      <label className="mt-5 flex items-start gap-3 text-sm text-amber-100">
+        <input type="checkbox" checked={encryptFile} onChange={event=>setEncryptFile(event.target.checked)}
+          className="mt-1 h-4 w-4 accent-amber-300"/>
+        <span><strong>Backup файлыг AES-256-GCM-ээр шифрлэх</strong>
+          <span className="mt-1 block text-xs leading-5 text-slate-300">
+            Файл хулгайлагдсан үед агуулгыг хамгаална. Нууц үг сервер эсвэл browser storage-д хадгалагдахгүй.
+          </span></span>
+      </label>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <label htmlFor="backup-password" className="text-sm text-amber-100">
+          Backup нууц үг (шифрлэх болон тайлахад)
+          <input id="backup-password" type="password" value={backupPassword}
+            onChange={event=>setBackupPassword(event.target.value)} autoComplete="new-password"
+            className="mt-2 w-full rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-white"/>
+        </label>
+        <label htmlFor="backup-confirm-password" className="text-sm text-amber-100">
+          Экспортлох үед нууц үг давтах
+          <input id="backup-confirm-password" type="password" value={passwordConfirmation}
+            onChange={event=>setPasswordConfirmation(event.target.value)} autoComplete="new-password"
+            className="mt-2 w-full rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-white"/>
+        </label>
+      </div>
+      <p className="mt-3 text-xs leading-5 text-slate-400">
+        Шифрлэсэн файлыг импортлох үед зөвхөн эхний нууц үгийн талбарыг бөглөнө. Нууц үг мартвал сэргээх арга байхгүй.
+        Төхөөрөмж дээрх journal өөрөө тусдаа шифрлэгдээгүй тул shared device дээр browser-ийн профайлаа хамгаалаарай.
       </p>
       <div className="mt-5 flex flex-wrap gap-3">
         <button type="button" onClick={()=>void exportAll()}
