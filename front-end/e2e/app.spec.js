@@ -311,3 +311,20 @@ test("tarot library filters all 56 minors by suit and shows educational details"
   await page.getByRole("button",{name:"Шүүлтүүр цэвэрлэх"}).click();
   await expect(page.locator("main button img[alt]")).toHaveCount(78);
 });
+
+test("keyboard-only skip link and library dialog restore focus on Escape",async({page})=>{
+  await page.goto("/?view=library");
+  await expect(page.getByRole("heading",{name:"78 картын сан"})).toBeVisible();
+  const skip=page.getByRole("link",{name:"Үндсэн агуулга руу очих"});
+  await skip.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#main-content")).toBeFocused();
+  const firstCard=page.locator("main button").filter({has:page.locator("img[alt]")}).first();
+  await firstCard.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("button",{name:"Хаах"})).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(firstCard).toBeFocused();
+});
