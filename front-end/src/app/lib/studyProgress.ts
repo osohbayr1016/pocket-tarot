@@ -89,8 +89,12 @@ export function pickStudyCard(
   const due=available.filter(id=>{const row=byId.get(id);return row!==undefined&&row.dueAt<=now;});
   const unseen=dueOnly?[]:available.filter(id=>!byId.has(id));
   const fallback=dueOnly?[]:available;
-  let options=due.length?due:unseen.length?unseen:fallback;
-  if(options.length>1 && lastId!==null)options=options.filter(id=>id!==lastId);
+  // Avoid repeating the exact same incorrect card when other material exists.
+  // Once fresh cards are exhausted it remains due and can be reviewed again.
+  const dueOther=lastId===null?due:due.filter(id=>id!==lastId);
+  const unseenOther=lastId===null?unseen:unseen.filter(id=>id!==lastId);
+  let options=dueOther.length?dueOther:unseenOther.length?unseenOther:due.length?due:fallback;
+  if(options.length>1&&lastId!==null)options=options.filter(id=>id!==lastId);
   if(options.length===0)return null;
   const index=randomInt(options.length);
   if(!Number.isInteger(index)||index<0||index>=options.length)throw new Error("Random selection outside range.");
