@@ -27,7 +27,7 @@ export default function InstallGuide(){
       window.removeEventListener("beforeinstallprompt",onPrompt);
       window.removeEventListener("appinstalled",onInstalled);
     };
-  },[]);
+  },[en]);
   const install=async()=>{
     if(!prompt)return;
     try{
