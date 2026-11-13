@@ -15,6 +15,10 @@ import LifeGuidance from "./components/LifeGuidance";
 import ReadingHistory from "./components/ReadingHistory";
 import DailyTarotCard from "./components/DailyTarotCard";
 import LearnTarot from "./components/LearnTarot";
+const MoonCalendar = dynamic(() => import("./components/MoonCalendar"), {
+  ssr: false,
+  loading: () => <p role="status" className="py-12 text-center text-amber-100">Сарны календарь ачаалж байна...</p>,
+});
 const NatalChartPage = dynamic(() => import("./components/NatalChartPage"), {
   ssr: false,
   loading: () => <p role="status" className="py-12 text-center text-amber-100">Тэнгэрийн зураг ачаалж байна...</p>,
@@ -146,6 +150,7 @@ export default function Home() {
         )}
         {section==="horoscope" && <Horoscope/>}
         {section==="natal" && <NatalChartPage/>}
+        {section==="moon" && <MoonCalendar/>}
         {section==="daily" && <DailyFortune/>}
         {section==="dream" && <DreamInterpretation/>}
         {section==="guidance" && <LifeGuidance/>}
