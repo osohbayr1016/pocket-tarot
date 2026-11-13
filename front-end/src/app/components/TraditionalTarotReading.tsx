@@ -1,522 +1,208 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { TarotCard as TarotCardType } from "../data/tarotCards";
-import { TarotSpread, getSpreadById, tarotSpreads } from "../data/tarotSpreads";
+import { useState } from "react";
+import { tarotCards } from "../data/tarotCards";
+import { tarotSpreads, type TarotSpread } from "../data/tarotSpreads";
+import { drawSpread, interpretReading, type DrawnCard } from "../lib/offlineEngine";
 import TarotCard from "./TarotCard";
-import AuthModal from "./AuthModal";
-import axios from "axios";
 
-interface TraditionalTarotReadingProps {
+interface Props {
   onReset: () => void;
-  user?: any;
-  onLogin?: (token: string, user: any) => void;
+  user?: unknown;
+  onLogin?: (token: string, user: unknown) => void;
   userQuestion?: string;
 }
+const HISTORY_KEY = "pocket-tarot-offline-readings-v1";
 
-interface ReadingCard {
-  card: TarotCardType;
-  position: number;
-  isReversed: boolean;
-  positionName: string;
-  positionDescription: string;
-}
-
-export default function TraditionalTarotReading({
-  onReset,
-  user,
-  onLogin,
-  userQuestion,
-}: TraditionalTarotReadingProps) {
-  const [selectedSpread, setSelectedSpread] = useState<TarotSpread | null>(
-    null
-  );
-  const [readingCards, setReadingCards] = useState<ReadingCard[]>([]);
-  const [isReading, setIsReading] = useState(false);
-  const [shuffling, setShuffling] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [question, setQuestion] = useState("");
+export default function TraditionalTarotReading({ onReset, userQuestion = "" }: Props) {
+  const [spread, setSpread] = useState<TarotSpread | null>(null);
+  const [question, setQuestion] = useState(userQuestion);
+  const [drawn, setDrawn] = useState<DrawnCard[]>([]);
+  const [visibleCount, setVisibleCount] = useState(0);
   const [notes, setNotes] = useState("");
-  const [mood, setMood] = useState("тодорхойгүй");
-  const [aiInterpretation, setAiInterpretation] = useState("");
-  const [isGettingAiInterpretation, setIsGettingAiInterpretation] =
-    useState(false);
-  const [showAiInterpretation, setShowAiInterpretation] = useState(false);
-  const [aiError, setAiError] = useState("");
-  const [isAiMock, setIsAiMock] = useState(false);
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [showSpreadSelection, setShowSpreadSelection] = useState(true);
+  const [savedMessage, setSavedMessage] = useState("");
+  const [error, setError] = useState("");
+  const [history, setHistory] = useState<{id:string; date:string; spread:string; question:string; reading:string}[]>([]);
+  const result = interpretReading(drawn, question);
 
-  const BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? "https://pocket-tarot-slp7.onrender.com"
-      : "http://localhost:5001";
-
-  // Import tarot cards dynamically to avoid circular dependency
-  const [tarotCards, setTarotCards] = useState<TarotCardType[]>([]);
-
-  useEffect(() => {
-    import("../data/tarotCards").then((module) => {
-      setTarotCards(module.tarotCards);
-    });
-  }, []);
-
-  const selectSpread = (spread: TarotSpread) => {
-    setSelectedSpread(spread);
-    setShowSpreadSelection(false);
-    setQuestion(userQuestion || "");
-  };
-
-  const shuffleAndDrawCards = () => {
-    if (!selectedSpread || !tarotCards.length) return;
-
-    setShuffling(true);
-    setCurrentCardIndex(0);
-    setReadingCards([]);
-
-    // Simulate shuffling
-    setTimeout(() => {
-      const shuffledCards = [...tarotCards].sort(() => Math.random() - 0.5);
-      const drawnCards: ReadingCard[] = [];
-
-      for (let i = 0; i < selectedSpread.cardCount; i++) {
-        const card = shuffledCards[i];
-        const position = selectedSpread.positions[i];
-        const isReversed = Math.random() > 0.7; // 30% chance of reversed
-
-        drawnCards.push({
-          card,
-          position: position.position,
-          isReversed,
-          positionName: position.name,
-          positionDescription: position.description,
-        });
-      }
-
-      setReadingCards(drawnCards);
-      setShuffling(false);
-      setIsReading(true);
-    }, 2000);
-  };
-
-  const getAiInterpretation = async () => {
-    if (!selectedSpread || readingCards.length === 0) return;
-
-    setIsGettingAiInterpretation(true);
-    setAiError("");
-    setAiInterpretation("");
-    setIsAiMock(false);
-    setShowAiInterpretation(false);
-
+  const refreshHistory = () => {
     try {
-      const response = await axios.post(
-        `${BASE_URL}/api/ai/traditional-tarot`,
-        {
-          spread: selectedSpread,
-          cards: readingCards,
-          question: question || userQuestion,
-          userContext: notes,
-        },
-        {
-          headers: { "Content-Type": "application/json" },
-          withCredentials: true,
-        }
-      );
-      const data = response.data;
-      if (data.success) {
-        setTimeout(() => {
-          setAiInterpretation(data.interpretation);
-          setIsAiMock(Boolean(data.isMock));
-          setShowAiInterpretation(true);
-          setIsGettingAiInterpretation(false);
-        }, 1200);
-      } else {
-        setAiError(data.message);
-        setShowAiInterpretation(false);
-        setIsGettingAiInterpretation(false);
-      }
-    } catch (error: any) {
-      if (error.response) {
-        setAiError(
-          error.response.data.message ||
-            `Серверийн алдаа: ${error.response.status}`
-        );
-      } else if (error.request) {
-        setAiError("Серверээс хариу ирсэнгүй. Сүлжээний алдаа байж магадгүй.");
-      } else {
-        setAiError("Алдаа: " + error.message);
-      }
-      setShowAiInterpretation(false);
-      setIsGettingAiInterpretation(false);
+      const parsed: unknown = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+      if (Array.isArray(parsed)) setHistory(parsed.slice(0, 20));
+    } catch {
+      setHistory([]);
     }
   };
-
-  const handleSaveReading = async () => {
-    if (!user) {
-      setShowAuthModal(true);
-      return;
-    }
-
-    setSaving(true);
+  const chooseSpread = (next: TarotSpread) => {
+    setSpread(next); setDrawn([]); setVisibleCount(0); setError(""); setSavedMessage("");
+    refreshHistory();
+  };
+  const makeReading = () => {
+    if (!spread) return;
     try {
-      const token = localStorage.getItem("tarot_token");
-      const response = await axios.post(
-        `${BASE_URL}/api/readings`,
-        {
-          spread: selectedSpread,
-          cards: readingCards,
-          question,
-          notes,
-          mood,
-          tags: [],
-          isPublic: false,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          withCredentials: true,
-        }
-      );
-      const data = response.data;
-      if (data.success) {
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000);
-      }
-    } catch (error) {
-      console.error("Save reading error:", error);
-    } finally {
-      setSaving(false);
+      const cards = drawSpread(tarotCards, spread);
+      setDrawn(cards);
+      setVisibleCount(0);
+      setError(""); setSavedMessage("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Карт холих үед алдаа гарлаа.");
     }
   };
-
-  const resetReading = () => {
-    setSelectedSpread(null);
-    setReadingCards([]);
-    setIsReading(false);
-    setShowSpreadSelection(true);
-    setQuestion("");
-    setNotes("");
-    setAiInterpretation("");
-    setShowAiInterpretation(false);
-    setCurrentCardIndex(0);
+  const save = () => {
+    if (!spread || !drawn.length || visibleCount !== drawn.length) return;
+    try {
+      const parsed: unknown = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+      const old = Array.isArray(parsed) ? parsed : [];
+      const record = {
+        id: crypto.randomUUID(),
+        date: new Date().toISOString(),
+        spread: spread.name,
+        question: question.trim().slice(0, 500),
+        reading: result,
+        notes: notes.trim().slice(0, 2000),
+        cards: drawn.map((entry) => ({id:entry.card.id,reversed:entry.isReversed,position:entry.position})),
+      };
+      localStorage.setItem(HISTORY_KEY, JSON.stringify([record, ...old].slice(0, 30)));
+      setSavedMessage("Энэ төхөөрөмж дээр уншилтыг хадгаллаа.");
+      refreshHistory();
+    } catch {
+      setError("Төхөөрөмжийн хадгалах эрх эсвэл зай хүрэлцэхгүй байна.");
+    }
   };
-
-  if (showSpreadSelection) {
-    return (
-      <div className="max-w-6xl mx-auto text-center">
-        <div className="mb-8">
-          <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
-            🔮 Уламжлалт Таро Уншилт 🔮
-          </h2>
-          <p className="text-xl text-purple-200">
-            Уламжлалт таро уншилтын арга барилаар хувь заяагаа нээ
-          </p>
-        </div>
-
-        {/* Question Input */}
-        <div className="mb-8">
-          <div className="bg-purple-800/30 backdrop-blur-sm rounded-lg p-6 border border-purple-400/20 max-w-2xl mx-auto">
-            <h3 className="text-2xl font-semibold mb-4 text-purple-200">
-              🔮 Асуултаа Асуу 🔮
-            </h3>
-            <textarea
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Жишээ: Миний ирээдүй ямар байх вэ? Миний хайр ямар байх вэ? Миний ажил ямар байх вэ?"
-              rows={4}
-              className="w-full px-4 py-3 bg-white/10 border border-purple-400/30 rounded-lg text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none text-lg"
-            />
-          </div>
-        </div>
-
-        {/* Spread Selection */}
-        <div className="space-y-6">
-          <h3 className="text-2xl font-semibold text-purple-200">
-            Уншилтын Арга Барилаа Сонго
-          </h3>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tarotSpreads.map((spread) => (
-              <div
-                key={spread.id}
-                onClick={() => selectSpread(spread)}
-                className="bg-purple-800/30 backdrop-blur-sm rounded-lg p-6 border border-purple-400/20 cursor-pointer hover:bg-purple-700/40 transition-all duration-300 hover:scale-105"
-              >
-                <div className="text-3xl mb-3">
-                  {spread.cardCount === 1
-                    ? "🃏"
-                    : spread.cardCount === 3
-                    ? "🎴"
-                    : "🔮"}
-                </div>
-                <h4 className="text-xl font-semibold mb-2 text-purple-200">
-                  {spread.name}
-                </h4>
-                <p className="text-sm text-purple-300 mb-3">
-                  {spread.description}
-                </p>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs bg-purple-600/50 px-2 py-1 rounded">
-                    {spread.cardCount} карт
-                  </span>
-                  <span className="text-xs bg-blue-600/50 px-2 py-1 rounded">
-                    {spread.difficulty}
+  const startAgain = () => {
+    setSpread(null);setDrawn([]);setVisibleCount(0);setError("");setSavedMessage("");setNotes("");
+  };
+  return (
+    <section className="mx-auto max-w-6xl px-3 pb-16 sm:px-6">
+      <header className="mx-auto mb-10 max-w-2xl text-center">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-amber-300">THE ART OF REFLECTION</p>
+        <h2 className="font-serif text-4xl font-medium tracking-tight text-amber-50 sm:text-5xl">Уламжлалт таро</h2>
+        <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-slate-300">
+          78 хөзрөөс уламжлалт байрлалаар санамсаргүй сонгож, бэлгэдлийг нь тайлбарлана.
+          AI, төлбөртэй API, сервер шаардлагагүй.
+        </p>
+      </header>
+      {!spread && (
+        <div className="mx-auto max-w-4xl">
+          <label htmlFor="tarot-question" className="mb-3 block text-sm font-medium text-amber-100">
+            Эргэцүүлэх асуулт (заавал биш)
+          </label>
+          <textarea
+            id="tarot-question" value={question} onChange={(event) => setQuestion(event.target.value)}
+            maxLength={500} rows={3}
+            placeholder="Жишээ: Энэ долоо хоногт ямар зүйлд анхаарах хэрэгтэй вэ?"
+            className="mb-8 w-full resize-y rounded-xl border border-amber-300/20 bg-white/5 p-4 text-base text-white placeholder:text-slate-400 focus:border-amber-300 focus:outline-none"
+          />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {tarotSpreads.map((option) => (
+              <button type="button" key={option.id} onClick={() => chooseSpread(option)}
+                className="group rounded-2xl border border-amber-300/20 bg-gradient-to-br from-[#241b38] to-[#141326] p-6 text-left shadow-xl transition-colors hover:border-amber-300/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200">
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="text-3xl font-serif text-amber-300" aria-hidden="true">✧</span>
+                  <span className="rounded-full border border-amber-300/30 px-3 py-1 text-xs text-amber-100">
+                    {option.cardCount} карт
                   </span>
                 </div>
-              </div>
+                <h3 className="font-serif text-xl text-amber-50">{option.name}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-300">{option.description}</p>
+                <span className="mt-5 block text-xs uppercase tracking-wider text-amber-300 group-hover:text-amber-100">
+                  Сонгох
+                </span>
+              </button>
             ))}
           </div>
         </div>
-      </div>
-    );
-  }
-
-  if (!selectedSpread) return null;
-
-  return (
-    <div className="max-w-6xl mx-auto text-center">
-      {/* Header */}
-      <div className="mb-8">
-        <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
-          🔮 {selectedSpread.name} 🔮
-        </h2>
-        <p className="text-xl text-purple-200 mb-4">
-          {selectedSpread.description}
-        </p>
-        {question && (
-          <div className="bg-purple-800/30 backdrop-blur-sm rounded-lg p-4 border border-purple-400/20 max-w-2xl mx-auto">
-            <p className="text-purple-200">
-              <strong>Асуулт:</strong> {question}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Shuffle and Draw */}
-      {!isReading && (
-        <div className="mb-8">
-          <button
-            onClick={shuffleAndDrawCards}
-            disabled={shuffling}
-            className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-full text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {shuffling ? (
-              <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                Картуудыг Холиж Байна...
-              </div>
-            ) : (
-              "🔄 Картуудыг Холиж Уншилт Эхлэх 🔄"
-            )}
-          </button>
-        </div>
       )}
-
-      {/* Reading Display */}
-      {isReading && readingCards.length > 0 && (
-        <div className="space-y-8">
-          {/* Cards Layout */}
-          <div className="bg-purple-800/30 backdrop-blur-sm rounded-lg p-6 border border-purple-400/20">
-            <h3 className="text-2xl font-semibold mb-6 text-purple-200">
-              🎴 Уншилтын Картууд 🎴
-            </h3>
-
-            <div
-              className="grid gap-4 md:gap-6"
-              style={{
-                gridTemplateColumns:
-                  selectedSpread.id === "celtic-cross"
-                    ? "repeat(3, minmax(160px, 1fr))"
-                    : selectedSpread.cardCount <= 3
-                    ? `repeat(${selectedSpread.cardCount}, minmax(160px, 1fr))`
-                    : "repeat(auto-fit, minmax(140px, 1fr))",
-              }}
-            >
-              {readingCards.map((readingCard, index) => (
-                <div key={index} className="text-center">
-                  <div className="mb-4">
-                    <TarotCard
-                      card={readingCard.card}
-                      isRevealed={true}
-                      userQuestion={readingCard.positionName}
-                      isReversed={readingCard.isReversed}
-                      size={
-                        selectedSpread.cardCount === 1
-                          ? "lg"
-                          : selectedSpread.cardCount <= 3
-                          ? "md"
-                          : "sm"
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-purple-200">
-                      {readingCard.positionName}
-                    </h4>
-                    <p className="text-sm text-purple-300">
-                      {readingCard.positionDescription}
-                    </p>
-                    {readingCard.isReversed && (
-                      <div className="text-xs bg-red-600/50 px-2 py-1 rounded text-red-200">
-                        🔄 Урвуу
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+      {spread && (
+        <div>
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-amber-300">{spread.cardCount} картын дэлгэмэл</p>
+              <h3 className="mt-2 font-serif text-3xl text-amber-50">{spread.name}</h3>
+              {question.trim() && <p className="mt-2 max-w-xl text-sm text-slate-300">Асуулт: {question.trim()}</p>}
             </div>
+            <button type="button" onClick={startAgain}
+              className="rounded-full border border-white/25 px-5 py-2 text-sm text-white transition-colors hover:border-amber-300">
+              Дэлгэмэл солих
+            </button>
           </div>
-
-          {/* AI Interpretation */}
-          <div className="bg-gradient-to-r from-blue-800/30 to-indigo-800/30 backdrop-blur-sm rounded-lg p-6 border border-blue-400/20">
-            <h3 className="text-2xl font-semibold mb-4 text-blue-200">
-              🤖 AI Уламжлалт Тайлал 🤖
-            </h3>
-
-            {!showAiInterpretation && !isGettingAiInterpretation && (
-              <div className="text-center">
-                <p className="text-blue-100 mb-4">
-                  AI-ийн тусламжтайгаар уламжлалт таро уншилтын дэлгэрэнгүй
-                  тайлал авах
-                </p>
-                <button
-                  onClick={getAiInterpretation}
-                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                >
-                  🤖 AI Тайлал Авах
-                </button>
-              </div>
-            )}
-
-            {isGettingAiInterpretation && (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
-                <p className="text-blue-200 text-lg">AI тайлал хийж байна...</p>
-              </div>
-            )}
-
-            {showAiInterpretation && aiInterpretation && (
-              <div className="text-left">
-                <pre className="text-lg text-blue-100 leading-relaxed whitespace-pre-wrap font-sans">
-                  {aiInterpretation}
-                </pre>
-              </div>
-            )}
-
-            {!isGettingAiInterpretation && aiError && (
-              <div className="text-center text-red-400 font-semibold py-4">
-                {aiError}
-              </div>
-            )}
-
-            {isAiMock && (
-              <div className="mt-4 p-3 bg-yellow-800/30 rounded-lg border border-yellow-400/20">
-                <p className="text-yellow-200 text-sm">
-                  💡 Энэ бол туршилтын хариулт юм. Жинхэнэ AI тайлалд Gemini API
-                  түлхүүр шаардлагатай.
-                  <br />
-                  <a
-                    href="https://makersuite.google.com/app/apikey"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-yellow-300 underline hover:text-yellow-100"
-                  >
-                    API түлхүүр авах
-                  </a>
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Save Reading */}
-          <div className="bg-gradient-to-r from-green-800/30 to-blue-800/30 backdrop-blur-sm rounded-lg p-6 border border-green-400/20">
-            <h3 className="text-xl font-semibold mb-4 text-green-200">
-              📄 Уншилтыг Хадгалах 📄
-            </h3>
-
-            {!user ? (
-              <div className="text-center">
-                <p className="text-green-100 mb-4">
-                  Уншилтаа хадгалахын тулд нэвтэрнэ үү
-                </p>
-                <button
-                  onClick={() => setShowAuthModal(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                >
-                  🔐 Нэвтрэх
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-green-200 mb-2">
-                    Тэмдэглэл
-                  </label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Энэ уншилтын талаар тэмдэглэл..."
-                    rows={3}
-                    className="w-full px-3 py-2 bg-white/10 border border-green-400/30 rounded-md text-white placeholder-green-200 focus:outline-none focus:ring-2 focus:ring-green-400 resize-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-green-200 mb-2">
-                    Сэтгэл хөдөлгөөн
-                  </label>
-                  <select
-                    value={mood}
-                    onChange={(e) => setMood(e.target.value)}
-                    className="w-full px-3 py-2 bg-white/10 border border-green-400/30 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-400"
-                  >
-                    <option value="тодорхойгүй">Тодорхойгүй</option>
-                    <option value="сайн">Сайн</option>
-                    <option value="дунд">Дунд</option>
-                    <option value="муу">Муу</option>
-                  </select>
-                </div>
-
-                <div className="flex gap-4 justify-center">
-                  <button
-                    onClick={handleSaveReading}
-                    disabled={saving}
-                    className="px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {saving ? "Хадгалж байна..." : "💾 Хадгалах"}
+          {drawn.length === 0 ? (
+            <div className="mx-auto max-w-lg rounded-2xl border border-amber-300/20 bg-[#1c1830] px-8 py-12 text-center">
+              <p className="text-5xl text-amber-300" aria-hidden="true">✦</p>
+              <p className="my-5 text-sm leading-relaxed text-slate-200">
+                Картуудыг жигд холиж, давхардалгүй сугална. Эгц эсвэл урвуу байрлалыг тусад нь санамсаргүй сонгоно.
+              </p>
+              <button type="button" onClick={makeReading}
+                className="w-full rounded-full bg-amber-300 px-8 py-3 font-semibold text-[#161024] transition-colors hover:bg-amber-200">
+                Хольж, хөзөр сугалах
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
+                <span>{visibleCount} / {drawn.length} карт нээсэн</span>
+                {visibleCount < drawn.length && (
+                  <button type="button" onClick={() => setVisibleCount((current)=>Math.min(current+1,drawn.length))}
+                    className="rounded-full bg-amber-300 px-6 py-3 font-medium text-[#161024] hover:bg-amber-200">
+                    Дараагийн картыг нээх
                   </button>
-
-                  <button
-                    onClick={resetReading}
-                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                  >
-                    🔮 Шинэ Уншилт 🔮
-                  </button>
-                </div>
-
-                {saveSuccess && (
-                  <div className="text-center text-green-300 font-semibold">
-                    ✅ Уншилт амжилттай хадгалагдлаа!
-                  </div>
                 )}
               </div>
-            )}
-          </div>
+              <div className="grid grid-cols-2 items-start gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                {drawn.map((item,index) => (
+                  <div key={item.position} className="min-w-0 rounded-xl border border-white/10 bg-[#211b32] p-3">
+                    <div className="flex justify-center">
+                      <TarotCard card={item.card} size="sm" isRevealed={index < visibleCount}
+                        isReversed={item.isReversed} userQuestion={index < visibleCount ? undefined : ""} />
+                    </div>
+                    <p className="mt-4 text-center text-sm font-semibold text-amber-100">{item.position}. {item.positionName}</p>
+                    <p className="mt-2 text-center text-xs leading-relaxed text-slate-300">{item.positionDescription}</p>
+                  </div>
+                ))}
+              </div>
+              {visibleCount === drawn.length && (
+                <div className="mx-auto mt-10 max-w-3xl rounded-2xl border border-amber-300/25 bg-gradient-to-b from-[#27203d] to-[#151224] p-6 sm:p-9">
+                  <h4 className="font-serif text-2xl text-amber-100">Таны уншилтын тайлал</h4>
+                  <pre className="mt-5 whitespace-pre-wrap break-words font-sans text-sm leading-7 text-slate-100">{result}</pre>
+                  <label className="mt-8 block text-sm font-medium text-amber-100" htmlFor="reading-notes">Хувийн тэмдэглэл</label>
+                  <textarea id="reading-notes" value={notes} onChange={(event)=>setNotes(event.target.value)}
+                    maxLength={2000} rows={3} placeholder="Өөрийн бодож мэдэрсэн зүйлээ энд бич..."
+                    className="mt-2 w-full rounded-lg border border-white/20 bg-white/5 p-4 text-sm text-white placeholder:text-slate-400 focus:border-amber-300 focus:outline-none"/>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button type="button" onClick={save}
+                      className="rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#161024] hover:bg-amber-200">
+                      Төхөөрөмж дээр хадгалах
+                    </button>
+                    <button type="button" onClick={makeReading}
+                      className="rounded-full border border-white/30 px-6 py-3 text-sm text-white hover:border-amber-300">
+                      Дахин холих
+                    </button>
+                  </div>
+                  {savedMessage && <p role="status" className="mt-4 text-sm text-emerald-200">{savedMessage}</p>}
+                </div>
+              )}
+            </>
+          )}
+          {error && <p role="alert" className="mt-6 text-center text-red-300">{error}</p>}
+          {history.length > 0 && (
+            <details className="mx-auto mt-10 max-w-3xl rounded-xl border border-white/10 p-5 text-sm text-slate-200">
+              <summary className="cursor-pointer text-amber-200">Өмнөх уншилтууд ({history.length})</summary>
+              <ul className="mt-4 space-y-3">
+                {history.map((entry) => <li key={entry.id} className="border-t border-white/10 py-3">
+                  <p className="font-medium text-amber-100">{entry.spread}</p>
+                  <p className="text-slate-300">{entry.question || "Асуулт оруулаагүй"}</p>
+                  <p className="text-xs text-slate-400">{new Date(entry.date).toLocaleDateString("mn-MN")}</p>
+                </li>)}
+              </ul>
+            </details>
+          )}
         </div>
       )}
-
-      {/* Authentication Modal */}
-      {showAuthModal && onLogin && (
-        <AuthModal
-          isOpen={showAuthModal}
-          onClose={() => setShowAuthModal(false)}
-          onLogin={onLogin}
-        />
-      )}
-    </div>
+      <p className="mx-auto mt-10 max-w-3xl text-center text-xs leading-relaxed text-slate-400">
+        Таро, зурхай нь шинжлэх ухааны баталгаатай ирээдүй таамаглах арга биш. Энэ бүтээгдэхүүн нь соёлын
+        бэлгэдэл болон өөрийгөө эргэцүүлэх зорилготой. Эрүүл мэнд, мөнгө, хууль зэрэг чухал
+        шийдвэрийг зөвхөн картын тайлалд тулгуурлан бүү гарга.
+      </p>
+    </section>
   );
 }
