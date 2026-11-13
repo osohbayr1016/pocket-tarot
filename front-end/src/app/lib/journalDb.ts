@@ -174,3 +174,25 @@ export async function replaceJournal(records:readonly SavedReading[]):Promise<vo
     await complete;
   });
 }
+
+export async function exportJournalJSON():Promise<string>{
+  return JSON.stringify({
+    format:"pocket-tarot-readings",version:2,exportedAt:new Date().toISOString(),
+    readings:await listJournal(),
+  },null,2);
+}
+export async function importJournalJSON(text:string):Promise<number>{
+  if(text.length>20_000_000)throw new Error("Импортын файл 20 MB-ээс бага байх ёстой.");
+  let parsed:unknown;
+  try{parsed=JSON.parse(text);}catch{throw new Error("JSON файл уншигдсангүй.");}
+  if(!parsed||typeof parsed!=="object"||Array.isArray(parsed))throw new Error("JSON формат буруу.");
+  const data=parsed as Record<string,unknown>;
+  if(data.format!=="pocket-tarot-readings"||(data.version!==1&&data.version!==2)
+    ||!Array.isArray(data.readings))throw new Error("Pocket Tarot уншилтын JSON биш байна.");
+  const incoming=validateMany(data.readings);
+  const existing=await listJournal();
+  if(new Set([...incoming,...existing].map(row=>row.id)).size>JOURNAL_SAFE_LIMIT)
+    throw new Error("5000-аас олон уншилт нэг архивд багтахгүй.");
+  await importJournal(incoming);
+  return incoming.length;
+}
