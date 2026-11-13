@@ -3,6 +3,8 @@
  * validated: localStorage is an untrusted source, not an implicit schema.
  */
 export const HISTORY_KEY = "pocket-tarot-offline-readings-v1";
+export type ReadingMood="neutral"|"calm"|"hopeful"|"uncertain"|"anxious";
+const MOODS:readonly ReadingMood[]=["neutral","calm","hopeful","uncertain","anxious"];
 export interface SavedReading {
   id: string;
   date: string;
@@ -11,6 +13,8 @@ export interface SavedReading {
   reading: string;
   notes: string;
   favorite?: boolean;
+  mood?: ReadingMood;
+  tags?: string[];
   cards: {id:number; reversed:boolean; position:number}[];
 }
 const MAX_RECORDS=100;
@@ -45,6 +49,9 @@ function sanitize(value:unknown):SavedReading|null {
     reading:item.reading,
     notes:limitText(item.notes,2000),
     favorite:item.favorite===true,
+    mood:MOODS.includes(item.mood as ReadingMood)?item.mood as ReadingMood:"neutral",
+    tags:Array.isArray(item.tags)?[...new Set(item.tags.filter((x):x is string=>
+      typeof x==="string"&&x.trim().length>0).map(x=>x.trim().slice(0,32)))].slice(0,6):[],
     cards,
   };
 }
