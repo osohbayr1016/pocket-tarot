@@ -101,4 +101,10 @@ data/
 
 # Temporary files
 tmp/
-temp/ 
+temp/
+
+# Private configuration (never commit secrets)
+**/.env.*
+!**/.env.example
+back-end/config.production.env
+**/config.production.env
