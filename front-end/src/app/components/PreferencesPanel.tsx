@@ -42,7 +42,7 @@ export default function PreferencesPanel(){
       const restored=restoreCompleteBackup(await file.text());
       setPrefs(restored.preferences);
       setMessage(restored.readings.length+" уншилт, "+restored.spreads.length+
-        " дэлгэмэл болон тохиргоо сэргээгдлээ. Бусад хэсэг рүү орж шинэ мэдээллээ хараарай.");
+        " дэлгэмэл, "+restored.study.length+" сурсан карт болон тохиргоо сэргээгдлээ. Бусад хэсэг рүү орж шинэ мэдээллээ хараарай.");
       setError("");
     }catch(cause){setError(cause instanceof Error?cause.message:"Backup сэргээхэд алдаа гарлаа.");}
   };
@@ -86,7 +86,7 @@ export default function PreferencesPanel(){
     <div className="mt-8 rounded-2xl border border-amber-300/25 bg-[#211a34] p-6 sm:p-9">
       <h2 className="font-serif text-2xl text-amber-100">Бүх мэдээллийн backup</h2>
       <p className="mt-3 text-sm leading-7 text-slate-300">
-        Journal, дуртай уншилт, custom spread болон тохиргоогоо нэг JSON файлд экспортолж
+        Journal, дуртай уншилт, custom spread, Tarot сургалтын ахиц болон тохиргоогоо нэг JSON файлд экспортолж
         өөр төхөөрөмж рүү зөөж болно. Нууц үг эсвэл сервер шаардлагагүй.
         JSON файл таны хувийн тэмдэглэлийг агуулдаг тул бусдад бүү илгээгээрэй.
       </p>
