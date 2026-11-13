@@ -92,3 +92,14 @@ export function importReadings(text:string):SavedReading[]{
   localStorage.setItem(HISTORY_KEY,JSON.stringify(unique));
   return unique;
 }
+
+/** Update private journal notes without overwriting card layout or reading text. */
+export function updateReadingNotes(id:string,notes:string):SavedReading[]{
+  if(typeof id!=="string"||typeof notes!=="string")throw new Error("Invalid journal data");
+  if(notes.length>2000)throw new Error("Тэмдэглэл 2000 тэмдэгтээс хэтэрсэн.");
+  const current=loadReadings();
+  if(!current.some(item=>item.id===id))throw new Error("Уншилт олдсонгүй.");
+  const result=current.map(item=>item.id===id?{...item,notes}:item);
+  localStorage.setItem(HISTORY_KEY,JSON.stringify(result));
+  return result;
+}
