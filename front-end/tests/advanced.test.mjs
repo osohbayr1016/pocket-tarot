@@ -1,3 +1,4 @@
+import { OFFLINE_CITIES, resolveLocalTime } from "../src/app/lib/astroTimeZone.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { makeCustomSpread } from "../src/app/lib/customSpread.ts";
@@ -84,4 +85,37 @@ test("custom spreads preserve 1–12 positions, labels and validation",()=>{
   assert.equal(new Set(reading.map(item=>item.card.id)).size,4);
   assert.throws(()=>makeCustomSpread(13,[]),RangeError);
   assert.throws(()=>makeCustomSpread(0,[]),RangeError);
+});
+
+test("offline city presets have valid unique IANA zones and coordinates",()=>{
+  assert.ok(OFFLINE_CITIES.length>=10);
+  assert.equal(new Set(OFFLINE_CITIES.map(city=>city.id)).size,OFFLINE_CITIES.length);
+  for(const city of OFFLINE_CITIES){
+    assert.ok(Math.abs(city.latitude)<=90);
+    assert.ok(Math.abs(city.longitude)<=180);
+    assert.doesNotThrow(()=>new Intl.DateTimeFormat("en-US",{timeZone:city.timeZone}));
+  }
+});
+test("IANA timezone adjusts historical local time for standard/DST offsets",()=>{
+  assert.equal(resolveLocalTime("2024-01-15","12:00","America/New_York").toISOString(),
+    "2024-01-15T17:00:00.000Z");
+  assert.equal(resolveLocalTime("2024-07-15","12:00","America/New_York").toISOString(),
+    "2024-07-15T16:00:00.000Z");
+  assert.equal(resolveLocalTime("2024-11-01","10:00","Asia/Ulaanbaatar").toISOString(),
+    "2024-11-01T02:00:00.000Z");
+  assert.equal(resolveLocalTime("2024-07-01","12:00","Europe/London").toISOString(),
+    "2024-07-01T11:00:00.000Z");
+});
+test("DST folds and gaps never silently guess user birth time",()=>{
+  assert.throws(()=>resolveLocalTime("2024-03-10","02:30","America/New_York"),/байхгүй/);
+  assert.throws(()=>resolveLocalTime("2024-11-03","01:30","America/New_York"),/давтагдсан/);
+  assert.equal(parseBirthUTC({birthDate:"2024-07-15",birthTime:"12:00",timeZone:"America/New_York",
+    latitude:40.71,longitude:-74.0}).toISOString(),"2024-07-15T16:00:00.000Z");
+});
+test("journal rejects truncation and duplicated imported card IDs",()=>{
+  const reading={id:"a",date:"2024-03-20T09:00:00.000Z",spread:"3 cards",
+    question:"",notes:"",reading:"Interpretation",cards:[
+      {id:1,reversed:false,position:1},{id:1,reversed:true,position:2}
+    ]};
+  assert.equal(parseReadings([reading]).length,0);
 });
