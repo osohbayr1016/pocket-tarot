@@ -26,6 +26,9 @@ jobs:
       - name: Offline engine tests
         working-directory: front-end
         run: npm test
+      - name: React UI smoke tests
+        working-directory: front-end
+        run: npm run test:legacy
       - name: TypeScript
         working-directory: front-end
         run: npm run typecheck
