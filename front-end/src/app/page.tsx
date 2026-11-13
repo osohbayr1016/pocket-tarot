@@ -203,7 +203,21 @@ export default function Home() {
       <footer className="relative z-10 border-t border-white/10 px-4 py-8 text-center text-xs leading-6 text-slate-400">
         <p className="font-serif text-lg text-amber-200">✧ Pocket Tarot</p>
         <p className="mt-2">Бэлгэдлийн тайлал ба өөрийгөө эргэцүүлэх орон зай. Ирээдүйг баттай таамаглахгүй.</p>
-        <p className="mt-1">Rider–Waite–Smith illustrations © public domain (1909). Art by Pamela Colman Smith.</p>
+        <p className="mt-1">{locale==="en"
+          ?"Original 1909 illustrations by Pamela Colman Smith. Historical scans restored by Steve P."
+          :"1909 оны анхны зургууд — Pamela Colman Smith. Түүхэн сканыг Steve P. сэргээн боловсруулсан."}</p>
+        <p className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1">
+          <a href="https://github.com/mixvlad/TarotCards/blob/main/SOURCES.md"
+            target="_blank" rel="noopener noreferrer"
+            className="underline decoration-amber-300/50 underline-offset-4 hover:text-amber-100">
+            {locale==="en"?"Artwork provenance":"Зургийн эх сурвалж"}
+          </a>
+          <a href="https://github.com/osohbayr1016/pocket-tarot/blob/feat/offline-tarot-foundation/ARTWORK_PROVENANCE.md"
+            target="_blank" rel="noopener noreferrer"
+            className="underline decoration-amber-300/50 underline-offset-4 hover:text-amber-100">
+            {locale==="en"?"Licensing notes":"Зургийн эрхийн тэмдэглэл"}
+          </a>
+        </p>
       </footer>
     </div>
   );
