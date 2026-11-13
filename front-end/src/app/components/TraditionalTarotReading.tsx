@@ -1,4 +1,5 @@
 "use client";
+import type { ReadingTopic } from "../lib/readingIntelligence";
 
 import { useState } from "react";
 import { tarotCards } from "../data/tarotCards";
@@ -17,13 +18,14 @@ const HISTORY_KEY = "pocket-tarot-offline-readings-v1";
 export default function TraditionalTarotReading({ onReset, userQuestion = "" }: Props) {
   const [spread, setSpread] = useState<TarotSpread | null>(null);
   const [question, setQuestion] = useState(userQuestion);
+  const [topic,setTopic] = useState<ReadingTopic|"auto">("auto");
   const [drawn, setDrawn] = useState<DrawnCard[]>([]);
   const [visibleCount, setVisibleCount] = useState(0);
   const [notes, setNotes] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
   const [error, setError] = useState("");
   const [history, setHistory] = useState<{id:string; date:string; spread:string; question:string; reading:string}[]>([]);
-  const result = interpretReading(drawn, question);
+  const result = interpretReading(drawn, question, topic === "auto" ? undefined : topic);
 
   const refreshHistory = () => {
     try {
@@ -102,6 +104,15 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
             placeholder="Жишээ: Энэ долоо хоногт ямар зүйлд анхаарах хэрэгтэй вэ?"
             className="mb-8 w-full resize-y rounded-xl border border-amber-300/20 bg-white/5 p-4 text-base text-white placeholder:text-slate-400 focus:border-amber-300 focus:outline-none"
           />
+          <label htmlFor="tarot-topic" className="mb-3 block text-sm font-medium text-amber-100">Асуултын чиглэл</label>
+          <select id="tarot-topic" value={topic} onChange={event=>setTopic(event.target.value as ReadingTopic|"auto")}
+            className="mb-8 w-full rounded-xl border border-white/20 bg-[#211a34] p-3 text-sm text-white sm:max-w-xs">
+            <option value="auto">Автоматаар тодорхойлох</option>
+            <option value="general">Ерөнхий</option>
+            <option value="love">Хайр, харилцаа</option>
+            <option value="career">Ажил, карьер</option>
+            <option value="growth">Хувь хүний хөгжил</option>
+          </select>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {tarotSpreads.map((option) => (
               <button type="button" key={option.id} onClick={() => chooseSpread(option)}
