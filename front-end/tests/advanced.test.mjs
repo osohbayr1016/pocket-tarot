@@ -1,3 +1,4 @@
+import {convertLegacyReadings} from "../src/app/lib/legacyMigration.ts";
 import {parseSavedSpreads,savedToSpread} from "../src/app/lib/savedCustomSpreads.ts";
 import { OFFLINE_CITIES, resolveLocalTime } from "../src/app/lib/astroTimeZone.ts";
 import test from "node:test";
@@ -139,4 +140,20 @@ test("major arcana pairs include a transparent cross-card interpretation",()=>{
   assert.match(text,/Картын хослол/);
   assert.match(text,/Нөөц/);
   assert.match(text,/баттай таамагладаггүй/);
+});
+
+test("legacy account export conversion preserves only explicit local fields",()=>{
+  const old={data:{readings:[{
+    id:17,cardId:6,cardName:"The Lovers",cardMeaning:"Legacy text",
+    question:"Миний асуулт",notes:"Old note",isFavorite:true,
+    readingDate:"2024-05-02T13:40:00.000Z"
+  }]}};
+  const migrated=convertLegacyReadings(old);
+  assert.equal(migrated.length,1);
+  assert.equal(migrated[0].id,"legacy-17");
+  assert.deepEqual(migrated[0].cards,[{id:6,reversed:false,position:1}]);
+  assert.match(migrated[0].reading,/Legacy text/);
+  assert.equal(migrated[0].favorite,true);
+  assert.throws(()=>convertLegacyReadings({readings:[{id:"a",cardId:999,readingDate:"2024-05-02"}]}),/ID/);
+  assert.throws(()=>convertLegacyReadings({readings:[{id:"b",cardId:1}]}),/огноо/);
 });
