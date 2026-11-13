@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { tarotCards, type TarotCard } from "./data/tarotCards";
 import { secureRandomInt } from "./lib/offlineEngine";
+import {getReadingPreferences} from "./lib/readingPreferences";
 import TarotCardView from "./components/TarotCard";
 import CardReading from "./components/CardReading";
 import TraditionalTarotReading from "./components/TraditionalTarotReading";
@@ -48,7 +49,7 @@ export default function Home() {
   const drawSingleCard = () => {
     try {
       const index = secureRandomInt(tarotCards.length);
-      setSelected({card:tarotCards[index],isReversed:secureRandomInt(2)===0});
+      setSelected({card:tarotCards[index],isReversed:getReadingPreferences().allowReversed && secureRandomInt(2)===0});
       setError("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Карт сугалж чадсангүй.");
