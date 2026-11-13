@@ -168,6 +168,7 @@ test("journal favorites filter and search work on saved readings",async({page})=
   await page.getByRole("button",{name:"Дуртайд нэмэх"}).click();
   await page.getByLabel("Зөвхөн дуртай уншилт").check();
   await page.getByRole("searchbox",{name:"Уншилт хайх"}).fill("Unique favorite journal");
+  await page.getByRole("button",{name:"Дэлгэрэнгүй"}).click();
   await expect(page.getByText("Unique favorite journal search token")).toBeVisible();
   await page.getByRole("searchbox",{name:"Уншилт хайх"}).fill("no such result anywhere");
   await expect(page.getByText("Шүүлтүүрт тохирох уншилт олдсонгүй.")).toBeVisible();
