@@ -1,69 +1,65 @@
 # Pocket Tarot
 
-**Tarot & astrology-inspired reflection, computed locally without AI or runtime API calls.**
+**Монгол хэл дээрх AI/API шаардлагагүй, offline-first Tarot ба Astrology платформ.**
 
-An offline-first Next.js 15 / React 19 experience in Mongolian. The browser draws cards, interprets traditional card meanings, validates dates, computes conventional Western tropical zodiac sun signs, and stores user readings **on the same device**.
+> Tarot ба astrology бол соёлын бэлгэдэл, эргэцүүллийн уламжлал. Картын тайлал ирээдүйг шинжлэх ухааны үндэслэлээр баттай таамаглахгүй. Эрүүл мэнд, хууль, санхүүгийн шийдвэрийг түүнд дангаар тулгуурлан бүү гарга.
 
-> Tarot and astrology are cultural/interpretive traditions, not scientific methods of predicting personal events. This application makes no claims about guaranteed future outcomes. Medical, legal, financial, and safety decisions require appropriate professional evidence.
+## Features (2026-11-13 branch)
 
-## Available experiences
+- **78 genuine Rider–Waite–Smith tarot cards** — 22 Major / 56 Minor; all 78 local original JPG (~20.9 MiB) and compressed WebP (~8.1 MiB).
+- **Five traditional spreads + custom spreads (1–12 cards)**, independently reversed cards, unbiased Web Crypto Fisher–Yates shuffling.
+- **Offline contextual interpretation** — question topic (love/career/growth/general), cross-card patterns, reversals, element balance; transparent deterministic rules, not LLM.
+- **Advanced astrology** — geocentric tropical Sun/Moon/planets, ascendant, aspects and Whole Sign houses calculated locally with Astronomy Engine 2.1.19 (MIT). Requires user-provided birth time, historical UTC offset and coordinates. Not Placidus and not a scientific prediction.
+- **12-sign conventional zodiac**, date validation, stable date-dependent daily symbolic prompts.
+- **Private journal** — local saved readings, individual deletion and notes, JSON export/import, PNG sharing, print/PDF.
+- **Daily Tarot Card**, beginner Major Arcana recognition quiz, card catalog and transparent rule-based dream symbols.
+- **Installable offline PWA** — locally cached Next app shell and on-demand images, browser service worker. Offline reload requires prior successful visit and installation; device-specific validation is still needed.
+- **Responsive UI and accessibility** — keyboard-first card modal and focus management, reduced-motion preference.
+- **Security** — legacy AI/auth APIs retired on branch with fail-closed HTTP 410, old OAuth token callback removed, secret-bearing config removed from branch. **Previously exposed production credentials MUST be rotated; Git history still contains them.**
 
-- **78-card Rider–Waite–Smith deck**: 22 Major Arcana, 56 Minor Arcana, actual historical card art.
-- **Five readings**: one card, past/present/possible direction, love, career, Celtic Cross (10).
-- **Reading engine**: unbiased Fisher–Yates shuffle via Web Crypto, no duplicate cards, upright/reversed drawn independently.
-- **Interpretation**: Mongolian card meanings with spread position labels, deterministic, fully local.
-- **Zodiac**: all 12 conventional tropical sun-sign date ranges and Gregorian date validation.
-- **Daily reflection**: date-dependent, repeatable local symbolic prompt; lucky numbers/colors are **entertainment, not forecasts**.
-- **Dream journal**: transparent keyword-based interpretations; not AI or clinical analysis.
-- **Personal guidance**: structured reflection, not generated professional advice.
-- **Privacy**: optional readings stored in browser localStorage; no login or network account needed.
+## Run / verify
 
-## Run the frontend
-
-Requirements: Node.js 22+, npm, network once to fetch publicly hosted artwork *if missing*.
+Requires Node 22+, npm.
 
 ```bash
 cd front-end
 npm ci --legacy-peer-deps
-npm run assets:sync   # skips already-installed card files
 npm run dev
-```
-
-Open http://localhost:3000. Actual images are committed under `front-end/public/tarot/rws`, so on this repo version assets sync is a no-op. Re-download is possible using `npm run assets:sync` if an image is missing.
-
-To build and test:
-
-```bash
-cd front-end
+# separate terminal:
 npm test
+npm run test:legacy
+npm run lint
 npm run typecheck
 npm run build
 ```
 
-After the frontend is built, readings, images, and astrology calculations make no backend or AI requests. **This is not yet a packaged offline-installable PWA**; serving/loading the website initially still requires a web server or local Next.js instance.
+Production built site: `npm run start`. Chromium E2E tests in CI use Playwright. To run them locally install `@playwright/test` and Chromium or follow `.github/workflows/offline-frontend.yml`.
 
-## Artwork provenance
+**No AI, inference API or backend requests are required for any main frontend feature.** All user-input calculations happen inside the browser. First visit or service-worker update naturally requires delivery of the application files over a network.
 
-78 Rider–Waite–Smith historical illustrations (1909), illustrated by **Pamela Colman Smith** under the direction of **A. E. Waite**. Local JPEG files sourced from the Rider–Waite deck maintained in [mixvlad/TarotCards](https://github.com/mixvlad/TarotCards/tree/main/tarot/rider-waite/720px). They document this edition as public domain; verify applicable copyright rules before distributing in a particular jurisdiction. The included asset sync tool only downloads assets during installation/build, never during card readings.
+## Asset provenance
 
-The `front-end/public/tarot/card-placeholder.svg` fallback is original to this project.
+Cards illustrated by **Pamela Colman Smith** for Rider–Waite–Smith (1909). Locally downloaded from [mixvlad/TarotCards](https://github.com/mixvlad/TarotCards/tree/main/tarot/rider-waite/720px). Verify country-specific distribution rights. The one-time sync script does not run at reading time.
 
-## Project structure
+## Technical structure
 
-- `front-end/src/app/data/tarotCards.ts` — the complete card catalog.
-- `front-end/src/app/data/tarotSpreads.ts` — 5 spreads and position definitions.
-- `front-end/src/app/lib/offlineEngine.ts` — reusable local computation.
-- `front-end/src/app/components/` — accessible responsive reading UI.
-- `front-end/tests/offline.test.mjs` — deterministic card/zodiac tests.
-- `front-end/public/tarot/rws/` — 78 local JPG assets.
-- `back-end/` — **legacy optional backend**, no longer called by the redesigned frontend. Before deploying this legacy server, audit its authentication, rate limiting, and credentials.
+- `front-end/src/app/data/` — 78 card metadata and spread definitions
+- `front-end/src/app/lib/offlineEngine.ts` — tarot shuffle, zodiac, daily and dream engine
+- `front-end/src/app/lib/readingIntelligence.ts` — deterministic topic and multi-card synthesis
+- `front-end/src/app/lib/astroChart.ts` — local natal chart ephemeris/ascendant/houses
+- `front-end/src/app/lib/readingHistory.ts` — validated private journal import/export
+- `front-end/src/app/lib/exportReadingPng.ts` — private Canvas PNG export
+- `front-end/src/app/components/` — feature UI
+- `front-end/public/sw.js` — installable browser PWA offline shell
+- `front-end/tests/` and `front-end/e2e/` — unit and browser regressions
+- `back-end/` — deprecated compatibility health server; it no longer offers auth/AI routes
 
-## Known limitations
+## Release gates not covered by automated tests
 
-- Sun-sign boundaries are conventional approximations; exact zodiac ingress, ascendant, houses, moon sign, transits, natal aspects require an ephemeris plus birth time and location. None are claimed here.
-- Dream interpretation is simple keyword matching; it does not understand novel free text the way a language model would.
-- Browser storage is device-local and may be erased by browser settings. It is not encrypted, backed up, or shared with another device.
-- Unit tests are not a proof of 100% correctness; perform live browser, accessibility, cross-device and deployment tests before production release.
-- If you're using the old backend: any credentials that were once committed must be rotated, even after deletion. See `SECURITY.md`.
+1. Rotate compromised database/JWT/API keys; revoke old secrets from deployment platforms and review access logs.
+2. Expert review of all 78 historical card interpretations, Mongolian terminology, Celtic Cross positions, and variant traditions.
+3. Real device QA for iOS Safari/Android Chrome, offline reload/storage eviction, screen-reader and browser accessibility checks.
+4. Independently cross-check astronomical fixtures and exact historical timezone/cusp behaviour; the current app accepts manual UTC offsets.
+5. Review live deployment configuration, rollback and privacy disclosures. `main` is **not changed until this PR is merged**.
 
-See `IMPLEMENTATION_AUDIT.md` for engineering scope and release blockers.
+No software can be guaranteed 100% bug-free. CI success indicates only the tested scope.
