@@ -25,8 +25,11 @@ export default function OfflineDeckManager(){
     }
   };
   useEffect(()=>{
-    void refresh().catch(()=>setError("Cache мэдээллийг уншиж чадсангүй."));
-    return ()=>{cancelled.current=true;};
+    // Browser Cache API is asynchronous and only available after hydration.
+    const frame=requestAnimationFrame(()=>{
+      void refresh().catch(()=>setError("Cache мэдээллийг уншиж чадсангүй."));
+    });
+    return ()=>{cancelled.current=true;cancelAnimationFrame(frame);};
   },[]);
   const download=async()=>{
     cancelled.current=false;
