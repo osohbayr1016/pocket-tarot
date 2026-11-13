@@ -25,7 +25,7 @@ export function validateStudyProgress(raw:unknown):CardProgress[]{
       throw new Error("Сургалтын картын мэдээлэл буруу байна.");
     const p=item as Record<string,unknown>;
     const numbers=["id","seen","correct","streak","intervalDays","dueAt","lastReviewedAt"] as const;
-    if(numbers.some(key=>!Number.isSafeInteger(p[key])||(p[key] as number)<0))
+    if(numbers.some(key=>!Number.isSafeInteger(p[key])||(p[key] as number)<0)
       ||(p.id as number)>=STUDY_LIMIT||(p.correct as number)>(p.seen as number)
       ||(p.streak as number)>(p.correct as number)
       ||(p.intervalDays as number)>365
