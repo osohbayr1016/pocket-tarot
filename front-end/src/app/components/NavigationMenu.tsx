@@ -1,6 +1,6 @@
 "use client";
 import {useState} from "react";
-export type Section = "reading"|"single"|"library"|"learn"|"horoscope"|"natal"|"daily"|"daily-card"|"dream"|"guidance"|"history"|"offline";
+export type Section = "reading"|"single"|"library"|"learn"|"horoscope"|"natal"|"daily"|"daily-card"|"dream"|"guidance"|"history"|"offline"|"settings";
 export const NAV_GROUPS: readonly {id:string;label:string;views:readonly {id:Section;label:string}[]}[]=[
   {id:"tarot",label:"Таро",views:[
     {id:"reading",label:"Таро дэлгэмэл"},{id:"single",label:"Нэг карт"},
@@ -14,7 +14,7 @@ export const NAV_GROUPS: readonly {id:string;label:string;views:readonly {id:Sec
     {id:"dream",label:"Зүүд"},{id:"guidance",label:"Удирдамж"}
   ]},
   {id:"journal",label:"Тэмдэглэл",views:[{id:"history",label:"Миний түүх"}]},
-  {id:"settings",label:"Офлайн",views:[{id:"offline",label:"Offline карт"}]}
+  {id:"settings",label:"Офлайн",views:[{id:"offline",label:"Offline карт"},{id:"settings",label:"Хувийн тохиргоо"}]}
 ];
 export function isSection(value:unknown):value is Section{
   return typeof value==="string"&&NAV_GROUPS.some(g=>g.views.some(v=>v.id===value));
