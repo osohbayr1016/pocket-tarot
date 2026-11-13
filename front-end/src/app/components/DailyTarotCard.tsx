@@ -4,6 +4,8 @@ import { tarotCards } from "../data/tarotCards";
 import { interpretReading } from "../lib/offlineEngine";
 import { addReading } from "../lib/readingHistory";
 import TarotCard from "./TarotCard";
+import {getReadingPreferences} from "../lib/readingPreferences";
+import {useLocalDraft} from "../lib/useLocalDraft";
 
 function hashDay(text:string):number{
   let hash=2166136261;
@@ -12,7 +14,8 @@ function hashDay(text:string):number{
 }
 export default function DailyTarotCard(){
   const [date,setDate]=useState("");
-  const [notes,setNotes]=useState("");
+  const draft=useLocalDraft(date?"daily-"+date:"");
+  const [allowReversed,setAllowReversed]=useState(true);
   const [message,setMessage]=useState("");
   const [error,setError]=useState("");
   useEffect(()=>{
@@ -22,6 +25,8 @@ export default function DailyTarotCard(){
     const update=()=>{
       const today=new Date();
       setDate([today.getFullYear(),String(today.getMonth()+1).padStart(2,"0"),String(today.getDate()).padStart(2,"0")].join("-"));
+      setAllowReversed(getReadingPreferences().allowReversed);
+      setMessage("");setError("");
       const midnight=new Date(today.getFullYear(),today.getMonth(),today.getDate()+1);
       timer=setTimeout(update,Math.max(100,midnight.getTime()-today.getTime()+100));
     };
@@ -41,19 +46,20 @@ export default function DailyTarotCard(){
   },[]);
   const seed=hashDay(date);
   const card=tarotCards[seed%78];
-  const isReversed=(seed>>>8)%2===0;
+  const isReversed=allowReversed && (seed>>>8)%2===0;
   const reading=card?interpretReading([{
     card,position:1,isReversed,positionName:"Өдрийн бэлгэдэл",
     positionDescription:"Өдөрт нэг удаа эргэцүүлэх сэдэв",
   }]):"";
   const save=()=>{
-    if(!date)return;
+    if(!date||!draft.ready)return;
     try{
       addReading({
         id:"daily-"+date,date:new Date().toISOString(),spread:"Өдрийн карт",
-        question:"Өнөөдөр юунд анхаарах вэ?",reading,notes:notes.slice(0,2000),
+        question:"Өнөөдөр юунд анхаарах вэ?",reading,notes:draft.text.slice(0,2000),
         cards:[{id:card.id,reversed:isReversed,position:1}],
       });
+      draft.clear();
       setMessage("Өдрийн тэмдэглэл хадгалагдлаа. Уншилтын түүхээс харж болно.");
       setError("");
     }catch{
@@ -69,13 +75,15 @@ export default function DailyTarotCard(){
       <TarotCard card={card} isRevealed isReversed={isReversed} size="lg"/>
       <pre className="mt-6 whitespace-pre-wrap text-left font-sans text-sm leading-7 text-slate-200">{reading}</pre>
       <label htmlFor="daily-notes" className="mt-6 block text-left text-sm font-semibold text-amber-100">Өдрийн тэмдэглэл</label>
-      <textarea id="daily-notes" value={notes} onChange={event=>setNotes(event.target.value)}
+      <textarea id="daily-notes" value={draft.text} disabled={!draft.ready} onChange={event=>draft.setText(event.target.value)}
         rows={3} maxLength={2000} placeholder="Өнөөдрийн зорилго, бодол..."
         className="mt-2 w-full rounded-lg border border-white/20 bg-white/5 p-3 text-sm text-white placeholder:text-slate-400"/>
-      <button type="button" onClick={save} className="mt-4 rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200">
+      <p className="mt-2 text-left text-xs text-slate-400">Тэмдэглэл бичих бүрд энэ төхөөрөмж дээр түр хадгалагдана. Өөр өдөр солигдоход тэмдэглэл холилдохгүй.</p>
+      <button type="button" disabled={!draft.ready} onClick={save} className="mt-4 rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200">
         Өдрийн тэмдэглэл хадгалах
       </button>
       {message&&<p role="status" className="mt-4 text-sm text-emerald-200">{message}</p>}
+      {draft.error&&<p role="alert" className="mt-3 text-sm text-red-300">{draft.error}</p>}
       {error&&<p role="alert" className="mt-4 text-sm text-red-300">{error}</p>}
       <p className="mt-5 text-xs text-slate-400">Өдрийн карт нь огнооноос детерминистик сонгогдох бөгөөд ирээдүйн баттай таамаглал биш.</p>
     </div>
