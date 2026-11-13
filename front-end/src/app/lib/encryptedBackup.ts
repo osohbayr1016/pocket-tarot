@@ -69,7 +69,7 @@ export async function decryptBackup(contents:string,passphrase:string):Promise<s
     throw new Error("Backup шифрийн бүтэц буруу.");
   try{
     const derived=await key(passphrase,salt,ITERATIONS);
-    const decrypted=await crypto.subtle.decrypt({name:"AES-GCM",iv},derived,ciphertext);
+    const decrypted=await crypto.subtle.decrypt({name:"AES-GCM",iv:new Uint8Array(iv)},derived,new Uint8Array(ciphertext));
     return dec.decode(decrypted);
   }catch{
     throw new Error("Нууц үг буруу эсвэл backup файл гэмтсэн.");
