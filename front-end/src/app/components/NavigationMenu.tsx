@@ -1,5 +1,6 @@
 "use client";
 import {useState} from "react";
+import {useLanguage} from "../lib/LanguageProvider";
 export type Section = "reading"|"single"|"library"|"learn"|"horoscope"|"natal"|"moon"|"daily"|"daily-card"|"dream"|"guidance"|"history"|"offline"|"settings";
 export const NAV_GROUPS: readonly {id:string;label:string;views:readonly {id:Section;label:string}[]}[]=[
   {id:"tarot",label:"Таро",views:[
@@ -27,10 +28,18 @@ export default function NavigationMenu({section,onNavigate}:{
 }){
   // Switching a category only reveals its submenu. It does not create a
   // phantom browser-history entry for the category's first view.
+  const {locale,setLocale,t}=useLanguage();
   const [previewGroup,setPreviewGroup]=useState<string|null>(null);
   const selectedGroup=groupForSection(section);
   const active=NAV_GROUPS.find(group=>group.id===previewGroup)||selectedGroup;
-  return <nav aria-label="Үндсэн цэс" className="mx-auto max-w-7xl px-4 sm:px-8">
+  return <nav aria-label={locale==="en"?"Main navigation":"Үндсэн цэс"} className="mx-auto max-w-7xl px-4 sm:px-8">
+    <div className="mb-2 flex justify-end">
+      <button type="button" onClick={()=>setLocale(locale==="mn"?"en":"mn")}
+        aria-label={locale==="mn"?"Switch language to English":"Монгол хэл рүү шилжих"}
+        className="min-h-11 rounded-full border border-amber-300/30 px-4 py-2 text-sm font-semibold text-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300">
+        {locale==="mn"?"EN":"MN"} · {locale==="mn"?"English":"Монгол"}
+      </button>
+    </div>
     <div className="flex flex-wrap gap-2 border-b border-white/10 pb-3" aria-label="Үндсэн ангиллууд">
       {NAV_GROUPS.map(group=>(
         <button type="button" key={group.id}
