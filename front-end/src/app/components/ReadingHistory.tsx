@@ -14,6 +14,7 @@ import { convertLegacyReadings } from "../lib/legacyMigration";
 import { calculateReadingStats } from "../lib/readingStats";
 import {matchesLocalDateRange} from "../lib/journalDateFilter";
 import {formatJournalSummaryCsv} from "../lib/journalSummaryCsv";
+import {JOURNAL_SIGNAL_KEY} from "../lib/journalSignal";
 
 function saveAsFile(content:string,name:string,mime:string){
   const blob=new Blob([content],{type:mime});
@@ -43,8 +44,8 @@ export default function ReadingHistory({onOpenBackup}:{onOpenBackup?:()=>void}){
   const legacyRef=useRef<HTMLInputElement>(null);
   useEffect(()=>{
     let mounted=true;
-    const reload=()=>{
-      if(document.visibilityState!=="visible")return;
+    const reload=(force=false)=>{
+      if(!force&&document.visibilityState!=="visible")return;
       void listJournal().then(rows=>{
         if(!mounted)return;
         setItems(rows);setError("");setLoading(false);
@@ -54,14 +55,20 @@ export default function ReadingHistory({onOpenBackup}:{onOpenBackup?:()=>void}){
         setLoading(false);
       });
     };
-    const frame=requestAnimationFrame(reload);
-    window.addEventListener("focus",reload);
-    document.addEventListener("visibilitychange",reload);
+    const onFocus=()=>reload();
+    const onStorage=(event:StorageEvent)=>{
+      if(event.key===JOURNAL_SIGNAL_KEY||event.key===HISTORY_KEY)reload(true);
+    };
+    const frame=requestAnimationFrame(onFocus);
+    window.addEventListener("focus",onFocus);
+    document.addEventListener("visibilitychange",onFocus);
+    window.addEventListener("storage",onStorage);
     return ()=>{
       mounted=false;
       cancelAnimationFrame(frame);
-      window.removeEventListener("focus",reload);
-      document.removeEventListener("visibilitychange",reload);
+      window.removeEventListener("focus",onFocus);
+      document.removeEventListener("visibilitychange",onFocus);
+      window.removeEventListener("storage",onStorage);
     };
   },[]);
   const onDelete=async(id:string)=>{
