@@ -31,8 +31,9 @@ export function convertLegacyReadings(raw:unknown):SavedReading[]{
     const oldDate=data.readingDate||data.createdAt||data.date;
     if(typeof oldDate!=="string"&&typeof oldDate!=="number")
       throw new Error("Хуучин уншилтын огноо байхгүй.");
-    const date=new Date(oldDate).toISOString();
-    if(!Number.isFinite(Date.parse(date)))throw new Error("Legacy уншилтын огноо буруу.");
+    const parsedDate=new Date(oldDate);
+    if(!Number.isFinite(parsedDate.getTime()))throw new Error("Legacy уншилтын огноо буруу.");
+    const date=parsedDate.toISOString();
     const oldId=typeof data.id==="string"||typeof data.id==="number"?String(data.id):
       typeof data._id==="string"?data._id:String(index);
     const safeId="legacy-"+oldId.replace(/[^a-zA-Z0-9-]/g,"").slice(0,60);
