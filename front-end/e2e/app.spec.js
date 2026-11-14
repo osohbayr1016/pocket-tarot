@@ -587,3 +587,23 @@ test("privacy settings can clear only unsaved drafts without erasing saved journ
   await openView(page,"Өдрийн карт");
   await expect(page.locator("#daily-notes")).toHaveValue("");
 });
+
+
+test("physical deck input validates duplicates and completes a manual three-card reading",async({page})=>{
+  await page.goto("/");
+  await page.getByRole("button",{name:/Өнгөрсөн • Одоо • Боломжит чиглэл/}).click();
+  await page.locator("#physical-deck-entry > summary").click();
+  await page.locator("#physical-card-0").selectOption("0");
+  await page.locator("#physical-card-1").selectOption("0");
+  await page.locator("#physical-card-2").selectOption("2");
+  await page.getByRole("button",{name:"Сонгосон картуудыг унших"}).click();
+  await expect(page.getByRole("alert").filter({hasText:"same physical card"})).toBeVisible();
+  await page.locator("#physical-card-1").selectOption("1");
+  await page.locator("#physical-card-0").locator("..").getByRole("checkbox",{name:"Урвуу карт"}).check();
+  await page.getByRole("button",{name:"Сонгосон картуудыг унших"}).click();
+  await expect(page.getByText("0 / 3 карт нээсэн")).toBeVisible();
+  for(let index=0;index<3;index++){
+    await page.getByRole("button",{name:/Дараагийн картыг нээх/}).click();
+  }
+  await expect(page.getByRole("heading",{name:"Таны уншилтын тайлал"})).toBeVisible();
+});
