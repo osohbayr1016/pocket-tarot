@@ -69,6 +69,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
       const previous=loadActiveReading();
       if(previous){
         setSpread(previous.spread);setDrawn(previous.drawn);
+        setPhysicalSelections(previous.spread.positions.map(()=>({cardId:"",isReversed:false})));
         setVisibleCount(previous.visibleCount);setTopic(previous.topic);
       }
       setRestored(true);
@@ -94,9 +95,6 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
       setError("");
     }catch(cause){setError(cause instanceof Error?cause.message:"Дэлгэмлийг хадгалж чадсангүй.");}
   };
-  useEffect(()=>{
-    setPhysicalSelections(spread ? spread.positions.map(()=>({cardId:"",isReversed:false})) : []);
-  },[spread]);
   const result = locale==="en"?englishReading(drawn,question,topic === "auto" ? undefined : topic):interpretReading(drawn, question, topic === "auto" ? undefined : topic);
 
   const refreshHistory = async () => {
@@ -110,7 +108,8 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
   };
   const chooseSpread = (next: TarotSpread) => {
     if(!confirmDiscard())return;
-    setSpread(next); setDrawn([]); setVisibleCount(0); setError(""); setSavedMessage(""); setNotes("");
+    setSpread(next);setPhysicalSelections(next.positions.map(()=>({cardId:"",isReversed:false})));
+    setDrawn([]); setVisibleCount(0); setError(""); setSavedMessage(""); setNotes("");
     refreshHistory();
   };
   const startQuickReading = (count:1|3 = 3) => {
