@@ -75,6 +75,7 @@ export default function PreferencesPanel(){
     finally{busyRef.current=false;setBusy(null);}
   };
   const clearUnsavedDrafts=()=>{
+    if(busyRef.current)return;
     if(!window.confirm(en?
       "Permanently delete ALL unsaved draft notes on this device? Saved readings are not affected.":
       "Энэ төхөөрөмж дээрх БҮХ түр draft тэмдэглэлийг устгах уу? Хадгалсан уншилт хэвээр үлдэнэ."))return;
@@ -180,8 +181,8 @@ export default function PreferencesPanel(){
         "Шифрлэсэн файлыг импортлох үед зөвхөн эхний нууц үгийн талбарыг бөглөнө. Нууц үг мартвал сэргээх арга байхгүй. Төхөөрөмж дээрх journal өөрөө тусдаа шифрлэгдээгүй тул shared device дээр browser-ийн профайлаа хамгаалаарай."}
       </p>
       <div className="mt-5 flex flex-wrap gap-3">
-        <button type="button" onClick={clearUnsavedDrafts}
-          className="min-h-11 rounded-full border border-red-300/40 px-5 py-3 text-sm text-red-200">
+        <button type="button" disabled={busy!==null} onClick={clearUnsavedDrafts}
+          className="min-h-11 rounded-full border border-red-300/40 px-5 py-3 text-sm text-red-200 disabled:opacity-50">
           {en?"Clear unsaved drafts":"Түр тэмдэглэлүүд арилгах"}
         </button>
         <button type="button" disabled={busy!==null} aria-busy={busy==="export"} onClick={()=>void exportAll()}
