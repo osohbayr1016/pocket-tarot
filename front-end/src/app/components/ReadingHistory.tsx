@@ -63,8 +63,9 @@ export default function ReadingHistory({onOpenBackup}:{onOpenBackup?:()=>void}){
   const readImport=async(file:File|undefined)=>{
     if(!file)return;
     try{
+      if(file.size>20_000_000)throw new Error(tr("Импортын файл 20 MB-ээс хэтэрсэн.","Import file exceeds 20 MB."));
       const count=await importJournalJSON(await file.text());
-      setItems(await listJournal());setError("");setMessage(en?`${count} readings imported.`:count+" уншилт импортлогдлоо.");
+      setItems(await listJournal());setError("");setMessage(en?`${count} new readings imported. Existing entries were kept.`:count+" шинэ уншилт импортлогдлоо. Өмнөх тэмдэглэлүүд хэвээр.");
     }catch(cause){setError(cause instanceof Error?cause.message:"Импорт амжилтгүй.");setMessage("");}
     if(fileRef.current)fileRef.current.value="";
   };
