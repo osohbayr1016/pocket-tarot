@@ -154,14 +154,14 @@ export function combineDailyNotes(existing:string,incoming:string):string{
   if(typeof existing!=="string"||typeof incoming!=="string")
     throw new Error("Invalid journal note");
   const addition=incoming.trim();
-  const combined=existing.trim()?existing+(addition?"\\n\\n"+addition:""):addition;
+  const combined=existing.trim()?existing+(addition?"\n\n"+addition:""):addition;
   if(combined.length>2000)
     throw new Error("Daily reflections exceed 2000 characters. Export or edit the earlier entry in the journal.");
   return combined;
 }
 export async function saveDailyJournalReading(value:SavedReading):Promise<void>{
   const record=sanitized(value);
-  if(!/^daily-\\d{4}-\\d{2}-\\d{2}$/.test(record.id))
+  if(!/^daily-\d{4}-\d{2}-\d{2}$/.test(record.id))
     throw new Error("Invalid daily journal ID.");
   if(!withIndexedDb()){
     const existing=loadReadings().find(item=>item.id===record.id);
