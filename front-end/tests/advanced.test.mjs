@@ -525,3 +525,16 @@ test("local CSV summary is UTF-8 Excel compatible and never includes private fre
   assert.equal(csv.split("\r\n").filter(Boolean).length,2);
   assert.throws(()=>formatJournalSummaryCsv([{...entry,date:"invalid-date"}]),/invalid date/);
 });
+
+
+test("valid encrypted exports larger than 20MB remain importable", {timeout:60_000}, async()=>{
+  // The old UI rejected this perfectly valid ~21MB base64 envelope.
+  const plaintext="x".repeat(15_600_000);
+  const secret="test backup passphrase long enough";
+  const ciphertext=await encryptBackup(plaintext,secret);
+  const size=utf8ByteLength(ciphertext);
+  assert.ok(size>20_000_000,"encrypted envelope should exceed old UI limit");
+  assert.ok(size<28_000_000,"envelope must fit the new encrypted limit");
+  assert.doesNotThrow(()=>assertBackupUploadSize(size));
+  assert.equal(await decryptBackup(ciphertext,secret),plaintext);
+});
