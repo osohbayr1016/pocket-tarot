@@ -41,14 +41,28 @@ export default function ReadingHistory({onOpenBackup}:{onOpenBackup?:()=>void}){
   const [message,setMessage]=useState("");
   const fileRef=useRef<HTMLInputElement>(null);
   const legacyRef=useRef<HTMLInputElement>(null);
-  const refresh=async()=>{
-    try{setItems(await listJournal());setError("");}
-    catch(cause){setError(cause instanceof Error?cause.message:"Түүхийг уншиж чадсангүй.");}
-    finally{setLoading(false);}
-  };
   useEffect(()=>{
-    const frame=requestAnimationFrame(()=>{void refresh();});
-    return ()=>cancelAnimationFrame(frame);
+    let mounted=true;
+    const reload=()=>{
+      if(document.visibilityState!=="visible")return;
+      void listJournal().then(rows=>{
+        if(!mounted)return;
+        setItems(rows);setError("");setLoading(false);
+      }).catch(cause=>{
+        if(!mounted)return;
+        setError(cause instanceof Error?cause.message:"Түүхийг уншиж чадсангүй.");
+        setLoading(false);
+      });
+    };
+    const frame=requestAnimationFrame(reload);
+    window.addEventListener("focus",reload);
+    document.addEventListener("visibilitychange",reload);
+    return ()=>{
+      mounted=false;
+      cancelAnimationFrame(frame);
+      window.removeEventListener("focus",reload);
+      document.removeEventListener("visibilitychange",reload);
+    };
   },[]);
   const onDelete=async(id:string)=>{
     if(!window.confirm(tr("Энэ уншилтыг бүр мөсөн арилгах уу?","Delete this reading permanently?")))return;
