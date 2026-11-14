@@ -421,7 +421,7 @@ test("IndexedDB journal supports more than 100 readings with pagination and expo
   await page.locator('input[aria-label="JSON уншилт импортлох"]').setInputFiles({
     name:"journal-v2.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(payload))
   });
-  await expect(page.getByText("105 уншилт импортлогдлоо.")).toBeVisible();
+  await expect(page.getByText(/105 шинэ уншилт импортлогдлоо/)).toBeVisible();
   await expect(page.getByText(/1 \/ 6 хуудас/)).toBeVisible();
   await page.getByRole("button",{name:"Дараах"}).click();
   await expect(page.getByText(/2 \/ 6 хуудас/)).toBeVisible();
@@ -679,6 +679,7 @@ test("manual reversed cards are preserved when automatic reversals are disabled"
   await page.getByRole("button",{name:"Сонгосон картуудыг унших"}).click();
   await page.getByRole("button",{name:"Дараагийн картыг нээх"}).click();
   await page.getByRole("button",{name:"Төхөөрөмж дээр хадгалах"}).click();
+  await expect(page.getByText("Энэ төхөөрөмж дээр уншилтыг хадгаллаа.")).toBeVisible();
   await openView(page,"Миний түүх");
   const download=page.waitForEvent("download");
   await page.getByRole("button",{name:"JSON export"}).click();
