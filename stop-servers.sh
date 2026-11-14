@@ -1,19 +1,6 @@
-#!/bin/bash
-
-echo "🛑 Stopping Pocket Tarot Servers..."
-
-# Kill all related processes
-echo "🔌 Stopping all processes..."
-pkill -f "concurrently" 2>/dev/null
-pkill -f "nodemon" 2>/dev/null
-pkill -f "next dev" 2>/dev/null
-pkill -f "node server.js" 2>/dev/null
-
-# Kill processes using our ports
-echo "🔌 Freeing up ports..."
-lsof -ti:5001 | xargs kill -9 2>/dev/null
-lsof -ti:3000 | xargs kill -9 2>/dev/null
-lsof -ti:3001 | xargs kill -9 2>/dev/null
-
-echo "✅ All servers stopped!"
-echo "💡 Ports 3000, 3001, and 5001 are now free" 
+#!/usr/bin/env bash
+set -euo pipefail
+# No broad pkill/kill -9: ports and process names may belong to other projects.
+printf '%s\n' \
+  'Pocket Tarot: stop the frontend in the terminal running start-servers.sh using Ctrl+C.' \
+  'This safety script does not terminate unrelated processes.'
