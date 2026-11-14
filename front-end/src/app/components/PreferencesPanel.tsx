@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from "react";
 import {createCompleteBackupV4,restoreCompleteBackupV3} from "../lib/offlineBackup";
 import {encryptBackup,decryptBackup,isEncryptedBackup} from "../lib/encryptedBackup";
+import {assertBackupUploadSize} from "../lib/backupLimits";
 import {useLanguage} from "../lib/LanguageProvider";
 import {readRawDraftKeys} from "../lib/useLocalDraft";
 import {
@@ -53,7 +54,7 @@ export default function PreferencesPanel(){
     if(backupInput.current)backupInput.current.value="";
     if(!window.confirm(en?"This will REPLACE your journal, saved spreads, unsaved drafts, study progress and preferences. Have you exported your current data?":"Энэ төхөөрөмж дээрх journal, custom spread, түр draft, сургалтын ахиц болон тохиргоо бүгд шинэ backup-ээр СОЛИГДОНО. Одоогийн data-г эхлээд export хийсэн үү?"))return;
     try{
-      if(file.size>20_000_000)throw new Error("Backup файл 20 MB-ээс бага байх ёстой.");
+      assertBackupUploadSize(file.size);
       const raw=await file.text();
       const text=isEncryptedBackup(raw)?await decryptBackup(raw,backupPassword):raw;
       const restored=await restoreCompleteBackupV3(text);
