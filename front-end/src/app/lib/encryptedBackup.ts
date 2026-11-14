@@ -72,13 +72,14 @@ export async function decryptBackup(contents:string,passphrase:string):Promise<s
   const salt=unb64(data.salt),iv=unb64(data.iv),ciphertext=unb64(data.ciphertext);
   if(salt.length!==16||iv.length!==12||ciphertext.length<16)
     throw new Error("Backup шифрийн бүтэц буруу.");
+  let decrypted:ArrayBuffer;
   try{
     const derived=await key(passphrase,salt,ITERATIONS);
-    const decrypted=await crypto.subtle.decrypt({name:"AES-GCM",iv:new Uint8Array(iv)},derived,new Uint8Array(ciphertext));
-    const plaintext=dec.decode(decrypted);
-    assertPlaintextBackupSize(plaintext);
-    return plaintext;
+    decrypted=await crypto.subtle.decrypt({name:"AES-GCM",iv:new Uint8Array(iv)},derived,new Uint8Array(ciphertext));
   }catch{
     throw new Error("Нууц үг буруу эсвэл backup файл гэмтсэн.");
   }
+  const plaintext=dec.decode(decrypted);
+  assertPlaintextBackupSize(plaintext);
+  return plaintext;
 }
