@@ -58,7 +58,9 @@ export function createCompleteBackup():string{
     readings:loadReadings(),spreads:loadSavedSpreads(),preferences:getReadingPreferences(),
     study:loadStudyProgress(),
   };
-  return JSON.stringify(backup,null,2);
+  const json=JSON.stringify(backup,null,2);
+  assertPlaintextBackupSize(json);
+  return json;
 }
 export function parseCompleteBackup(content:string):CompleteBackup{
   assertPlaintextBackupSize(content);
