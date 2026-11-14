@@ -12,6 +12,7 @@ import { exportReadingPng } from "../lib/exportReadingPng";
 import {exportReadingSocialPng} from "../lib/exportReadingSocialPng";
 import { convertLegacyReadings } from "../lib/legacyMigration";
 import { calculateReadingStats } from "../lib/readingStats";
+import {matchesLocalDateRange} from "../lib/journalDateFilter";
 
 function saveAsFile(content:string,name:string,mime:string){
   const blob=new Blob([content],{type:mime});
@@ -27,6 +28,8 @@ export default function ReadingHistory({onOpenBackup}:{onOpenBackup?:()=>void}){
   const [items,setItems]=useState<SavedReading[]>([]);
   const [selected,setSelected]=useState<string|null>(null);
   const [search,setSearch]=useState("");
+  const [fromDate,setFromDate]=useState("");
+  const [toDate,setToDate]=useState("");
   const [favoritesOnly,setFavoritesOnly]=useState(false);
   const [draftNotes,setDraftNotes]=useState("");
   const [draftTags,setDraftTags]=useState("");
@@ -93,6 +96,7 @@ export default function ReadingHistory({onOpenBackup}:{onOpenBackup?:()=>void}){
   const searched=search.trim().toLocaleLowerCase();
   const visible=items.filter(item=>{
     if(favoritesOnly&&!item.favorite)return false;
+    if(!matchesLocalDateRange(item.date,fromDate,toDate))return false;
     if(!searched)return true;
     const cardNames=item.cards.flatMap(entry=>{
       const card=tarotCards.find(c=>c.id===entry.id);
@@ -185,6 +189,35 @@ export default function ReadingHistory({onOpenBackup}:{onOpenBackup?:()=>void}){
           <input type="checkbox" checked={favoritesOnly} onChange={event=>{setFavoritesOnly(event.target.checked);setPage(1);}}/>
           {(locale==="en"?"Favorites only":"Зөвхөн дуртай уншилт")}
         </label>
+      </div>
+      <div className="mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-white/10 bg-white/5 p-4" role="group" aria-label={tr("Огнооны шүүлтүүр","Reading date range")}>
+        <label htmlFor="journal-date-from" className="flex-1 text-sm text-amber-100">
+          {tr("Эхлэх огноо","From date")}
+          <input id="journal-date-from" type="date" value={fromDate} max={toDate||undefined}
+            onChange={event=>{
+              const next=event.target.value;
+              setFromDate(next);
+              if(toDate&&next&&next>toDate)setToDate("");
+              setPage(1);
+            }}
+            className="mt-2 block w-full min-w-32 rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-white"/>
+        </label>
+        <label htmlFor="journal-date-to" className="flex-1 text-sm text-amber-100">
+          {tr("Дуусах огноо","To date")}
+          <input id="journal-date-to" type="date" value={toDate} min={fromDate||undefined}
+            onChange={event=>{
+              const next=event.target.value;
+              setToDate(next);
+              if(fromDate&&next&&next<fromDate)setFromDate("");
+              setPage(1);
+            }}
+            className="mt-2 block w-full min-w-32 rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-white"/>
+        </label>
+        <button type="button" onClick={()=>{
+          setFromDate("");setToDate("");setSearch("");setFavoritesOnly(false);setPage(1);
+        }} className="min-h-11 rounded-full border border-white/20 px-4 py-2 text-sm text-slate-200 hover:border-amber-300/60">
+          {tr("Шүүлтүүр арилгах","Clear filters")}
+        </button>
       </div>
       {message&&<p role="status" className="my-3 text-center text-sm text-emerald-200">{message}</p>}
       {!loading&&!items.length&&!error&&(

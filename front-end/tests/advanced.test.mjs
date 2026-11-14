@@ -1,4 +1,5 @@
 import {buildPhysicalReading} from "../src/app/lib/physicalReading.ts";
+import {matchesLocalDateRange} from "../src/app/lib/journalDateFilter.ts";
 import {mergeJournalRecords,importJournal,combineDailyNotes} from "../src/app/lib/journalDb.ts";
 import {HISTORY_KEY} from "../src/app/lib/readingHistory.ts";
 import {englishHoroscope,englishDailyFortune,englishLifeGuidance,englishDreamReflection} from "../src/app/lib/englishReflections.ts";
@@ -478,4 +479,16 @@ test("invalid legacy reading dates fail with actionable validation errors",()=>{
   assert.throws(()=>convertLegacyReadings([{
     id:"wrong-date",cardId:0,readingDate:"never-a-date"
   }]),/Legacy уншилтын огноо буруу/);
+});
+
+test("local-day journal filtering is inclusive and rejects invalid timestamps",()=>{
+  const date=new Date(2024,9,3,15,30,0);
+  const iso=date.toISOString();
+  const localDay="2024-10-03";
+  assert.equal(matchesLocalDateRange(iso,localDay,localDay),true);
+  assert.equal(matchesLocalDateRange(iso,"2024-10-02",localDay),true);
+  assert.equal(matchesLocalDateRange(iso,"2024-10-04",""),false);
+  assert.equal(matchesLocalDateRange(iso,"","2024-10-02"),false);
+  assert.equal(matchesLocalDateRange(iso),true);
+  assert.equal(matchesLocalDateRange("not-a-date"),false);
 });
