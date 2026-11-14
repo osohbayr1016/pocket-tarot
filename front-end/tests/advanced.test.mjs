@@ -450,7 +450,7 @@ test("no-IndexedDB import is atomic with a 100-reading cap",async()=>{
 });
 
 test("daily reflections append without overwriting and enforce journal size",()=>{
-  assert.equal(combineDailyNotes("Morning thought","Evening thought"),"Morning thought\\n\\nEvening thought");
+  assert.equal(combineDailyNotes("Morning thought","Evening thought"),"Morning thought\n\nEvening thought");
   assert.equal(combineDailyNotes("Morning thought",""),"Morning thought");
   assert.equal(combineDailyNotes("","New reflection"),"New reflection");
   assert.throws(()=>combineDailyNotes("a".repeat(1999),"additional reflection"),/2000/);
