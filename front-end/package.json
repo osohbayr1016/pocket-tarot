@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
-    "test": "node --experimental-strip-types --test tests/offline.test.mjs tests/advanced.test.mjs",
+    "test": "node --experimental-strip-types --test tests/offline.test.mjs tests/advanced.test.mjs tests/releaseSafety.test.mjs",
     "assets:sync": "node scripts/download-rws.mjs",
     "prebuild": "npm run assets:verify && node scripts/version-sw.mjs",
     "predev": "npm run assets:verify",
