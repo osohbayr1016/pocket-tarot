@@ -1,5 +1,5 @@
 "use client";
-import {useState} from "react";
+import {useEffect,useState} from "react";
 import {useLanguage} from "../lib/LanguageProvider";
 export type Section = "reading"|"single"|"library"|"learn"|"horoscope"|"natal"|"moon"|"daily"|"daily-card"|"dream"|"guidance"|"history"|"offline"|"settings";
 export const NAV_GROUPS: readonly {id:string;label:string;views:readonly {id:Section;label:string}[]}[]=[
@@ -30,6 +30,9 @@ export default function NavigationMenu({section,onNavigate}:{
   // phantom browser-history entry for the category's first view.
   const {locale,setLocale,t}=useLanguage();
   const [previewGroup,setPreviewGroup]=useState<string|null>(null);
+  // Browser back/forward may change the actual view while a category preview
+  // is open. Always show the submenu for the restored view after navigation.
+  useEffect(()=>setPreviewGroup(null),[section]);
   const selectedGroup=groupForSection(section);
   const active=NAV_GROUPS.find(group=>group.id===previewGroup)||selectedGroup;
   return <nav aria-label={locale==="en"?"Main navigation":"Үндсэн цэс"} className="mx-auto max-w-7xl px-4 sm:px-8">
