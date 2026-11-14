@@ -306,10 +306,11 @@ export async function importJournalJSON(text:string):Promise<number>{
     ||!Array.isArray(data.readings))throw new Error("Pocket Tarot уншилтын JSON биш байна.");
   const incoming=validateMany(data.readings);
   const existing=await listJournal();
+  const existingIds=new Set(existing.map(row=>row.id));
   if(new Set([...incoming,...existing].map(row=>row.id)).size>JOURNAL_SAFE_LIMIT)
     throw new Error("5000-аас олон уншилт нэг архивд багтахгүй.");
   await importJournal(incoming);
-  return incoming.length;
+  return incoming.filter(record=>!existingIds.has(record.id)).length;
 }
 
 export async function changeJournalMetadata(id:string,tags:string[],mood:ReadingMood):Promise<void>{
