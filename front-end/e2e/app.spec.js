@@ -688,3 +688,24 @@ test("manual reversed cards are preserved when automatic reversals are disabled"
   expect(output.readings).toHaveLength(1);
   expect(output.readings[0].cards[0].reversed).toBe(true);
 });
+
+
+test("re-saving the same spread updates a single journal entry and appends notes",async({page})=>{
+  await page.goto("/");
+  await page.getByRole("button",{name:"1 карт сугалах"}).click();
+  await page.getByRole("button",{name:"Дараагийн картыг нээх"}).click();
+  await page.locator("#reading-notes").fill("Original reflection");
+  await page.getByRole("button",{name:"Төхөөрөмж дээр хадгалах"}).click();
+  await expect(page.getByText("Энэ төхөөрөмж дээр уншилтыг хадгаллаа.")).toBeVisible();
+  await page.locator("#reading-notes").fill("Follow-up reflection");
+  await page.getByRole("button",{name:"Төхөөрөмж дээр хадгалах"}).click();
+  await expect(page.getByRole("button",{name:"Хадгалсан"})).toBeDisabled();
+  await openView(page,"Миний түүх");
+  const download=page.waitForEvent("download");
+  await page.getByRole("button",{name:"JSON export"}).click();
+  const blob=await download;
+  const output=JSON.parse(require("node:fs").readFileSync(await blob.path(),"utf8"));
+  expect(output.readings).toHaveLength(1);
+  expect(output.readings[0].notes).toContain("Original reflection");
+  expect(output.readings[0].notes).toContain("Follow-up reflection");
+});
