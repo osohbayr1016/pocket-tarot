@@ -7,6 +7,7 @@ import {
   HISTORY_KEY,loadReadings,parseReadings,addReading,deleteReading,clearReadings,
   updateReadingNotes,setReadingFavorite,type SavedReading,type ReadingMood
 } from "./readingHistory.ts";
+import {notifyJournalChanged} from "./journalSignal.ts";
 
 const DB_NAME="pocket-tarot-journal";
 const DB_VERSION=1;
@@ -130,7 +131,7 @@ export async function getJournalPage(page:number,pageSize=JOURNAL_PAGE_SIZE):Pro
 }
 export async function saveJournalReading(value:SavedReading):Promise<void>{
   const record=sanitized(value);
-  if(!withIndexedDb()){addReading(record);return;}
+  if(!withIndexedDb()){addReading(record);notifyJournalChanged();return;}
   await inDb(async db=>{
     const tx=db.transaction(STORE,"readwrite"),complete=done(tx);
     const store=tx.objectStore(STORE);
@@ -148,6 +149,7 @@ export async function saveJournalReading(value:SavedReading):Promise<void>{
     };
     try{await complete;}catch(cause){throw operationError??cause;}
   });
+  notifyJournalChanged();
 }
 /** Append notes to an existing daily entry instead of overwriting past reflections. */
 export function combineDailyNotes(existing:string,incoming:string):string{
@@ -166,6 +168,7 @@ export async function saveDailyJournalReading(value:SavedReading):Promise<void>{
   if(!withIndexedDb()){
     const existing=loadReadings().find(item=>item.id===record.id);
     addReading(existing?{...existing,notes:combineDailyNotes(existing.notes,record.notes)}:record);
+    notifyJournalChanged();
     return;
   }
   await inDb(async db=>{
@@ -194,23 +197,26 @@ export async function saveDailyJournalReading(value:SavedReading):Promise<void>{
     };
     try{await complete;}catch(cause){throw operationError??cause;}
   });
+  notifyJournalChanged();
 }
 
 export async function deleteJournalReading(id:string):Promise<void>{
-  if(!withIndexedDb()){deleteReading(id);return;}
+  if(!withIndexedDb()){deleteReading(id);notifyJournalChanged();return;}
   await inDb(async db=>{
     const tx=db.transaction(STORE,"readwrite"),complete=done(tx);
     tx.objectStore(STORE).delete(id);
     await complete;
   });
+  notifyJournalChanged();
 }
 export async function clearJournal():Promise<void>{
-  if(!withIndexedDb()){clearReadings();return;}
+  if(!withIndexedDb()){clearReadings();notifyJournalChanged();return;}
   await inDb(async db=>{
     const tx=db.transaction(STORE,"readwrite"),complete=done(tx);
     tx.objectStore(STORE).clear();
     await complete;
   });
+  notifyJournalChanged();
 }
 async function updateJournal(id:string,transform:(item:SavedReading)=>SavedReading):Promise<void>{
   if(!withIndexedDb())throw new Error("This operation requires IndexedDB");
@@ -235,14 +241,15 @@ async function updateJournal(id:string,transform:(item:SavedReading)=>SavedReadi
     try{await complete;}
     catch(cause){throw operationError??cause;}
   });
+  notifyJournalChanged();
 }
 export async function changeJournalNotes(id:string,notes:string):Promise<void>{
   if(typeof notes!=="string"||notes.length>2000)throw new Error("Тэмдэглэл 2000 тэмдэгтээс хэтэрсэн.");
-  if(!withIndexedDb()){updateReadingNotes(id,notes);return;}
+  if(!withIndexedDb()){updateReadingNotes(id,notes);notifyJournalChanged();return;}
   await updateJournal(id,reading=>({...reading,notes}));
 }
 export async function changeJournalFavorite(id:string,favorite:boolean):Promise<void>{
-  if(!withIndexedDb()){setReadingFavorite(id,favorite);return;}
+  if(!withIndexedDb()){setReadingFavorite(id,favorite);notifyJournalChanged();return;}
   await updateJournal(id,reading=>({...reading,favorite}));
 }
 /**
@@ -256,6 +263,7 @@ export async function importJournal(records:readonly SavedReading[]):Promise<voi
     // archive exceeds the 100-item legacy limit or a write fails.
     const combined=mergeJournalRecords(loadReadings(),validated,100);
     localStorage.setItem(HISTORY_KEY,JSON.stringify(combined));
+    notifyJournalChanged();
     return;
   }
   await inDb(async db=>{
@@ -277,6 +285,7 @@ export async function importJournal(records:readonly SavedReading[]):Promise<voi
     };
     try{await complete;}catch(cause){throw operationError??cause;}
   });
+  notifyJournalChanged();
 }
 export async function replaceJournal(records:readonly SavedReading[]):Promise<void>{
   const validated=validateMany(records);
@@ -288,6 +297,7 @@ export async function replaceJournal(records:readonly SavedReading[]):Promise<vo
     for(const record of validated)store.put(record);
     await complete;
   });
+  notifyJournalChanged();
 }
 
 export async function exportJournalJSON():Promise<string>{
@@ -322,6 +332,7 @@ export async function changeJournalMetadata(id:string,tags:string[],mood:Reading
     const target=current.find(item=>item.id===id);
     if(!target)throw new Error("Уншилт олдсонгүй.");
     addReading({...target,tags,mood});
+    notifyJournalChanged();
     return;
   }
   await updateJournal(id,record=>({...record,tags,mood}));
