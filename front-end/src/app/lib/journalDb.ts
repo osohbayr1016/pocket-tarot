@@ -116,7 +116,7 @@ export function mergeJournalRecords(
   return combined;
 }
 export async function listJournal():Promise<SavedReading[]>{
-  if(!withIndexedDb())return loadReadings();
+  if(!withIndexedDb())return loadReadings().sort((a,b)=>b.date.localeCompare(a.date)||a.id.localeCompare(b.id));
   return inDb(async db=>{
     const tx=db.transaction(STORE,"readonly");
     const records=await result(tx.objectStore(STORE).getAll()) as SavedReading[];
@@ -149,6 +149,53 @@ export async function saveJournalReading(value:SavedReading):Promise<void>{
     try{await complete;}catch(cause){throw operationError??cause;}
   });
 }
+/** Append notes to an existing daily entry instead of overwriting past reflections. */
+export function combineDailyNotes(existing:string,incoming:string):string{
+  if(typeof existing!=="string"||typeof incoming!=="string")
+    throw new Error("Invalid journal note");
+  const addition=incoming.trim();
+  const combined=existing.trim()?existing+(addition?"\\n\\n"+addition:""):addition;
+  if(combined.length>2000)
+    throw new Error("Daily reflections exceed 2000 characters. Export or edit the earlier entry in the journal.");
+  return combined;
+}
+export async function saveDailyJournalReading(value:SavedReading):Promise<void>{
+  const record=sanitized(value);
+  if(!/^daily-\\d{4}-\\d{2}-\\d{2}$/.test(record.id))
+    throw new Error("Invalid daily journal ID.");
+  if(!withIndexedDb()){
+    const existing=loadReadings().find(item=>item.id===record.id);
+    addReading(existing?{...existing,notes:combineDailyNotes(existing.notes,record.notes)}:record);
+    return;
+  }
+  await inDb(async db=>{
+    const tx=db.transaction(STORE,"readwrite"),complete=done(tx);
+    const store=tx.objectStore(STORE);
+    let operationError:Error|null=null;
+    const request=store.get(record.id);
+    request.onsuccess=()=>{
+      if(request.result!==undefined){
+        try{
+          const old=sanitized(request.result as SavedReading);
+          store.put({...old,notes:combineDailyNotes(old.notes,record.notes)});
+        }catch(cause){
+          operationError=cause instanceof Error?cause:new Error("Could not append daily note.");
+          tx.abort();
+        }
+        return;
+      }
+      const count=store.count();
+      count.onsuccess=()=>{
+        if(count.result>=JOURNAL_SAFE_LIMIT){
+          operationError=new Error("Journal is full. Export older readings before saving.");
+          tx.abort();
+        }else store.add(record);
+      };
+    };
+    try{await complete;}catch(cause){throw operationError??cause;}
+  });
+}
+
 export async function deleteJournalReading(id:string):Promise<void>{
   if(!withIndexedDb()){deleteReading(id);return;}
   await inDb(async db=>{
