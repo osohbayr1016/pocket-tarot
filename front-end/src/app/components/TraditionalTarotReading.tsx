@@ -1,6 +1,6 @@
 "use client";
 import type { ReadingTopic } from "../lib/readingIntelligence";
-import {listJournal,saveJournalReading,clearJournal} from "../lib/journalDb";
+import {listJournal,saveJournalReading,clearJournal,combineDailyNotes} from "../lib/journalDb";
 
 import { useEffect, useRef, useState } from "react";
 import { tarotCards } from "../data/tarotCards";
@@ -60,8 +60,15 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
   const notes=notesDraft.text;
   const setNotes=notesDraft.setText;
   const [savedMessage, setSavedMessage] = useState("");
+  const [hasSaved,setHasSaved]=useState(false);
   const [saving,setSaving]=useState(false);
   const savingRef=useRef(false);
+  const readingIdRef=useRef<string|null>(null);
+  const savedNotesRef=useRef("");
+  const resetSaved=()=>{
+    readingIdRef.current=null;savedNotesRef.current="";
+    setHasSaved(false);
+  };
   const [shareMessage,setShareMessage] = useState("");
   const [exporting,setExporting] = useState(false);
   const [error, setError] = useState("");
@@ -104,12 +111,13 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
     catch(cause){setError(cause instanceof Error?cause.message:"Уншилтын түүхийг уншиж чадсангүй.");}
   };
   const confirmDiscard=()=>{
-    if(notes.trim()&&!savedMessage)
+    if(notes.trim()&&!hasSaved)
       return window.confirm(tr("Хадгалаагүй тэмдэглэл түр хадгалагдсан. Шинэ уншилт эхлүүлж, энэ тэмдэглэлийг арилгах уу?","This draft contains unsaved notes. Discard it to begin a new reading?"));
     return true;
   };
   const chooseSpread = (next: TarotSpread) => {
     if(!confirmDiscard())return;
+    resetSaved();
     setSpread(next);setPhysicalSelections(next.positions.map(()=>({cardId:"",isReversed:false})));
     setDrawn([]); setVisibleCount(0); setError(""); setSavedMessage(""); setNotes("");
     refreshHistory();
@@ -119,6 +127,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
     const quick=tarotSpreads.find(option=>option.cardCount===count)??tarotSpreads[0];
     try {
       const cards=drawSpread(tarotCards,quick,undefined,{allowReversed:getReadingPreferences().allowReversed});
+      resetSaved();
       setSpread(quick);setDrawn(cards);setVisibleCount(0);setNotes("");
       setError("");setSavedMessage("");emitFeedback("draw");
     } catch(cause) {
@@ -129,6 +138,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
     if (!spread || !confirmDiscard()) return;
     try {
       const cards = drawSpread(tarotCards,spread,undefined,{allowReversed:getReadingPreferences().allowReversed});
+      resetSaved();
       setDrawn(cards);
       emitFeedback("draw");
       setVisibleCount(0);
@@ -147,12 +157,13 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
       }
       const cards=buildPhysicalReading(tarotCards,spread,
         physicalSelections.map(choice=>({cardId:Number(choice.cardId),isReversed:choice.isReversed})));
+      resetSaved();
       setDrawn(cards);setVisibleCount(0);setNotes("");
       setError("");setSavedMessage("");emitFeedback("draw");
     }catch(cause){
       const message=cause instanceof Error?cause.message:"Invalid card selection.";
       setError(!en&&message.includes("same physical card")?
-        "Нэг картыг олон байрлалд давхар сонгох боломжгүй.":" "+message);
+        "Нэг картыг олон байрлалд давхар сонгох боломжгүй.":message);
     }
   };
   const revealNext=()=>{
@@ -161,18 +172,23 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
     setVisibleCount(current=>Math.min(current+1,drawn.length));
   };
   const save = async () => {
-    if (!spread || !drawn.length || visibleCount !== drawn.length || !notesDraft.ready || !questionDraft.ready || savedMessage || savingRef.current) return;
+    if (!spread || !drawn.length || visibleCount !== drawn.length || !notesDraft.ready || !questionDraft.ready || hasSaved || savingRef.current) return;
     savingRef.current=true;setSaving(true);
     try {
+      const id=readingIdRef.current??crypto.randomUUID();
+      const nextNotes=readingIdRef.current?combineDailyNotes(savedNotesRef.current,notes.trim()):notes.trim();
       await saveJournalReading({
-        id:crypto.randomUUID(),
+        id,
         date:new Date().toISOString(),
         spread:spread.name,
         question:question.trim().slice(0,500),
         reading:result,
-        notes:notes.trim().slice(0,2000),
+        notes:nextNotes,
         cards:drawn.map(entry=>({id:entry.card.id,reversed:entry.isReversed,position:entry.position})),
       });
+      readingIdRef.current=id;
+      savedNotesRef.current=nextNotes;
+      setHasSaved(true);
       setNotes("");
       setSavedMessage(tr("Энэ төхөөрөмж дээр уншилтыг хадгаллаа.","Reading saved on this device."));
       refreshHistory();
@@ -201,7 +217,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
     if(!window.confirm(tr("БҮХ хадгалсан уншилтаа энэ төхөөрөмжөөс бүрмөсөн устгах уу? Эхлээд JSON backup хийхийг зөвлөе.","Permanently delete ALL readings from this device? Export a backup first.")))return;
     try {
       await clearJournal();
-      setHistory([]);
+      setHistory([]);resetSaved();
       setSavedMessage(tr("Энэ төхөөрөмж дээрх хадгалсан уншилтуудыг арилгалаа.","Journal cleared on this device."));
     } catch {
       setError("Хадгалсан уншилтыг арилгаж чадсангүй.");
@@ -209,6 +225,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
   };
   const startAgain = () => {
     if(!confirmDiscard())return;
+    resetSaved();
     setSpread(null);setDrawn([]);setVisibleCount(0);setError("");setSavedMessage("");setNotes("");
   };
   return (
@@ -499,13 +516,13 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
                   <h4 className="font-serif text-2xl text-amber-100">{t("Таны уншилтын тайлал")}</h4>
                   <pre className="mt-5 whitespace-pre-wrap break-words font-sans text-sm leading-7 text-slate-100">{result}</pre>
                   <label className="mt-8 block text-sm font-medium text-amber-100" htmlFor="reading-notes">{tr("Хувийн тэмдэглэл","Private notes")}</label>
-                  <textarea id="reading-notes" disabled={!notesDraft.ready} value={notes} onChange={(event)=>{setNotes(event.target.value);setSavedMessage("");}}
+                  <textarea id="reading-notes" disabled={!notesDraft.ready} value={notes} onChange={(event)=>{setNotes(event.target.value);setHasSaved(false);setSavedMessage("");}}
                     maxLength={2000} rows={3} placeholder={tr("Өөрийн бодож мэдэрсэн зүйлээ энд бич...","Write your thoughts and feelings here...")}
                     className="mt-2 w-full rounded-lg border border-white/20 bg-white/5 p-4 text-sm text-white placeholder:text-slate-400 focus:border-amber-300 focus:outline-none"/>
                   <div className="mt-4 flex flex-wrap gap-3">
-                    <button type="button" onClick={save} disabled={saving||Boolean(savedMessage)}
+                    <button type="button" onClick={save} disabled={saving||hasSaved}
                       className="rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#161024] hover:bg-amber-200">
-                      {saving?tr("Хадгалж байна...","Saving..."):savedMessage?tr("Хадгалсан","Saved"):tr("Төхөөрөмж дээр хадгалах","Save to this device")}
+                      {saving?tr("Хадгалж байна...","Saving..."):hasSaved?tr("Хадгалсан","Saved"):tr("Төхөөрөмж дээр хадгалах","Save to this device")}
                     </button>
                     <button type="button" onClick={makeReading}
                       className="rounded-full border border-white/30 px-6 py-3 text-sm text-white hover:border-amber-300">
