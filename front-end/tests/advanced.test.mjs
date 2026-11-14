@@ -1,3 +1,5 @@
+import {utf8ByteLength,assertPlaintextBackupSize,assertBackupUploadSize} from "../src/app/lib/backupLimits.ts";
+import {formatJournalSummaryCsv} from "../src/app/lib/journalSummaryCsv.ts";
 import {buildPhysicalReading} from "../src/app/lib/physicalReading.ts";
 import {matchesLocalDateRange} from "../src/app/lib/journalDateFilter.ts";
 import {mergeJournalRecords,importJournal,combineDailyNotes} from "../src/app/lib/journalDb.ts";
@@ -491,4 +493,35 @@ test("local-day journal filtering is inclusive and rejects invalid timestamps",(
   assert.equal(matchesLocalDateRange(iso,"","2024-10-02"),false);
   assert.equal(matchesLocalDateRange(iso),true);
   assert.equal(matchesLocalDateRange("not-a-date"),false);
+});
+
+test("encrypted backup import limit includes safe base64 overhead and checks UTF-8 bytes",()=>{
+  assert.equal(utf8ByteLength("✦"),3);
+  assert.equal(utf8ByteLength("💫"),4);
+  assert.equal(utf8ByteLength("ASCII"),5);
+  assert.doesNotThrow(()=>assertBackupUploadSize(25_000_000));
+  assert.throws(()=>assertBackupUploadSize(28_000_001),/28 MB/);
+  assert.throws(()=>assertBackupUploadSize(-1),/28 MB/);
+  assert.doesNotThrow(()=>assertPlaintextBackupSize("a".repeat(20_000_000)));
+  assert.throws(()=>assertPlaintextBackupSize("💫".repeat(5_000_001)),/20 MB/);
+});
+
+test("local CSV summary is UTF-8 Excel compatible and never includes private free text",()=>{
+  const entry={
+    id:"summary",date:"2024-10-02T12:34:56.000Z",spread:"=HYPERLINK(private)",
+    question:"PRIVATE_QUESTION",reading:"PRIVATE_INTERPRETATION",notes:"PRIVATE_NOTES",
+    tags:["PRIVATE_TAG"],favorite:true,mood:"hopeful",
+    cards:[{id:0,reversed:true,position:1},{id:1,reversed:false,position:2}]
+  };
+  const csv=formatJournalSummaryCsv([entry]);
+  assert.ok(csv.startsWith("\uFEFF"));
+  assert.match(csv,/Timestamp \(UTC\)/);
+  assert.match(csv,/2024-10-02T12:34:56\.000Z/);
+  assert.match(csv,/The Fool \(reversed\); The Magician/);
+  assert.match(csv,/"2","1","Yes","hopeful"/);
+  for(const privateText of [entry.spread,entry.question,entry.reading,entry.notes,entry.tags[0]]){
+    assert.ok(!csv.includes(privateText),"CSV must exclude "+privateText);
+  }
+  assert.equal(csv.split("\r\n").filter(Boolean).length,2);
+  assert.throws(()=>formatJournalSummaryCsv([{...entry,date:"invalid-date"}]),/invalid date/);
 });
