@@ -83,6 +83,8 @@ export function parseCompleteBackup(content:string):CompleteBackup{
   const study=obj.version===1?[]:validateStudyProgress(obj.study);
   if(readings.length!==obj.readings.length)
     throw new Error("Backup-ийн зарим уншилт буруу байна.");
+  if(new Set(readings.map(reading=>reading.id)).size!==readings.length)
+    throw new Error("Backup-ийн уншилтын ID давхардсан байна. Одоогийн тэмдэглэлийг хамгаалахын тулд сэргээхгүй.");
   const prefs=obj.preferences;
   if(!prefs||typeof prefs!=="object"||Array.isArray(prefs))
     throw new Error("Backup-ийн тохиргоо буруу байна.");
