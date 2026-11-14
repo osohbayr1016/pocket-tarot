@@ -15,8 +15,7 @@ export interface PhysicalCardSelection {
 export function buildPhysicalReading(
   deck: readonly TarotCard[],
   spread: TarotSpread,
-  selections: readonly PhysicalCardSelection[],
-  options: { allowReversed?: boolean } = {}
+  selections: readonly PhysicalCardSelection[]
 ): DrawnCard[] {
   if (!spread || !Number.isInteger(spread.cardCount) || spread.cardCount < 1 ||
       spread.cardCount > 12 || !Array.isArray(spread.positions) ||
@@ -51,7 +50,7 @@ export function buildPhysicalReading(
       position: position.position,
       positionName: position.name,
       positionDescription: position.description,
-      isReversed: options.allowReversed === false ? false : choice.isReversed,
+      isReversed: choice.isReversed,
     };
   });
 }

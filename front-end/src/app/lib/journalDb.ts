@@ -4,7 +4,7 @@
  * The migration is atomic, idempotent and never deletes the legacy copy.
  */
 import {
-  loadReadings,parseReadings,addReading,deleteReading,clearReadings,
+  HISTORY_KEY,loadReadings,parseReadings,addReading,deleteReading,clearReadings,
   updateReadingNotes,setReadingFavorite,type SavedReading,type ReadingMood
 } from "./readingHistory.ts";
 
@@ -95,8 +95,28 @@ function validateMany(records:readonly SavedReading[]):SavedReading[]{
     throw new Error("Импортолсон уншилтын ID давхардсан байна.");
   return validated;
 }
+/**
+ * Import is a merge, never a destructive restore: records already saved on
+ * this device win on ID collisions. Explicit full-backup restoration is the
+ * only operation that replaces saved records.
+ */
+export function mergeJournalRecords(
+  existing:readonly SavedReading[],incoming:readonly SavedReading[],limit=JOURNAL_SAFE_LIMIT
+):SavedReading[]{
+  if(!Number.isSafeInteger(limit)||limit<1||limit>JOURNAL_SAFE_LIMIT)
+    throw new Error("Journal record limit is invalid.");
+  const current=validateMany(existing),candidates=validateMany(incoming);
+  const ids=new Set(current.map(record=>record.id));
+  const combined=[...current];
+  for(const record of candidates){
+    if(!ids.has(record.id)){combined.push(record);ids.add(record.id);}
+  }
+  if(combined.length>limit)
+    throw new Error("Journal capacity exceeded. Export older readings before importing more.");
+  return combined;
+}
 export async function listJournal():Promise<SavedReading[]>{
-  if(!withIndexedDb())return loadReadings();
+  if(!withIndexedDb())return loadReadings().sort((a,b)=>b.date.localeCompare(a.date)||a.id.localeCompare(b.id));
   return inDb(async db=>{
     const tx=db.transaction(STORE,"readonly");
     const records=await result(tx.objectStore(STORE).getAll()) as SavedReading[];
@@ -113,10 +133,69 @@ export async function saveJournalReading(value:SavedReading):Promise<void>{
   if(!withIndexedDb()){addReading(record);return;}
   await inDb(async db=>{
     const tx=db.transaction(STORE,"readwrite"),complete=done(tx);
-    tx.objectStore(STORE).put(record);
-    await complete;
+    const store=tx.objectStore(STORE);
+    let operationError:Error|null=null;
+    const request=store.get(record.id);
+    request.onsuccess=()=>{
+      if(request.result!==undefined){store.put(record);return;}
+      const count=store.count();
+      count.onsuccess=()=>{
+        if(count.result>=JOURNAL_SAFE_LIMIT){
+          operationError=new Error("Journal has reached 5000 readings. Export older entries before saving more.");
+          tx.abort();
+        }else store.add(record);
+      };
+    };
+    try{await complete;}catch(cause){throw operationError??cause;}
   });
 }
+/** Append notes to an existing daily entry instead of overwriting past reflections. */
+export function combineDailyNotes(existing:string,incoming:string):string{
+  if(typeof existing!=="string"||typeof incoming!=="string")
+    throw new Error("Invalid journal note");
+  const addition=incoming.trim();
+  const combined=existing.trim()?existing+(addition?"\n\n"+addition:""):addition;
+  if(combined.length>2000)
+    throw new Error("Daily reflections exceed 2000 characters. Export or edit the earlier entry in the journal.");
+  return combined;
+}
+export async function saveDailyJournalReading(value:SavedReading):Promise<void>{
+  const record=sanitized(value);
+  if(!/^daily-\d{4}-\d{2}-\d{2}$/.test(record.id))
+    throw new Error("Invalid daily journal ID.");
+  if(!withIndexedDb()){
+    const existing=loadReadings().find(item=>item.id===record.id);
+    addReading(existing?{...existing,notes:combineDailyNotes(existing.notes,record.notes)}:record);
+    return;
+  }
+  await inDb(async db=>{
+    const tx=db.transaction(STORE,"readwrite"),complete=done(tx);
+    const store=tx.objectStore(STORE);
+    let operationError:Error|null=null;
+    const request=store.get(record.id);
+    request.onsuccess=()=>{
+      if(request.result!==undefined){
+        try{
+          const old=sanitized(request.result as SavedReading);
+          store.put({...old,notes:combineDailyNotes(old.notes,record.notes)});
+        }catch(cause){
+          operationError=cause instanceof Error?cause:new Error("Could not append daily note.");
+          tx.abort();
+        }
+        return;
+      }
+      const count=store.count();
+      count.onsuccess=()=>{
+        if(count.result>=JOURNAL_SAFE_LIMIT){
+          operationError=new Error("Journal is full. Export older readings before saving.");
+          tx.abort();
+        }else store.add(record);
+      };
+    };
+    try{await complete;}catch(cause){throw operationError??cause;}
+  });
+}
+
 export async function deleteJournalReading(id:string):Promise<void>{
   if(!withIndexedDb()){deleteReading(id);return;}
   await inDb(async db=>{
@@ -167,20 +246,36 @@ export async function changeJournalFavorite(id:string,favorite:boolean):Promise<
   await updateJournal(id,reading=>({...reading,favorite}));
 }
 /**
- * All-or-nothing import, preserving existing rows unless IDs match.
+ * All-or-nothing import, preserving existing rows when IDs match.
  * For a destructive restore use replaceJournal() after confirmation.
  */
 export async function importJournal(records:readonly SavedReading[]):Promise<void>{
   const validated=validateMany(records);
   if(!withIndexedDb()){
-    for(const record of validated)addReading(record);
+    // One localStorage write guarantees no partial fallback import if the
+    // archive exceeds the 100-item legacy limit or a write fails.
+    const combined=mergeJournalRecords(loadReadings(),validated,100);
+    localStorage.setItem(HISTORY_KEY,JSON.stringify(combined));
     return;
   }
   await inDb(async db=>{
     const tx=db.transaction(STORE,"readwrite"),complete=done(tx);
     const store=tx.objectStore(STORE);
-    for(const record of validated)store.put(record);
-    await complete;
+    let operationError:Error|null=null;
+    // Query and additions share the same readwrite transaction to avoid
+    // races between tabs and enforce the 5000-entry limit atomically.
+    const keys=store.getAllKeys();
+    keys.onsuccess=()=>{
+      const existing=new Set(keys.result.map(key=>String(key)));
+      const toAdd=validated.filter(record=>!existing.has(record.id));
+      if(existing.size+toAdd.length>JOURNAL_SAFE_LIMIT){
+        operationError=new Error("Journal has reached 5000 readings. Export older entries before importing.");
+        tx.abort();
+        return;
+      }
+      for(const record of toAdd)store.add(record);
+    };
+    try{await complete;}catch(cause){throw operationError??cause;}
   });
 }
 export async function replaceJournal(records:readonly SavedReading[]):Promise<void>{
@@ -211,10 +306,11 @@ export async function importJournalJSON(text:string):Promise<number>{
     ||!Array.isArray(data.readings))throw new Error("Pocket Tarot уншилтын JSON биш байна.");
   const incoming=validateMany(data.readings);
   const existing=await listJournal();
+  const existingIds=new Set(existing.map(row=>row.id));
   if(new Set([...incoming,...existing].map(row=>row.id)).size>JOURNAL_SAFE_LIMIT)
     throw new Error("5000-аас олон уншилт нэг архивд багтахгүй.");
   await importJournal(incoming);
-  return incoming.length;
+  return incoming.filter(record=>!existingIds.has(record.id)).length;
 }
 
 export async function changeJournalMetadata(id:string,tags:string[],mood:ReadingMood):Promise<void>{

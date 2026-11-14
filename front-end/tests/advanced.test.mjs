@@ -1,4 +1,6 @@
 import {buildPhysicalReading} from "../src/app/lib/physicalReading.ts";
+import {mergeJournalRecords,importJournal,combineDailyNotes} from "../src/app/lib/journalDb.ts";
+import {HISTORY_KEY} from "../src/app/lib/readingHistory.ts";
 import {englishHoroscope,englishDailyFortune,englishLifeGuidance,englishDreamReflection} from "../src/app/lib/englishReflections.ts";
 import {parseActiveReading} from "../src/app/lib/activeReading.ts";
 import {calculateTransits} from "../src/app/lib/astroTransits.ts";
@@ -206,6 +208,10 @@ test("reading statistics stay local and handle favorites and repeated cards",()=
   const stats=calculateReadingStats(rows,now);
   assert.deepEqual([stats.total,stats.favorites,stats.distinctCards,stats.topCardId,stats.topCardDraws,stats.last30Days],
     [2,1,2,0,2,1]);
+  assert.equal(stats.cardsDrawn,3);
+  assert.equal(stats.reversedCards,1);
+  assert.equal(stats.reversedPercent,33);
+  assert.equal(stats.topSuit,null);
 });
 
 test("complete offline backup validates all journal/template/preferences before replacement",()=>{
@@ -392,11 +398,84 @@ test("physical-deck readings keep chosen card order, reject duplicates and respe
   assert.deepEqual(reading.map(row=>row.position),[1,2,3]);
   assert.deepEqual(reading.map(row=>row.isReversed),[true,false,true]);
   assert.equal(reading[0].positionName,spread.positions[0].name);
-  assert.deepEqual(
-    buildPhysicalReading(tarotCards,spread,choices,{allowReversed:false}).map(row=>row.isReversed),
-    [false,false,false]
-  );
+  // Physical orientation is observed, not re-randomized or overridden by a
+  // global preference intended for digitally drawn cards.
+  assert.deepEqual(buildPhysicalReading(tarotCards,spread,choices).map(row=>row.isReversed),
+    [true,false,true]);
   assert.throws(()=>buildPhysicalReading(tarotCards,spread,[choices[0],choices[0],choices[2]]),/same physical card/);
   assert.throws(()=>buildPhysicalReading(tarotCards,spread,choices.slice(0,2)),/every position/);
   assert.throws(()=>buildPhysicalReading(tarotCards,spread,[choices[0],{cardId:999,isReversed:false},choices[2]]),/not in this deck/);
+});
+
+
+test("journal merge preserves edited entries, appends new IDs and rejects overflow",()=>{
+  const reading=(id,notes)=>({
+    id,date:"2026-11-14T01:00:00.000Z",spread:"Three cards",question:"",reading:"Reflection",
+    notes,cards:[{id:0,reversed:false,position:1}]
+  });
+  const existing=[reading("same","valuable edited notes")];
+  const imported=[reading("same","older outdated note"),reading("new","fresh")];
+  const merged=mergeJournalRecords(existing,imported,2);
+  assert.deepEqual(merged.map(item=>item.id),["same","new"]);
+  assert.equal(merged[0].notes,"valuable edited notes");
+  assert.throws(()=>mergeJournalRecords(existing,imported,1),/capacity/i);
+  assert.throws(()=>mergeJournalRecords([],imported,0),/limit/i);
+});
+
+test("no-IndexedDB import is atomic with a 100-reading cap",async()=>{
+  const make=(id,notes="")=>({
+    id,date:"2026-11-14T01:00:00.000Z",spread:"One card",question:"",
+    reading:"Local reflection",notes,cards:[{id:0,reversed:false,position:1}]
+  });
+  const values=new Map([[HISTORY_KEY,JSON.stringify([make("already","personal notes")])]]);
+  const originalStorage=Object.getOwnPropertyDescriptor(globalThis,"localStorage");
+  const originalIdb=Object.getOwnPropertyDescriptor(globalThis,"indexedDB");
+  const fakeStorage={
+    getItem:key=>values.get(key)??null,
+    setItem:(key,value)=>values.set(key,String(value)),
+    removeItem:key=>values.delete(key)
+  };
+  Object.defineProperty(globalThis,"localStorage",{value:fakeStorage,configurable:true});
+  Object.defineProperty(globalThis,"indexedDB",{value:undefined,configurable:true});
+  try{
+    await importJournal([make("already","stale"),make("new","imported")]);
+    let rows=JSON.parse(values.get(HISTORY_KEY));
+    assert.equal(rows.length,2);
+    assert.equal(rows[0].notes,"personal notes");
+    const before=values.get(HISTORY_KEY);
+    await assert.rejects(importJournal(Array.from({length:101},(_,i)=>make("bulk-"+i))),/capacity/i);
+    assert.equal(values.get(HISTORY_KEY),before,"failed batch must make zero writes");
+  }finally{
+    if(originalStorage)Object.defineProperty(globalThis,"localStorage",originalStorage);
+    else delete globalThis.localStorage;
+    if(originalIdb)Object.defineProperty(globalThis,"indexedDB",originalIdb);
+    else delete globalThis.indexedDB;
+  }
+});
+
+test("daily reflections append without overwriting and enforce journal size",()=>{
+  assert.equal(combineDailyNotes("Morning thought","Evening thought"),"Morning thought\n\nEvening thought");
+  assert.equal(combineDailyNotes("Morning thought",""),"Morning thought");
+  assert.equal(combineDailyNotes("","New reflection"),"New reflection");
+  assert.throws(()=>combineDailyNotes("a".repeat(1999),"additional reflection"),/2000/);
+});
+
+
+test("private journal insights count reversals and suit concentration",()=>{
+  const sample={
+    id:"insight",date:"2026-11-14T02:00:00.000Z",spread:"Three",
+    question:"",reading:"Local reflection",notes:"",favorite:false,
+    cards:[{id:22,reversed:true,position:1},{id:23,reversed:true,position:2},{id:36,reversed:false,position:3}]
+  };
+  const stats=calculateReadingStats([sample]);
+  assert.equal(stats.cardsDrawn,3);
+  assert.equal(stats.reversedPercent,67);
+  assert.equal(stats.topSuit,"Wands");
+  assert.equal(stats.topSuitDraws,2);
+});
+
+test("invalid legacy reading dates fail with actionable validation errors",()=>{
+  assert.throws(()=>convertLegacyReadings([{
+    id:"wrong-date",cardId:0,readingDate:"never-a-date"
+  }]),/Legacy уншилтын огноо буруу/);
 });

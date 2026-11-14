@@ -63,8 +63,9 @@ export default function ReadingHistory({onOpenBackup}:{onOpenBackup?:()=>void}){
   const readImport=async(file:File|undefined)=>{
     if(!file)return;
     try{
+      if(file.size>20_000_000)throw new Error(tr("Импортын файл 20 MB-ээс хэтэрсэн.","Import file exceeds 20 MB."));
       const count=await importJournalJSON(await file.text());
-      setItems(await listJournal());setError("");setMessage(en?`${count} readings imported.`:count+" уншилт импортлогдлоо.");
+      setItems(await listJournal());setError("");setMessage(en?`${count} new readings imported. Existing entries were kept.`:count+" шинэ уншилт импортлогдлоо. Өмнөх тэмдэглэлүүд хэвээр.");
     }catch(cause){setError(cause instanceof Error?cause.message:"Импорт амжилтгүй.");setMessage("");}
     if(fileRef.current)fileRef.current.value="";
   };
@@ -87,6 +88,8 @@ export default function ReadingHistory({onOpenBackup}:{onOpenBackup?:()=>void}){
   const active=items.find(item=>item.id===selected);
   const stats=calculateReadingStats(items);
   const mostSeen=tarotCards.find(card=>card.id===stats.topCardId);
+  const suitNames:Record<string,string>={Wands:"Саваа",Cups:"Хундага",Swords:"Сэлэм",Pentacles:"Зоос"};
+  const topSuitName=stats.topSuit?(en?stats.topSuit:suitNames[stats.topSuit])+" ("+stats.topSuitDraws+")":"—";
   const searched=search.trim().toLocaleLowerCase();
   const visible=items.filter(item=>{
     if(favoritesOnly&&!item.favorite)return false;
@@ -110,12 +113,14 @@ export default function ReadingHistory({onOpenBackup}:{onOpenBackup?:()=>void}){
           {tr("Таны тэмдэглэл энэ төхөөрөмж дээр хадгалагдана. Серверт илгээхгүй. Browser-ийн мэдээллийг устгавал export хийгээгүй тэмдэглэлүүд алдагдана. Хуучин account import-д өөрийн account-аас эрхтэйгээр татсан JSON хэрэгтэй; апп хуучин сервертэй холбогдохгүй.","Journal entries stay on this device. Clearing browser data can erase entries without a backup. Legacy imports require a file you exported from your own account; this app never connects to the old server.")}
         </p>
       </header>
-      {items.length>0&&<div aria-label={tr("Уншилтын хувийн статистик","Private journal statistics")} className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {items.length>0&&<div aria-label={tr("Уншилтын хувийн статистик","Private journal statistics")} className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {[
           [tr("Нийт уншилт","Total readings"),String(stats.total)],
           [tr("Дуртай уншилт","Favorites"),String(stats.favorites)],
           [tr("Өөр карт","Unique cards"),String(stats.distinctCards)],
-          [tr("Их давтагдсан","Most drawn"),mostSeen?(en?mostSeen.englishName:mostSeen.name)+" ("+stats.topCardDraws+")":"—"]
+          [tr("Их давтагдсан","Most drawn"),mostSeen?(en?mostSeen.englishName:mostSeen.name)+" ("+stats.topCardDraws+")":"—"],
+          [tr("Урвуу карт","Reversed cards"),stats.reversedPercent+"% ("+stats.reversedCards+"/"+stats.cardsDrawn+")"],
+          [tr("Давамгай бүлэг","Most common suit"),topSuitName]
         ].map(([label,value])=>(
           <div key={label} className="rounded-xl border border-white/10 bg-white/5 p-4">
             <p className="text-xs text-slate-300">{label}</p>
