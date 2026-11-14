@@ -1,5 +1,5 @@
 import type { SavedReading } from "./readingHistory";
-import {tarotCards} from "../data/tarotCards";
+import {tarotCards} from "../data/tarotCards.ts";
 
 export interface ReadingStats{
   total:number;favorites:number;distinctCards:number;
