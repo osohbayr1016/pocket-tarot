@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { tarotCards } from "../data/tarotCards";
 import { interpretReading } from "../lib/offlineEngine";
-import {saveJournalReading} from "../lib/journalDb";
+import {saveDailyJournalReading} from "../lib/journalDb";
 import TarotCard from "./TarotCard";
 import {getReadingPreferences} from "../lib/readingPreferences";
 import {useLocalDraft} from "../lib/useLocalDraft";
@@ -58,7 +58,7 @@ export default function DailyTarotCard(){
   const save=async()=>{
     if(!date||!draft.ready)return;
     try{
-      await saveJournalReading({
+      await saveDailyJournalReading({
         id:"daily-"+date,date:new Date().toISOString(),spread:"Өдрийн карт",
         question:"Өнөөдөр юунд анхаарах вэ?",reading,notes:draft.text.slice(0,2000),
         cards:[{id:card.id,reversed:isReversed,position:1}],
@@ -66,8 +66,9 @@ export default function DailyTarotCard(){
       draft.clear();
       setMessage(en?"Daily reflection saved to your device. Find it in the reading journal.":"Өдрийн тэмдэглэл хадгалагдлаа. Уншилтын түүхээс харж болно.");
       setError("");
-    }catch{
-      setError(en?"Could not save notes; check browser storage.":"Тэмдэглэл хадгалагдсангүй. Browser storage-ийг шалгана уу.");
+    }catch(cause){
+      setError(cause instanceof Error?cause.message:
+        (en?"Could not save notes; check browser storage.":"Тэмдэглэл хадгалагдсангүй. Browser storage-ийг шалгана уу."));
     }
   };
   if(!date)return <div className="p-10 text-center text-slate-300">{en?"Preparing your daily card...":"Өдрийн картыг бэлдэж байна..."}</div>;
@@ -82,7 +83,7 @@ export default function DailyTarotCard(){
       <textarea id="daily-notes" value={draft.text} disabled={!draft.ready} onChange={event=>draft.setText(event.target.value)}
         rows={3} maxLength={2000} placeholder={en?"Today’s intentions and reflections...":"Өнөөдрийн зорилго, бодол..."}
         className="mt-2 w-full rounded-lg border border-white/20 bg-white/5 p-3 text-sm text-white placeholder:text-slate-400"/>
-      <p className="mt-2 text-left text-xs text-slate-400">{en?"Your draft saves locally as you type and stays separate for each day.":"Тэмдэглэл бичих бүрд энэ төхөөрөмж дээр түр хадгалагдана. Өөр өдөр солигдоход тэмдэглэл холилдохгүй."}</p>
+      <p className="mt-2 text-left text-xs text-slate-400">{en?"Your draft saves locally as you type. Saving another note today appends it without erasing earlier reflections.":"Draft нь төхөөрөмж дээр хадгалагдана. Нэг өдөр дахин хадгалахад өмнөх тэмдэглэлийг устгахгүй, үргэлжлүүлэн нэмнэ."}</p>
       <button type="button" disabled={!draft.ready} onClick={save} className="mt-4 rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200">
         {en?"Save daily reflection":"Өдрийн тэмдэглэл хадгалах"}
       </button>
