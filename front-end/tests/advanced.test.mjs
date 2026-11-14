@@ -495,6 +495,24 @@ test("local-day journal filtering is inclusive and rejects invalid timestamps",(
   assert.equal(matchesLocalDateRange("not-a-date"),false);
 });
 
+
+test("complete backup refuses duplicate journal IDs before destructive restore",()=>{
+  const row={
+    id:"duplicate",date:"2026-11-14T02:00:00.000Z",spread:"Three",
+    question:"",reading:"A saved interpretation",notes:"A personal note",
+    cards:[{id:0,reversed:false,position:1}]
+  };
+  const base={
+    format:BACKUP_FORMAT,version:4,exportedAt:"2026-11-14T02:00:00.000Z",
+    readings:[row,{...row,notes:"conflicting notes"}],spreads:[],
+    preferences:{allowReversed:true,reduceMotion:false,cardBack:"star"},
+    study:[],drafts:[],locale:"mn"
+  };
+  assert.throws(()=>parseCompleteBackup(JSON.stringify(base)),/ID давхардсан/);
+  assert.throws(()=>parseCompleteBackup(JSON.stringify({...base,version:2})),/ID давхардсан/);
+  assert.equal(parseCompleteBackup(JSON.stringify({...base,readings:[row]})).readings.length,1);
+});
+
 test("encrypted backup import limit includes safe base64 overhead and checks UTF-8 bytes",()=>{
   assert.equal(utf8ByteLength("✦"),3);
   assert.equal(utf8ByteLength("💫"),4);
