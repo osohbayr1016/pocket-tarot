@@ -757,3 +757,77 @@ test("rapid double-click on daily Save cannot append the same note twice",async(
   expect(daily).toHaveLength(1);
   expect(daily[0].notes).toBe("Only one entry after simultaneous saves");
 });
+
+
+test("journal CSV summary exports only filtered cards and no private free text",async({page})=>{
+  await page.goto("/");
+  await openView(page,"Миний түүх");
+  const records=[
+    {id:"csv-one",date:"2024-10-01T12:00:00.000Z",spread:"Sensitive old spread",
+      question:"SECRET_QUESTION_ONE",reading:"SECRET_READING_ONE",notes:"SECRET_NOTES_ONE",
+      favorite:false,tags:["SECRET_TAG_ONE"],cards:[{id:0,reversed:false,position:1}]},
+    {id:"csv-two",date:"2024-10-02T12:00:00.000Z",spread:"=HYPERLINK(secret)",
+      question:"SECRET_QUESTION_TWO",reading:"SECRET_READING_TWO",notes:"SECRET_NOTES_TWO",
+      favorite:true,mood:"hopeful",tags:["SECRET_TAG_TWO"],
+      cards:[{id:1,reversed:true,position:1}]}
+  ];
+  const payload={format:"pocket-tarot-readings",version:2,readings:records};
+  await page.locator('input[aria-label="JSON уншилт импортлох"]').setInputFiles({
+    name:"csv-source.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(payload))
+  });
+  await expect(page.getByText("SECRET_QUESTION_TWO")).toBeVisible();
+  await page.locator("#journal-date-from").fill("2024-10-02");
+  await page.locator("#journal-date-to").fill("2024-10-02");
+  const pending=page.waitForEvent("download");
+  await page.getByRole("button",{name:"CSV хураангуй"}).click();
+  const download=await pending;
+  expect(download.suggestedFilename()).toBe("pocket-tarot-journal-summary.csv");
+  const csv=require("node:fs").readFileSync(await download.path(),"utf8");
+  expect(csv.charCodeAt(0)).toBe(0xfeff);
+  expect(csv).toContain("The Magician (reversed)");
+  expect(csv).not.toContain("The Fool");
+  expect(csv).toContain("2024-10-02");
+  for(const secret of ["SECRET_QUESTION","SECRET_NOTES","SECRET_READING","SECRET_TAG","=HYPERLINK"]){
+    expect(csv).not.toContain(secret);
+  }
+});
+
+test("journal refreshes from IndexedDB when returning from another browser tab",async({page,context,browserName})=>{
+  test.skip(browserName!=="chromium","Cross-tab IndexedDB synchronization smoke runs in Chromium.");
+  await page.goto("/");
+  await openView(page,"Миний түүх");
+  await expect(page.getByText("Одоогоор уншилт алга")).toBeVisible();
+  const other=await context.newPage();
+  try{
+    await other.goto("/");
+    await openView(other,"Миний түүх");
+    const payload={format:"pocket-tarot-readings",version:2,readings:[{
+      id:"other-tab",date:"2024-11-02T12:00:00.000Z",spread:"One card",
+      question:"Cross-tab reflection",reading:"Stored only on this device",notes:"",
+      cards:[{id:0,reversed:false,position:1}]
+    }]};
+    await other.locator('input[aria-label="JSON уншилт импортлох"]').setInputFiles({
+      name:"cross-tab.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(payload))
+    });
+    await expect(other.getByText("Cross-tab reflection")).toBeVisible();
+    await page.bringToFront();
+    await expect(page.getByText("Cross-tab reflection")).toBeVisible();
+  }finally{
+    await other.close();
+  }
+});
+
+test("double-clicking backup export launches only one file generation",async({page,browserName})=>{
+  test.skip(browserName!=="chromium","Duplicate export smoke runs in Chromium.");
+  await page.goto("/");
+  await openView(page,"Хувийн тохиргоо");
+  await page.getByLabel("Backup файлыг AES-256-GCM-ээр шифрлэх").uncheck();
+  const downloads=[];
+  page.on("download",download=>downloads.push(download));
+  const exportButton=page.getByRole("button",{name:"Бүх data export"});
+  await exportButton.evaluate(button=>{button.click();button.click();});
+  await expect.poll(()=>downloads.length).toBe(1);
+  // A second event-loop iteration must not be required to finish the first.
+  await expect(page.getByText("JSON backup татагдлаа. Хувийн мэдээлэлтэй файлаа хамгаалаарай.")).toBeVisible();
+  expect(downloads).toHaveLength(1);
+});

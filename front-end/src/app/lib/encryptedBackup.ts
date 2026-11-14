@@ -3,6 +3,7 @@
  * Passphrase is never sent to a network, saved in storage, or logged.
  * This protects EXPORTED files, not device-local IndexedDB.
  */
+import {assertPlaintextBackupSize,MAX_BACKUP_ENCRYPTED_BYTES} from "./backupLimits.ts";
 const FORMAT="pocket-tarot-encrypted-backup";
 const ITERATIONS=310000;
 const enc=new TextEncoder(),dec=new TextDecoder();
@@ -42,20 +43,24 @@ export function isEncryptedBackup(source:string):boolean{
 }
 export async function encryptBackup(plaintext:string,passphrase:string):Promise<string>{
   if(passphrase.length<12)throw new Error("Backup-ийн нууц үг 12-оос олон тэмдэгттэй байна.");
-  if(plaintext.length>20_000_000)throw new Error("Backup хэмжээ 20 MB-ээс хэтэрсэн.");
+  assertPlaintextBackupSize(plaintext);
+  const plaintextBytes=enc.encode(plaintext);
   const salt=crypto.getRandomValues(new Uint8Array(16));
   const iv=crypto.getRandomValues(new Uint8Array(12));
   const derived=await key(passphrase,salt,ITERATIONS);
-  const encrypted=await crypto.subtle.encrypt({name:"AES-GCM",iv},derived,enc.encode(plaintext));
+  const encrypted=await crypto.subtle.encrypt({name:"AES-GCM",iv},derived,plaintextBytes);
   const envelope:Envelope={
     format:FORMAT,version:1,algorithm:"AES-256-GCM",
     kdf:"PBKDF2-SHA256",iterations:ITERATIONS,
     salt:b64(salt),iv:b64(iv),ciphertext:b64(new Uint8Array(encrypted))
   };
-  return JSON.stringify(envelope);
+  const exported=JSON.stringify(envelope);
+  if(exported.length>MAX_BACKUP_ENCRYPTED_BYTES)
+    throw new Error("Шифрлэсэн backup файл 28 MB-ээс хэтэрсэн.");
+  return exported;
 }
 export async function decryptBackup(contents:string,passphrase:string):Promise<string>{
-  if(contents.length>28_000_000)throw new Error("Шифрлэсэн backup хэмжээ хэтэрсэн.");
+  if(contents.length>MAX_BACKUP_ENCRYPTED_BYTES)throw new Error("Шифрлэсэн backup хэмжээ хэтэрсэн.");
   if(!passphrase)throw new Error("Нууц үгээ оруулна уу.");
   let data:Record<string,unknown>;
   try{data=JSON.parse(contents);}catch{throw new Error("Шифрлэсэн JSON файл буруу.");}
@@ -67,11 +72,14 @@ export async function decryptBackup(contents:string,passphrase:string):Promise<s
   const salt=unb64(data.salt),iv=unb64(data.iv),ciphertext=unb64(data.ciphertext);
   if(salt.length!==16||iv.length!==12||ciphertext.length<16)
     throw new Error("Backup шифрийн бүтэц буруу.");
+  let decrypted:ArrayBuffer;
   try{
     const derived=await key(passphrase,salt,ITERATIONS);
-    const decrypted=await crypto.subtle.decrypt({name:"AES-GCM",iv:new Uint8Array(iv)},derived,new Uint8Array(ciphertext));
-    return dec.decode(decrypted);
+    decrypted=await crypto.subtle.decrypt({name:"AES-GCM",iv:new Uint8Array(iv)},derived,new Uint8Array(ciphertext));
   }catch{
     throw new Error("Нууц үг буруу эсвэл backup файл гэмтсэн.");
   }
+  const plaintext=dec.decode(decrypted);
+  assertPlaintextBackupSize(plaintext);
+  return plaintext;
 }

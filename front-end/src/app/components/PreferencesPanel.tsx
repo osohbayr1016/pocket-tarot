@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from "react";
 import {createCompleteBackupV4,restoreCompleteBackupV3} from "../lib/offlineBackup";
 import {encryptBackup,decryptBackup,isEncryptedBackup} from "../lib/encryptedBackup";
+import {assertBackupUploadSize} from "../lib/backupLimits";
 import {useLanguage} from "../lib/LanguageProvider";
 import {readRawDraftKeys} from "../lib/useLocalDraft";
 import {
@@ -19,6 +20,8 @@ export default function PreferencesPanel(){
   const [passwordConfirmation,setPasswordConfirmation]=useState("");
   const [message,setMessage]=useState("");
   const [error,setError]=useState("");
+  const [busy,setBusy]=useState<"export"|"import"|null>(null);
+  const busyRef=useRef(false);
   useEffect(()=>{
     const frame=requestAnimationFrame(()=>setPrefs(getReadingPreferences()));
     return()=>cancelAnimationFrame(frame);
@@ -33,6 +36,8 @@ export default function PreferencesPanel(){
     }
   }
   const exportAll=async()=>{
+    if(busyRef.current)return;
+    busyRef.current=true;setBusy("export");
     try{
       if(encryptFile&&(backupPassword.length<12||backupPassword!==passwordConfirmation))
         throw new Error(en?"Use a password of 12+ characters and confirm it exactly.":"Нууц үг 12+ тэмдэгттэй бөгөөд давтан оруулсан нууц үгтэй ижил байх ёстой.");
@@ -47,13 +52,16 @@ export default function PreferencesPanel(){
       setMessage(en?(encryptFile?"Encrypted backup downloaded. Losing the password means losing access.":"JSON backup downloaded. Keep the private file safe."):(encryptFile?"Шифрлэсэн backup татагдлаа. Нууц үгээ мартвал сэргээх боломжгүй.":"JSON backup татагдлаа. Хувийн мэдээлэлтэй файлаа хамгаалаарай."));
       setBackupPassword("");setPasswordConfirmation("");setError("");
     }catch(cause){setError(cause instanceof Error?cause.message:"Backup үүсгэж чадсангүй.");}
+    finally{busyRef.current=false;setBusy(null);}
   };
   const importAll=async(file:File|undefined)=>{
     if(!file)return;
     if(backupInput.current)backupInput.current.value="";
+    if(busyRef.current)return;
     if(!window.confirm(en?"This will REPLACE your journal, saved spreads, unsaved drafts, study progress and preferences. Have you exported your current data?":"Энэ төхөөрөмж дээрх journal, custom spread, түр draft, сургалтын ахиц болон тохиргоо бүгд шинэ backup-ээр СОЛИГДОНО. Одоогийн data-г эхлээд export хийсэн үү?"))return;
+    busyRef.current=true;setBusy("import");
     try{
-      if(file.size>20_000_000)throw new Error("Backup файл 20 MB-ээс бага байх ёстой.");
+      assertBackupUploadSize(file.size);
       const raw=await file.text();
       const text=isEncryptedBackup(raw)?await decryptBackup(raw,backupPassword):raw;
       const restored=await restoreCompleteBackupV3(text);
@@ -64,8 +72,10 @@ export default function PreferencesPanel(){
         restored.readings.length+" уншилт, "+restored.spreads.length+" дэлгэмэл, "+restored.study.length+" сурсан карт болон тохиргоо сэргээгдлээ. Бусад хэсэг рүү орж шинэ мэдээллээ хараарай.");
       setError("");
     }catch(cause){setError(cause instanceof Error?cause.message:"Backup сэргээхэд алдаа гарлаа.");}
+    finally{busyRef.current=false;setBusy(null);}
   };
   const clearUnsavedDrafts=()=>{
+    if(busyRef.current)return;
     if(!window.confirm(en?
       "Permanently delete ALL unsaved draft notes on this device? Saved readings are not affected.":
       "Энэ төхөөрөмж дээрх БҮХ түр draft тэмдэглэлийг устгах уу? Хадгалсан уншилт хэвээр үлдэнэ."))return;
@@ -171,20 +181,20 @@ export default function PreferencesPanel(){
         "Шифрлэсэн файлыг импортлох үед зөвхөн эхний нууц үгийн талбарыг бөглөнө. Нууц үг мартвал сэргээх арга байхгүй. Төхөөрөмж дээрх journal өөрөө тусдаа шифрлэгдээгүй тул shared device дээр browser-ийн профайлаа хамгаалаарай."}
       </p>
       <div className="mt-5 flex flex-wrap gap-3">
-        <button type="button" onClick={clearUnsavedDrafts}
-          className="min-h-11 rounded-full border border-red-300/40 px-5 py-3 text-sm text-red-200">
+        <button type="button" disabled={busy!==null} onClick={clearUnsavedDrafts}
+          className="min-h-11 rounded-full border border-red-300/40 px-5 py-3 text-sm text-red-200 disabled:opacity-50">
           {en?"Clear unsaved drafts":"Түр тэмдэглэлүүд арилгах"}
         </button>
-        <button type="button" onClick={()=>void exportAll()}
+        <button type="button" disabled={busy!==null} aria-busy={busy==="export"} onClick={()=>void exportAll()}
           className="rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-[#171127]">
-          {en?"Export all data":"Бүх data export"}
+          {busy==="export"?(en?"Preparing backup...":"Backup бэлдэж байна..."):(en?"Export all data":"Бүх data export")}
         </button>
-        <input type="file" accept=".json,application/json" ref={backupInput}
+        <input type="file" disabled={busy!==null} accept=".json,application/json" ref={backupInput}
           aria-label={en?"Import complete JSON backup":"Бүх data import JSON"} className="sr-only"
           onChange={event=>void importAll(event.target.files?.[0])}/>
-        <button type="button" onClick={()=>backupInput.current?.click()}
+        <button type="button" disabled={busy!==null} aria-busy={busy==="import"} onClick={()=>backupInput.current?.click()}
           className="rounded-full border border-amber-300/40 px-5 py-3 text-sm text-amber-100">
-          {en?"Import a backup":"Backup import"}
+          {busy==="import"?(en?"Restoring backup...":"Backup сэргээж байна..."):(en?"Import a backup":"Backup import")}
         </button>
       </div>
     </div>

@@ -9,6 +9,7 @@ import {PREFS_KEY,getReadingPreferences,normalizeReadingPreferences,
 
 import {STUDY_KEY,loadStudyProgress,validateStudyProgress,type CardProgress} from "./studyProgress.ts";
 import {listJournal,replaceJournal,JOURNAL_SAFE_LIMIT} from "./journalDb.ts";
+import {assertPlaintextBackupSize} from "./backupLimits.ts";
 export const BACKUP_FORMAT="pocket-tarot-complete-backup";
 const DRAFT_PREFIX="pocket-tarot-draft-v1:";
 const LOCALE_KEY="pocket-tarot-locale-v1";
@@ -57,10 +58,12 @@ export function createCompleteBackup():string{
     readings:loadReadings(),spreads:loadSavedSpreads(),preferences:getReadingPreferences(),
     study:loadStudyProgress(),
   };
-  return JSON.stringify(backup,null,2);
+  const json=JSON.stringify(backup,null,2);
+  assertPlaintextBackupSize(json);
+  return json;
 }
 export function parseCompleteBackup(content:string):CompleteBackup{
-  if(content.length>20_000_000)throw new Error("Backup файлын дээд хэмжээ 20 MB.");
+  assertPlaintextBackupSize(content);
   let raw:unknown;
   try{raw=JSON.parse(content);}
   catch{throw new Error("JSON файл уншигдсангүй.");}
@@ -128,7 +131,7 @@ export async function createCompleteBackupV3():Promise<string>{
     study:loadStudyProgress(),
   };
   const json=JSON.stringify(backup,null,2);
-  if(json.length>20_000_000)throw new Error("Backup 20 MB-ээс хэтэрсэн. Хуучин уншилтаа тусдаа архивлаарай.");
+  assertPlaintextBackupSize(json);
   return json;
 }
 /**
@@ -193,7 +196,6 @@ export async function createCompleteBackupV4():Promise<string>{
     drafts:collectDrafts()
   };
   const json=JSON.stringify(content,null,2);
-  if(json.length>20_000_000)
-    throw new Error("Backup 20 MB-ээс хэтэрсэн. Архиваа тусад нь экспортлоно уу.");
+  assertPlaintextBackupSize(json);
   return json;
 }
