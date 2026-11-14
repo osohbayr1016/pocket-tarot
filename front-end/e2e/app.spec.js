@@ -607,3 +607,14 @@ test("physical deck input validates duplicates and completes a manual three-card
   }
   await expect(page.getByRole("heading",{name:"Таны уншилтын тайлал"})).toBeVisible();
 });
+
+
+test("back navigation restores the submenu even after previewing another category",async({page})=>{
+  await page.goto("/");
+  await openView(page,"Орд");
+  await page.getByRole("button",{name:"Офлайн",exact:true}).click();
+  await expect(page.getByRole("button",{name:"Offline карт",exact:true})).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("button",{name:"Таро дэлгэмэл",exact:true})).toBeVisible();
+  await expect(page.getByRole("button",{name:"Offline карт",exact:true})).toHaveCount(0);
+});
