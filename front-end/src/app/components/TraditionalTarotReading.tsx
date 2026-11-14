@@ -18,6 +18,7 @@ import {emitFeedback} from "../lib/feedback";
 import {loadActiveReading,saveActiveReading} from "../lib/activeReading";
 import {exportReadingSocialPng,type SocialFormat} from "../lib/exportReadingSocialPng";
 import {loadSavedSpreads,saveCustomSpread,deleteCustomSpread,savedToSpread,type SavedSpread} from "../lib/savedCustomSpreads";
+import {buildPhysicalReading} from "../lib/physicalReading";
 
 interface Props {
   onReset: () => void;
@@ -52,6 +53,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
   const [customLabels,setCustomLabels] = useState<string[]>([]);
   const [topic,setTopic] = useState<ReadingTopic|"auto">("auto");
   const [drawn, setDrawn] = useState<DrawnCard[]>([]);
+  const [physicalSelections,setPhysicalSelections] = useState<{cardId:string;isReversed:boolean}[]>([]);
   const [visibleCount, setVisibleCount] = useState(0);
   const [restored,setRestored] = useState(false);
   const notesDraft=useLocalDraft("traditional-notes");
@@ -67,6 +69,7 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
       const previous=loadActiveReading();
       if(previous){
         setSpread(previous.spread);setDrawn(previous.drawn);
+        setPhysicalSelections(previous.spread.positions.map(()=>({cardId:"",isReversed:false})));
         setVisibleCount(previous.visibleCount);setTopic(previous.topic);
       }
       setRestored(true);
@@ -105,7 +108,8 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
   };
   const chooseSpread = (next: TarotSpread) => {
     if(!confirmDiscard())return;
-    setSpread(next); setDrawn([]); setVisibleCount(0); setError(""); setSavedMessage(""); setNotes("");
+    setSpread(next);setPhysicalSelections(next.positions.map(()=>({cardId:"",isReversed:false})));
+    setDrawn([]); setVisibleCount(0); setError(""); setSavedMessage(""); setNotes("");
     refreshHistory();
   };
   const startQuickReading = (count:1|3 = 3) => {
@@ -130,6 +134,22 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
       setError(""); setSavedMessage("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Карт холих үед алдаа гарлаа.");
+    }
+  };
+  const startPhysicalReading=()=>{
+    if(!spread || !confirmDiscard())return;
+    try{
+      if(physicalSelections.length!==spread.cardCount ||
+         physicalSelections.some(choice=>choice.cardId==="")){
+        throw new Error(tr("Байрлал бүрт карт сонгоно уу.","Choose a card for every position."));
+      }
+      const cards=buildPhysicalReading(tarotCards,spread,
+        physicalSelections.map(choice=>({cardId:Number(choice.cardId),isReversed:choice.isReversed})),
+        {allowReversed:getReadingPreferences().allowReversed});
+      setDrawn(cards);setVisibleCount(0);setNotes("");
+      setError("");setSavedMessage("");emitFeedback("draw");
+    }catch(cause){
+      setError(cause instanceof Error?cause.message:tr("Карт сонголт буруу байна.","Invalid card selection."));
     }
   };
   const revealNext=()=>{
@@ -381,6 +401,43 @@ export default function TraditionalTarotReading({ onReset, userQuestion = "" }: 
                 className="w-full rounded-full bg-amber-300 px-8 py-3 font-semibold text-[#161024] transition-colors hover:bg-amber-200">
                 {(locale==="en"?"Shuffle and draw":"Хольж, хөзөр сугалах")}
               </button>
+              <details className="mt-5 text-left" id="physical-deck-entry">
+                <summary className="min-h-11 cursor-pointer rounded-xl border border-white/20 px-4 py-3 text-sm font-medium text-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200">
+                  {tr("Бодит карт ашиглах · Гараар оруулах","Using a physical deck? Enter drawn cards")}
+                </summary>
+                <p className="mt-3 text-xs leading-6 text-slate-300">
+                  {tr("Бодит хөзрөөсөө татсан картыг байрлал бүрт сонгоорой. Нэг карт давхардаж болохгүй. Бүх мэдээлэл төхөөрөмж дээр үлдэнэ.","Select the cards you drew from your own deck, in position order. Each card can appear only once. Nothing leaves your device.")}
+                </p>
+                <div className="mt-3 space-y-3">
+                  {spread.positions.map((position,index)=>(
+                    <div key={position.position} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <label htmlFor={"physical-card-"+index} className="block text-sm text-amber-100">
+                        {position.position}. {en?englishSpreadPosition(spread,position.position).name:position.name}
+                      </label>
+                      <select id={"physical-card-"+index} value={physicalSelections[index]?.cardId??""}
+                        onChange={event=>setPhysicalSelections(current=>current.map((choice,i)=>
+                          i===index?{...choice,cardId:event.target.value}:choice))}
+                        className="mt-2 w-full rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-white">
+                        <option value="">{tr("Карт сонгох","Choose a card")}</option>
+                        {tarotCards.map(card=><option key={card.id} value={card.id}>
+                          {en?card.englishName:card.name}
+                        </option>)}
+                      </select>
+                      <label className="mt-3 flex items-center gap-2 text-sm text-slate-200">
+                        <input type="checkbox" checked={physicalSelections[index]?.isReversed??false}
+                          onChange={event=>setPhysicalSelections(current=>current.map((choice,i)=>
+                            i===index?{...choice,isReversed:event.target.checked}:choice))}
+                          className="h-4 w-4 accent-amber-300"/>
+                        {tr("Урвуу карт","Reversed")}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" onClick={startPhysicalReading}
+                  className="mt-4 w-full rounded-full border border-amber-300/60 px-6 py-3 text-sm font-semibold text-amber-100 hover:bg-amber-300/10">
+                  {tr("Сонгосон картуудыг унших","Read my selected cards")}
+                </button>
+              </details>
             </div>
           ) : (
             <>

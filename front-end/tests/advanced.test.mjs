@@ -1,3 +1,4 @@
+import {buildPhysicalReading} from "../src/app/lib/physicalReading.ts";
 import {englishHoroscope,englishDailyFortune,englishLifeGuidance,englishDreamReflection} from "../src/app/lib/englishReflections.ts";
 import {parseActiveReading} from "../src/app/lib/activeReading.ts";
 import {calculateTransits} from "../src/app/lib/astroTransits.ts";
@@ -375,4 +376,27 @@ test("complete v4 backup validates bounded drafts and locale without arbitrary s
   assert.throws(()=>parseCompleteBackup(JSON.stringify({...base,drafts:[...base.drafts,...base.drafts]})),/Draft/);
   assert.throws(()=>parseCompleteBackup(JSON.stringify({...base,drafts:[{...base.drafts[0],text:"x".repeat(4001)}]})),/Draft/);
   assert.equal(parseCompleteBackup(JSON.stringify({...base,version:3,drafts:undefined,locale:undefined})).version,3);
+});
+
+
+test("physical-deck readings keep chosen card order, reject duplicates and respect reversed preference",()=>{
+  const spread=tarotSpreads.find(item=>item.id==="three-card");
+  assert.ok(spread);
+  const choices=[
+    {cardId:0,isReversed:true},
+    {cardId:1,isReversed:false},
+    {cardId:2,isReversed:true},
+  ];
+  const reading=buildPhysicalReading(tarotCards,spread,choices);
+  assert.deepEqual(reading.map(row=>row.card.id),[0,1,2]);
+  assert.deepEqual(reading.map(row=>row.position),[1,2,3]);
+  assert.deepEqual(reading.map(row=>row.isReversed),[true,false,true]);
+  assert.equal(reading[0].positionName,spread.positions[0].name);
+  assert.deepEqual(
+    buildPhysicalReading(tarotCards,spread,choices,{allowReversed:false}).map(row=>row.isReversed),
+    [false,false,false]
+  );
+  assert.throws(()=>buildPhysicalReading(tarotCards,spread,[choices[0],choices[0],choices[2]]),/same physical card/);
+  assert.throws(()=>buildPhysicalReading(tarotCards,spread,choices.slice(0,2)),/every position/);
+  assert.throws(()=>buildPhysicalReading(tarotCards,spread,[choices[0],{cardId:999,isReversed:false},choices[2]]),/not in this deck/);
 });

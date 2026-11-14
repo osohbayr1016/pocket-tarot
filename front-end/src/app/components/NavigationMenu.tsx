@@ -29,9 +29,11 @@ export default function NavigationMenu({section,onNavigate}:{
   // Switching a category only reveals its submenu. It does not create a
   // phantom browser-history entry for the category's first view.
   const {locale,setLocale,t}=useLanguage();
-  const [previewGroup,setPreviewGroup]=useState<string|null>(null);
+  // Category previews are tied to the section that opened them. A browser
+  // back/forward navigation must not leave an unrelated submenu visible.
+  const [previewGroup,setPreviewGroup]=useState<{id:string;section:Section}|null>(null);
   const selectedGroup=groupForSection(section);
-  const active=NAV_GROUPS.find(group=>group.id===previewGroup)||selectedGroup;
+  const active=NAV_GROUPS.find(group=>group.id===previewGroup?.id&&previewGroup.section===section)||selectedGroup;
   return <nav aria-label={locale==="en"?"Main navigation":"Үндсэн цэс"} className="mx-auto max-w-7xl px-4 sm:px-8">
     <div className="mb-2 flex justify-end">
       <button type="button" onClick={()=>setLocale(locale==="mn"?"en":"mn")}
@@ -44,7 +46,7 @@ export default function NavigationMenu({section,onNavigate}:{
       {NAV_GROUPS.map(group=>(
         <button type="button" key={group.id}
           aria-current={group.id===selectedGroup.id?"page":undefined}
-          aria-pressed={group.id===active.id} onClick={()=>setPreviewGroup(group.id)}
+          aria-pressed={group.id===active.id} onClick={()=>setPreviewGroup({id:group.id,section})}
           className={"min-h-11 shrink-0 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 "+
             (group.id===active.id?"bg-amber-300 text-[#171127]":"border border-white/15 text-slate-200 hover:border-amber-300/50 hover:text-amber-200")}>
           {t(group.label)}

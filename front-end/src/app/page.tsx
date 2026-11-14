@@ -232,7 +232,7 @@ export default function Home() {
             className="underline decoration-amber-300/50 underline-offset-4 hover:text-amber-100">
             {locale==="en"?"Artwork provenance":"Зургийн эх сурвалж"}
           </a>
-          <a href="https://github.com/osohbayr1016/pocket-tarot/blob/feat/offline-tarot-foundation/ARTWORK_PROVENANCE.md"
+          <a href="https://github.com/osohbayr1016/pocket-tarot/blob/main/ARTWORK_PROVENANCE.md"
             target="_blank" rel="noopener noreferrer"
             className="underline decoration-amber-300/50 underline-offset-4 hover:text-amber-100">
             {locale==="en"?"Licensing notes":"Зургийн эрхийн тэмдэглэл"}
