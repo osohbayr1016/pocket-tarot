@@ -597,7 +597,7 @@ test("physical deck input validates duplicates and completes a manual three-card
   await page.locator("#physical-card-1").selectOption("0");
   await page.locator("#physical-card-2").selectOption("2");
   await page.getByRole("button",{name:"Сонгосон картуудыг унших"}).click();
-  await expect(page.getByRole("alert").filter({hasText:"same physical card"})).toBeVisible();
+  await expect(page.getByRole("alert").filter({hasText:"Нэг картыг олон байрлалд"})).toBeVisible();
   await page.locator("#physical-card-1").selectOption("1");
   await page.locator("#physical-card-0").locator("..").getByRole("checkbox",{name:"Урвуу карт"}).check();
   await page.getByRole("button",{name:"Сонгосон картуудыг унших"}).click();
@@ -617,4 +617,73 @@ test("back navigation restores the submenu even after previewing another categor
   await page.goBack();
   await expect(page.getByRole("button",{name:"Таро дэлгэмэл",exact:true})).toBeVisible();
   await expect(page.getByRole("button",{name:"Offline карт",exact:true})).toHaveCount(0);
+});
+
+
+test("journal re-import preserves locally edited notes instead of overwriting them",async({page})=>{
+  await page.goto("/");
+  await openView(page,"Миний түүх");
+  const id="reimport-preserve-local-notes";
+  const payload={
+    format:"pocket-tarot-readings",version:2,
+    readings:[{
+      id,date:"2026-10-02T12:00:00.000Z",spread:"Three cards",
+      question:"Imported reflection",reading:"Original symbolic note",
+      notes:"Original imported notes",cards:[{id:0,reversed:false,position:1}]
+    }]
+  };
+  const file={name:"journal.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(payload))};
+  await page.locator('input[aria-label="JSON уншилт импортлох"]').setInputFiles(file);
+  await expect(page.getByText("Imported reflection")).toBeVisible();
+  await page.getByRole("button",{name:"Дэлгэрэнгүй"}).click();
+  await page.locator("#history-notes-"+id).fill("My newer edited notes must survive");
+  await page.getByRole("button",{name:"Тэмдэглэл хадгалах"}).click();
+  await expect(page.getByText("Тэмдэглэл хадгалагдлаа.")).toBeVisible();
+  await page.locator('input[aria-label="JSON уншилт импортлох"]').setInputFiles(file);
+  const download=page.waitForEvent("download");
+  await page.getByRole("button",{name:"JSON export"}).click();
+  const blob=await download;
+  const output=JSON.parse(require("node:fs").readFileSync(await blob.path(),"utf8"));
+  expect(output.readings).toHaveLength(1);
+  expect(output.readings[0].notes).toBe("My newer edited notes must survive");
+});
+
+test("daily card saves append notes instead of replacing today's reflection",async({page})=>{
+  await page.goto("/");
+  await openView(page,"Өдрийн карт");
+  await page.locator("#daily-notes").fill("First thought this morning");
+  await page.getByRole("button",{name:"Өдрийн тэмдэглэл хадгалах"}).click();
+  await expect(page.locator("#daily-notes")).toHaveValue("");
+  await page.locator("#daily-notes").fill("Second thought this evening");
+  await page.getByRole("button",{name:"Өдрийн тэмдэглэл хадгалах"}).click();
+  await openView(page,"Миний түүх");
+  const download=page.waitForEvent("download");
+  await page.getByRole("button",{name:"JSON export"}).click();
+  const blob=await download;
+  const output=JSON.parse(require("node:fs").readFileSync(await blob.path(),"utf8"));
+  const daily=output.readings.find(item=>item.id.startsWith("daily-"));
+  expect(daily.notes).toContain("First thought this morning");
+  expect(daily.notes).toContain("Second thought this evening");
+  expect(output.readings).toHaveLength(1);
+});
+
+test("manual reversed cards are preserved when automatic reversals are disabled",async({page})=>{
+  await page.goto("/");
+  await openView(page,"Хувийн тохиргоо");
+  await page.getByLabel("Урвуу карт оруулах").uncheck();
+  await openView(page,"Таро дэлгэмэл");
+  await page.getByRole("button",{name:/Нэг карт/}).last().click();
+  await page.locator("#physical-deck-entry > summary").click();
+  await page.locator("#physical-card-0").selectOption("0");
+  await page.locator("#physical-card-0").locator("..").getByRole("checkbox",{name:"Урвуу карт"}).check();
+  await page.getByRole("button",{name:"Сонгосон картуудыг унших"}).click();
+  await page.getByRole("button",{name:"Дараагийн картыг нээх"}).click();
+  await page.getByRole("button",{name:"Төхөөрөмж дээр хадгалах"}).click();
+  await openView(page,"Миний түүх");
+  const download=page.waitForEvent("download");
+  await page.getByRole("button",{name:"JSON export"}).click();
+  const blob=await download;
+  const output=JSON.parse(require("node:fs").readFileSync(await blob.path(),"utf8"));
+  expect(output.readings).toHaveLength(1);
+  expect(output.readings[0].cards[0].reversed).toBe(true);
 });
