@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { tarotCards } from "../data/tarotCards";
 import { interpretReading } from "../lib/offlineEngine";
 import {saveDailyJournalReading} from "../lib/journalDb";
@@ -22,6 +22,8 @@ export default function DailyTarotCard(){
   const [allowReversed,setAllowReversed]=useState(true);
   const [message,setMessage]=useState("");
   const [error,setError]=useState("");
+  const [saving,setSaving]=useState(false);
+  const savingRef=useRef(false);
   useEffect(()=>{
     // A long-running tab must roll over to the next LOCAL calendar day.
     // Using next local midnight (instead of 24h) handles DST changes.
@@ -56,7 +58,10 @@ export default function DailyTarotCard(){
     positionDescription:"Өдөрт нэг удаа эргэцүүлэх сэдэв",
   }]):"";
   const save=async()=>{
-    if(!date||!draft.ready)return;
+    // The ref flips before React paints the disabled state, so two clicks in
+    // the same event loop cannot append an identical daily note twice.
+    if(!date||!draft.ready||savingRef.current)return;
+    savingRef.current=true;setSaving(true);setError("");setMessage("");
     try{
       await saveDailyJournalReading({
         id:"daily-"+date,date:new Date().toISOString(),spread:"Өдрийн карт",
@@ -69,6 +74,8 @@ export default function DailyTarotCard(){
     }catch(cause){
       setError(cause instanceof Error?cause.message:
         (en?"Could not save notes; check browser storage.":"Тэмдэглэл хадгалагдсангүй. Browser storage-ийг шалгана уу."));
+    }finally{
+      savingRef.current=false;setSaving(false);
     }
   };
   if(!date)return <div className="p-10 text-center text-slate-300">{en?"Preparing your daily card...":"Өдрийн картыг бэлдэж байна..."}</div>;
@@ -84,8 +91,10 @@ export default function DailyTarotCard(){
         rows={3} maxLength={2000} placeholder={en?"Today’s intentions and reflections...":"Өнөөдрийн зорилго, бодол..."}
         className="mt-2 w-full rounded-lg border border-white/20 bg-white/5 p-3 text-sm text-white placeholder:text-slate-400"/>
       <p className="mt-2 text-left text-xs text-slate-400">{en?"Your draft saves locally as you type. Saving another note today appends it without erasing earlier reflections.":"Draft нь төхөөрөмж дээр хадгалагдана. Нэг өдөр дахин хадгалахад өмнөх тэмдэглэлийг устгахгүй, үргэлжлүүлэн нэмнэ."}</p>
-      <button type="button" disabled={!draft.ready} onClick={save} className="mt-4 rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200">
-        {en?"Save daily reflection":"Өдрийн тэмдэглэл хадгалах"}
+      <button type="button" disabled={!draft.ready||saving} aria-busy={saving} onClick={save}
+        className="mt-4 rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60">
+        {saving?(en?"Saving reflection...":"Тэмдэглэл хадгалж байна..."):
+          (en?"Save daily reflection":"Өдрийн тэмдэглэл хадгалах")}
       </button>
       {message&&<p role="status" className="mt-4 text-sm text-emerald-200">{message}</p>}
       {draft.error&&<p role="alert" className="mt-3 text-sm text-red-300">{draft.error}</p>}
