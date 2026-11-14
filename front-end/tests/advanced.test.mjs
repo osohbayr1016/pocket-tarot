@@ -208,6 +208,10 @@ test("reading statistics stay local and handle favorites and repeated cards",()=
   const stats=calculateReadingStats(rows,now);
   assert.deepEqual([stats.total,stats.favorites,stats.distinctCards,stats.topCardId,stats.topCardDraws,stats.last30Days],
     [2,1,2,0,2,1]);
+  assert.equal(stats.cardsDrawn,3);
+  assert.equal(stats.reversedCards,1);
+  assert.equal(stats.reversedPercent,33);
+  assert.equal(stats.topSuit,null);
 });
 
 test("complete offline backup validates all journal/template/preferences before replacement",()=>{
@@ -454,4 +458,24 @@ test("daily reflections append without overwriting and enforce journal size",()=
   assert.equal(combineDailyNotes("Morning thought",""),"Morning thought");
   assert.equal(combineDailyNotes("","New reflection"),"New reflection");
   assert.throws(()=>combineDailyNotes("a".repeat(1999),"additional reflection"),/2000/);
+});
+
+
+test("private journal insights count reversals and suit concentration",()=>{
+  const sample={
+    id:"insight",date:"2026-11-14T02:00:00.000Z",spread:"Three",
+    question:"",reading:"Local reflection",notes:"",favorite:false,
+    cards:[{id:22,reversed:true,position:1},{id:23,reversed:true,position:2},{id:36,reversed:false,position:3}]
+  };
+  const stats=calculateReadingStats([sample]);
+  assert.equal(stats.cardsDrawn,3);
+  assert.equal(stats.reversedPercent,67);
+  assert.equal(stats.topSuit,"Wands");
+  assert.equal(stats.topSuitDraws,2);
+});
+
+test("invalid legacy reading dates fail with actionable validation errors",()=>{
+  assert.throws(()=>convertLegacyReadings([{
+    id:"wrong-date",cardId:0,readingDate:"never-a-date"
+  }]),/Legacy уншилтын огноо буруу/);
 });
