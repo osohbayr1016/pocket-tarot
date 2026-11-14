@@ -13,6 +13,7 @@ import {exportReadingSocialPng} from "../lib/exportReadingSocialPng";
 import { convertLegacyReadings } from "../lib/legacyMigration";
 import { calculateReadingStats } from "../lib/readingStats";
 import {matchesLocalDateRange} from "../lib/journalDateFilter";
+import {formatJournalSummaryCsv} from "../lib/journalSummaryCsv";
 
 function saveAsFile(content:string,name:string,mime:string){
   const blob=new Blob([content],{type:mime});
@@ -151,6 +152,15 @@ export default function ReadingHistory({onOpenBackup}:{onOpenBackup?:()=>void}){
           className="rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200">
           JSON export
         </button>
+        <button type="button" disabled={!visible.length} onClick={()=>{
+          try{
+            saveAsFile(formatJournalSummaryCsv(visible),"pocket-tarot-journal-summary.csv","text/csv;charset=utf-8");
+            setMessage(tr("Шүүлтүүрт тохирсон уншилтын CSV хураангуй татагдлаа.","Filtered journal summary CSV downloaded."));
+            setError("");
+          }catch(cause){setError(cause instanceof Error?cause.message:tr("CSV гаргаж чадсангүй.","Could not export CSV."));}
+        }} className="rounded-full border border-amber-300/40 px-5 py-3 text-sm text-amber-100 disabled:cursor-not-allowed disabled:opacity-50">
+          {tr("CSV хураангуй","CSV summary")}
+        </button>
         <input ref={fileRef} type="file" accept=".json,application/json" className="sr-only"
           aria-label={tr("JSON уншилт импортлох","Import readings JSON")} onChange={(event)=>void readImport(event.target.files?.[0])}/>
         <button type="button" onClick={()=>fileRef.current?.click()}
@@ -178,6 +188,9 @@ export default function ReadingHistory({onOpenBackup}:{onOpenBackup?:()=>void}){
       }} className="mb-4 rounded-full border border-amber-300/30 px-5 py-2 text-sm text-amber-100">
         {(locale==="en"?"Download raw backup first":"Өмнө нь raw backup татах")}
       </button>}
+      <p className="mb-3 text-center text-xs leading-5 text-slate-400">
+        {tr("CSV нь зөвхөн одоогийн шүүлтүүрт тохирсон карт, огноо, энгийн статистик агуулна. Хувийн асуулт, тэмдэглэл, тайлал, custom spread нэр орохгүй.","CSV exports only filtered card names, dates and basic statistics. Questions, notes, interpretations, tags and custom spread titles are excluded.")}
+      </p>
       <div className="mb-7 flex flex-col items-start justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center">
         <label className="w-full max-w-md text-sm text-amber-100">
           {(locale==="en"?"Search readings":"Уншилт хайх")}
