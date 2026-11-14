@@ -354,11 +354,11 @@ test("offline lunar calendar renders a month and changes months without API call
   await expect(page).toHaveURL(/view=moon/);
   await expect(page.getByRole("heading",{name:"Сарны фазын календарь"})).toBeVisible();
   const dates=page.locator('div[aria-label="Сарны фазын өдрийн календарь"] button');
-  expect(await dates.count()).toBeGreaterThanOrEqual(28);
-  const firstMonth=await page.locator("h2").first().innerText();
+  await expect.poll(()=>dates.count()).toBeGreaterThanOrEqual(28);
+  const monthHeading=page.locator("h2").first();
+  const firstMonth=await monthHeading.innerText();
   await page.getByRole("button",{name:"Дараагийн сар"}).click();
-  const secondMonth=await page.locator("h2").first().innerText();
-  expect(secondMonth).not.toBe(firstMonth);
+  await expect(monthHeading).not.toHaveText(firstMonth);
   await dates.first().click();
   await expect(page.getByText(/Ойролцоох гэрэлтэлт:/)).toBeVisible();
   expect(api).toEqual([]);
@@ -708,4 +708,32 @@ test("re-saving the same spread updates a single journal entry and appends notes
   expect(output.readings).toHaveLength(1);
   expect(output.readings[0].notes).toContain("Original reflection");
   expect(output.readings[0].notes).toContain("Follow-up reflection");
+});
+
+
+test("journal filters saved readings by inclusive local date range and resets",async({page})=>{
+  await page.goto("/");
+  await openView(page,"Миний түүх");
+  const payload={
+    format:"pocket-tarot-readings",version:2,
+    readings:[2,3,4].map(day=>({
+      id:"date-filter-"+day,
+      date:"2024-10-0"+day+"T12:00:00.000Z",
+      spread:"One card",question:"Date filter sample "+day,
+      reading:"Local symbolic reflection",notes:"",
+      cards:[{id:day,reversed:false,position:1}]
+    }))
+  };
+  await page.locator('input[aria-label="JSON уншилт импортлох"]').setInputFiles({
+    name:"date-filter.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(payload))
+  });
+  await expect(page.getByText("Date filter sample 2")).toBeVisible();
+  await page.locator("#journal-date-from").fill("2024-10-03");
+  await page.locator("#journal-date-to").fill("2024-10-03");
+  await expect(page.getByText("Date filter sample 3")).toBeVisible();
+  await expect(page.getByText("Date filter sample 2")).toHaveCount(0);
+  await expect(page.getByText("Date filter sample 4")).toHaveCount(0);
+  await page.getByRole("button",{name:"Шүүлтүүр арилгах"}).click();
+  await expect(page.getByText("Date filter sample 2")).toBeVisible();
+  await expect(page.getByText("Date filter sample 4")).toBeVisible();
 });
