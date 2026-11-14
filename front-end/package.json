@@ -9,11 +9,12 @@
     "lint": "eslint . --max-warnings=0",
     "test": "node --experimental-strip-types --test tests/offline.test.mjs tests/advanced.test.mjs",
     "assets:sync": "node scripts/download-rws.mjs",
-    "prebuild": "npm run assets:sync && node scripts/version-sw.mjs",
-    "predev": "npm run assets:sync",
+    "prebuild": "npm run assets:verify && node scripts/version-sw.mjs",
+    "predev": "npm run assets:verify",
     "typecheck": "tsc --noEmit",
     "test:legacy": "jest --runInBand",
-    "postbuild": "node scripts/manifest-sw.mjs"
+    "postbuild": "node scripts/manifest-sw.mjs",
+    "assets:verify": "node scripts/verify-artwork.mjs"
   },
   "dependencies": {
     "astronomy-engine": "2.1.19",
