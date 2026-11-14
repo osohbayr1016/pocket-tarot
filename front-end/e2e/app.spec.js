@@ -737,3 +737,23 @@ test("journal filters saved readings by inclusive local date range and resets",a
   await expect(page.getByText("Date filter sample 2")).toBeVisible();
   await expect(page.getByText("Date filter sample 4")).toBeVisible();
 });
+
+
+test("rapid double-click on daily Save cannot append the same note twice",async({page})=>{
+  await page.goto("/");
+  await openView(page,"Өдрийн карт");
+  await page.locator("#daily-notes").fill("Only one entry after simultaneous saves");
+  const save=page.getByRole("button",{name:"Өдрийн тэмдэглэл хадгалах"});
+  // Fire both clicks synchronously, before React can commit the disabled UI.
+  await save.evaluate(button=>{button.click();button.click();});
+  await expect(page.locator("#daily-notes")).toHaveValue("");
+  await expect(page.getByRole("status").filter({hasText:"Өдрийн тэмдэглэл хадгалагдлаа."})).toBeVisible();
+  await openView(page,"Миний түүх");
+  const pendingDownload=page.waitForEvent("download");
+  await page.getByRole("button",{name:"JSON export"}).click();
+  const download=await pendingDownload;
+  const json=JSON.parse(require("node:fs").readFileSync(await download.path(),"utf8"));
+  const daily=json.readings.filter(row=>row.id.startsWith("daily-"));
+  expect(daily).toHaveLength(1);
+  expect(daily[0].notes).toBe("Only one entry after simultaneous saves");
+});
