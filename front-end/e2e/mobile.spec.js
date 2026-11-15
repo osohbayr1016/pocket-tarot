@@ -37,3 +37,24 @@ test("choose and read on a phone without searching below the deck",async({page})
   await expect(page.locator(".table-column")).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
+
+
+test("a selected mobile tarot card fits the table and previous positions remain selectable",async({page})=>{
+  await page.goto("/");
+  await page.getByRole("button",{name:/Гурван карт/}).tap();
+  await page.getByRole("button",{name:"Картаа холих"}).tap();
+  await page.locator(".pick-card").last().tap();
+  await expect(page.locator(".reading-panel")).toBeVisible();
+  await page.getByRole("button",{name:"Ширээнээс дахин сонгох"}).tap();
+  await page.locator(".pick-card").first().tap();
+  await page.getByRole("button",{name:"Карт",exact:true}).tap();
+  await expect(page.locator(".revealed-art .reveal-front img")).toBeVisible();
+  const fits=await page.evaluate(()=>{
+    const artwork=document.querySelector(".reveal-flip")?.getBoundingClientRect();
+    const felt=document.querySelector(".felt")?.getBoundingClientRect();
+    return !!artwork&&!!felt&&artwork.left>=felt.left-2&&artwork.right<=felt.right+2&&artwork.top>=felt.top-2&&artwork.bottom<=felt.bottom+2;
+  });
+  expect(fits).toBe(true);
+  await page.locator(".position-list button").first().tap();
+  await expect(page.locator(".position-list button").first()).toHaveAttribute("aria-pressed","true");
+});

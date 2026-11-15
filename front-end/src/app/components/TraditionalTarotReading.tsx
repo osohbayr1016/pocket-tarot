@@ -42,6 +42,7 @@ export default function TraditionalTarotReading({single=false}:{single?:boolean}
   const [topic,setTopic]=useState<ReadingTopic|"auto">("auto");
   const [shuffling,setShuffling]=useState(false);
   const [selectedIndex,setSelectedIndex]=useState<number|null>(null);
+  const [showChoices,setShowChoices]=useState(true);
   const [mobilePane,setMobilePane]=useState<"deck"|"reading">("deck");
   const [busy,setBusy]=useState(false);
   const saving=useRef(false);
@@ -59,7 +60,7 @@ export default function TraditionalTarotReading({single=false}:{single?:boolean}
   const finished=count>0&&count===cards.length;
   const activeIndex=Math.min(selectedIndex??count-1,count-1);
   const active=cards[activeIndex];
-  const phase=shuffling?"shuffle":!cards.length?"idle":finished?"read":"pick";
+  const phase=shuffling?"shuffle":!cards.length?"idle":count>0&&!showChoices||finished?"read":"pick";
   const notes=useLocalDraft(single?(active?"single-"+active.card.id+"-"+(active.isReversed?"reversed":"upright"):""):"traditional-notes");
   const selectedTopic=topic==="auto"?undefined:topic;
   const guidance=active?readingGuidance(active,question,selectedTopic,locale):null;
@@ -78,7 +79,7 @@ export default function TraditionalTarotReading({single=false}:{single?:boolean}
       const previous=loadActiveReading(single);
       if(previous){
         setSession(previous);setTopic(previous.topic);
-        if(previous.visibleCount)setMobilePane("reading");
+        if(previous.visibleCount){setMobilePane("reading");setShowChoices(false);}
       }
       setReady(true);
     });
@@ -104,7 +105,7 @@ export default function TraditionalTarotReading({single=false}:{single?:boolean}
   function chooseSpread(next:TarotSpread){
     if(!canReplace())return;
     if(notes.text)notes.clear();
-    clearFeedback();setShuffling(false);setMobilePane("deck");
+    clearFeedback();setShuffling(false);setShowChoices(true);setMobilePane("deck");
     setSession({spread:next,drawn:[],visibleCount:0,topic});
     showDesk();
   }
@@ -113,7 +114,7 @@ export default function TraditionalTarotReading({single=false}:{single?:boolean}
     clearFeedback();
     if(notes.text)notes.clear();
     setSession({spread:next,drawn,reserve,visibleCount:0,topic,journalId:crypto.randomUUID()});
-    setMobilePane("deck");liveFocus.current=true;
+    setShowChoices(true);setMobilePane("deck");liveFocus.current=true;
     setShuffling(animate&&!prefs.reduceMotion&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     emitFeedback("draw");showDesk();
   }
@@ -128,14 +129,14 @@ export default function TraditionalTarotReading({single=false}:{single?:boolean}
     if(!session||shuffling||count>=cards.length)return;
     const picked=pickFromTable(cards,session.reserve??[],count,offset);
     setSession({...session,...picked,visibleCount:count+1});
-    setSelectedIndex(count);setMobilePane("reading");liveFocus.current=true;
+    setSelectedIndex(count);setShowChoices(false);setMobilePane("reading");liveFocus.current=true;
     emitFeedback("flip");if(mobile())showDesk();
   }
   function startAgain(newQuestion=false){
     if(!canReplace())return;
     if(notes.text)notes.clear();
     if(newQuestion){questionDraft.clear();setTopic("auto");}
-    clearFeedback();setSession(null);setShuffling(false);setMobilePane("deck");showDesk();
+    clearFeedback();setSession(null);setShuffling(false);setShowChoices(true);setMobilePane("deck");showDesk();
   }
   async function save(){
     if(!session||!finished||saving.current||saved||!notes.ready||!questionDraft.ready)return;
@@ -180,10 +181,11 @@ export default function TraditionalTarotReading({single=false}:{single?:boolean}
       </div>}
       <DeckTable phase={phase} choices={maxChoices} active={active} visibleCount={count} total={spread.cardCount} onPick={reveal} onShuffle={ready&&questionDraft.ready?shuffle:undefined}>
         {count>0&&<div role="group" aria-label={tr("Нээсэн картууд","Revealed cards")} className="position-list">
-          {cards.slice(0,count).map((card,i)=><button key={card.card.id} type="button" aria-pressed={activeIndex===i} onClick={()=>{setSelectedIndex(i);setMobilePane("reading");}}>
+          {cards.slice(0,count).map((card,i)=><button key={card.card.id} type="button" aria-pressed={activeIndex===i} onClick={()=>{setSelectedIndex(i);setShowChoices(false);setMobilePane("reading");}}>
             <img alt="" src={card.card.image} className={card.isReversed?"rotate-180":""} width="20" height="32" onError={cardFallback}/>
             <span>{i+1}. {positionName(i)}</span></button>)}
         </div>}
+        {count>0&&!finished&&!shuffling&&<button type="button" className="text-button table-next" onClick={()=>{setShowChoices(true);setMobilePane("deck");liveFocus.current=true;showDesk();}}><Icon name="cards" size={16}/>{tr("Дараагийн картыг ширээнээс сонгох","Choose the next card from the table")}</button>}
         {session&&<button type="button" className="text-button change-spread" disabled={busy} onClick={()=>startAgain()}>{t("Дэлгэмэл солих")}</button>}
       </DeckTable>
       <div className="reading-panel" aria-busy={shuffling}>
@@ -220,7 +222,7 @@ export default function TraditionalTarotReading({single=false}:{single?:boolean}
               <p className="panel-lead">{session?.reserve?.length?tr("Доош харсан картуудаас аль нэгийг дараарай. Сонгосон картын тань утга энд гарна.","Tap any face-down card on the table. Its meaning will open here."):tr("Эхний картыг дарахад байрлалынх нь тайлал гарна.","Turn over the first card to see its meaning in this position.")}</p>
               {question.trim()&&<blockquote className="your-question">{question.trim()}</blockquote>}</>}
           {!shuffling&&!finished&&<div className="next-controls">
-            {count>0&&<button className="primary-button mobile-next" type="button" onClick={()=>{setMobilePane("deck");liveFocus.current=true;showDesk();}}>{tr("Ширээнээс дахин сонгох","Choose from the table")}<Icon name="arrow"/></button>}
+            {count>0&&<button className="primary-button choose-next" type="button" onClick={()=>{setShowChoices(true);setMobilePane("deck");liveFocus.current=true;showDesk();}}>{tr("Ширээнээс дахин сонгох","Choose from the table")}<Icon name="arrow"/></button>}
             <button type="button" className="text-button" onClick={()=>reveal(0)}>{t("Дараагийн картыг нээх")}<Icon name="arrow" size={16}/></button>
           </div>}
           {finished&&<div className="reading-actions">

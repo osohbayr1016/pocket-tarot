@@ -43,9 +43,14 @@ export default function DeckTable({phase,choices,active,visibleCount,total,onPic
           <CardBack/><span className="pick-number">{i+1}</span>
         </button>)}
       </div>}
-      {phase==="read"&&active&&<div className="revealed-art" key={active.card.id}><div className="printed-card">
-        <img src={active.card.image} alt={en?active.card.englishName:active.card.name} width="480" height="800" className={active.isReversed?"rotate-180":""} onError={cardFallback}/>
-      </div></div>}
+      {phase==="read"&&active&&<div className="revealed-art" key={active.position+"-"+active.card.id}>
+        <div className="reveal-flip">
+          <div className="printed-card reveal-face reveal-back"><CardBack/></div>
+          <div className="printed-card reveal-face reveal-front"><img src={active.card.image}
+            alt={en?active.card.englishName:active.card.name} width="480" height="800"
+            className={active.isReversed?"rotate-180":""} onError={cardFallback}/></div>
+        </div>
+      </div>}
       <div className="felt-caption"><span aria-hidden="true">✧</span>
         {phase==="idle"?"Rider–Waite–Smith · 1909":phase==="shuffle"?(en?"Shuffling the deck…":"Картыг хольж байна…"):
           phase==="pick"?(en?"Choose a face-down card":"Доош харсан картуудаас нэгийг сонгоорой"):active?.card.englishName}

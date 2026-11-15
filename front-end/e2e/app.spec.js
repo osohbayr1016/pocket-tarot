@@ -1,3 +1,31 @@
+
+test("five-card reading fits each card and changes the artwork when selecting positions",async({page})=>{
+  await page.goto("/");
+  await page.locator(".spread-catalog").getByRole("button",{name:/Харилцааны таван карт/}).click();
+  await page.getByRole("button",{name:"Картаа холих"}).click();
+  await expect(page.locator(".pick-card")).toHaveCount(5);
+  await page.locator(".pick-card").last().click();
+  await expect(page.locator(".revealed-art .reveal-front img")).toBeVisible();
+  await expect(page.locator(".reading-desk")).toHaveAttribute("data-pane","reading");
+  for(let index=1;index<5;index++){
+    await page.locator(".table-next").click();
+    await expect(page.locator(".pick-card").first()).toBeVisible();
+    await page.locator(".pick-card").last().click();
+  }
+  await expect(page.locator(".position-list button")).toHaveCount(5);
+  await page.locator(".position-list button").first().click();
+  const firstSource=await page.locator(".revealed-art .reveal-front img").getAttribute("src");
+  await page.locator(".position-list button").last().click();
+  await expect(page.locator(".revealed-art .reveal-front img")).not.toHaveAttribute("src",firstSource);
+  await expect(page.locator(".reveal-flip")).toHaveCSS("animation-name","reveal-flip");
+  const contained=await page.evaluate(()=>{
+    const card=document.querySelector(".reveal-flip")?.getBoundingClientRect();
+    const felt=document.querySelector(".felt")?.getBoundingClientRect();
+    return !!card&&!!felt&&card.width>100&&card.height>200&&card.left>=felt.left-2&&card.top>=felt.top-2&&card.right<=felt.right+2&&card.bottom<=felt.bottom+2;
+  });
+  expect(contained).toBe(true);
+});
+
 const {test,expect} = require("@playwright/test");
 const groupFor={
   "Уншлага":"Таро","Нэг карт":"Таро","Картын сан":"Таро","Таро сурах":"Таро",
