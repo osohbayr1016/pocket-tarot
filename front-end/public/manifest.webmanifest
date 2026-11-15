@@ -1,12 +1,12 @@
 {
   "name": "Pocket Tarot — Tarot ба өөрийгөө эргэцүүлэх",
   "short_name": "Pocket Tarot",
-  "description": "78 Tarot карт, ордын тайлбар болон өдөр тутмын эргэцүүлэл. AI/API-гүй.",
+  "description": "78 таро карт, монгол тайлал, хувийн тэмдэглэл.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#100e1e",
-  "theme_color": "#100e1e",
+  "background_color": "#f6f3eb",
+  "theme_color": "#f6f3eb",
   "lang": "mn",
   "orientation": "any",
   "icons": [

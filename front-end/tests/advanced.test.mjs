@@ -556,3 +556,36 @@ test("valid encrypted exports larger than 20MB remain importable", {timeout:60_0
   assert.doesNotThrow(()=>assertBackupUploadSize(size));
   assert.equal(await decryptBackup(ciphertext,secret),plaintext);
 });
+
+test("face-down choices preserve positions, unique cards and the same choices after restore",async()=>{
+  const {dealChoices,pickFromTable}=await import("../src/app/lib/offlineEngine.ts");
+  const spread=tarotSpreads.find(s=>s.cardCount===3);
+  let table=dealChoices(spread,tarotCards,false);
+  for(let i=0;i<spread.cardCount;i++){
+    const before=[...table.drawn,...table.reserve];
+    const offset=before.length-i-1;
+    const expected=before[i+offset];
+    table=pickFromTable(table.drawn,table.reserve,i,offset);
+    assert.equal(table.drawn[i].card.id,expected.card.id);
+    assert.equal(table.drawn[i].positionName,spread.positions[i].name);
+    assert.equal(new Set([...table.drawn,...table.reserve].map(e=>e.card.id)).size,5);
+    assert.ok(table.drawn.every(c=>!c.isReversed));
+    const raw={version:1,spread,topic:"auto",visibleCount:i+1,
+      cards:table.drawn.map(c=>({id:c.card.id,reversed:c.isReversed,position:c.position})),
+      reserve:table.reserve.map(c=>({id:c.card.id,reversed:c.isReversed}))};
+    assert.deepEqual(parseActiveReading(JSON.stringify(raw)).reserve,table.reserve);
+    assert.equal(parseActiveReading(JSON.stringify({...raw,reserve:[raw.cards[0]]})),null);
+  }
+});
+test("guidance distinguishes concrete questions, written scripts, orientation and silent draws",async()=>{
+  const {readingGuidance}=await import("../src/app/lib/readingIntelligence.ts");
+  const entry={card:tarotCards[1],isReversed:false};
+  const job=readingGuidance(entry,"Ажлаа солих уу?");
+  assert.match(job.lead,/Ажлаа солих/);
+  assert.deepEqual(readingGuidance(entry,"Ajlaa solih uu?"),job);
+  assert.notEqual(readingGuidance({...entry,isReversed:true},"Ажлаа солих уу?").action,job.action);
+  assert.notEqual(readingGuidance(entry,"Ажлын ачаалал их байна").action,job.action);
+  assert.match(readingGuidance(entry,"Найзтайгаа маргалдлаа").lead,/Маргааны дараа/);
+  assert.notEqual(readingGuidance(entry,"Ажлаа солих уу?","love").lead,job.lead);
+  assert.deepEqual(readingGuidance(entry,"???"),readingGuidance(entry,""));
+});

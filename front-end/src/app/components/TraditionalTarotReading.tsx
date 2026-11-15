@@ -1,570 +1,247 @@
 "use client";
-import type { ReadingTopic } from "../lib/readingIntelligence";
-import {listJournal,saveJournalReading,clearJournal,combineDailyNotes} from "../lib/journalDb";
 
-import { useEffect, useRef, useState } from "react";
-import { tarotCards } from "../data/tarotCards";
-import { tarotSpreads, type TarotSpread } from "../data/tarotSpreads";
-import { drawSpread, interpretReading, type DrawnCard } from "../lib/offlineEngine";
-import TarotCard from "./TarotCard";
-import CelticCrossBoard from "./CelticCrossBoard";
-import { makeCustomSpread } from "../lib/customSpread";
+import {useEffect,useRef,useState} from "react";
+import {tarotCards} from "../data/tarotCards";
+import {tarotSpreads,type TarotSpread} from "../data/tarotSpreads";
+import {dealChoices,pickFromTable,interpretReading,type DrawnCard,type CardFace} from "../lib/offlineEngine";
+import {readingGuidance,type ReadingTopic} from "../lib/readingIntelligence";
+import {englishCardMeaning,englishReading} from "../lib/englishTarot";
+import {englishSpreadName,englishSpreadPosition} from "../lib/englishSpreads";
 import {getReadingPreferences} from "../lib/readingPreferences";
+import {loadActiveReading,saveActiveReading,type ActiveReading} from "../lib/activeReading";
+import {appendJournalReflection} from "../lib/journalDb";
 import {useLocalDraft} from "../lib/useLocalDraft";
 import {useLanguage} from "../lib/LanguageProvider";
-import {englishReading} from "../lib/englishTarot";
-import {englishSpreadName,englishSpreadDescription,englishSpreadPosition} from "../lib/englishSpreads";
 import {emitFeedback} from "../lib/feedback";
-import {loadActiveReading,saveActiveReading} from "../lib/activeReading";
 import {exportReadingSocialPng,type SocialFormat} from "../lib/exportReadingSocialPng";
-import {loadSavedSpreads,saveCustomSpread,deleteCustomSpread,savedToSpread,type SavedSpread} from "../lib/savedCustomSpreads";
-import {buildPhysicalReading} from "../lib/physicalReading";
+import DeckTable,{cardFallback} from "./DeckTable";
+import SpreadTools from "./SpreadTools";
+import PhysicalDeckEntry from "./PhysicalDeckEntry";
+import CelticCrossBoard from "./CelticCrossBoard";
+import {Icon} from "./InterfaceIcon";
 
-interface Props {
-  onReset: () => void;
-  user?: unknown;
-  onLogin?: (token: string, user: unknown) => void;
-  userQuestion?: string;
-}
+const quickSpreads=[tarotSpreads[0],tarotSpreads[1]];
+const prompts=[
+  ["Өнөөдөр","Today","Өнөөдөр юунд төвлөрөх вэ?","What deserves my attention today?"],
+  ["Харилцаа","Relationships","Маргалдсаны дараа яриагаа яаж эхлүүлэх вэ?","How can I start a conversation after an argument?"],
+  ["Ажил","Work","Ажлаа солихоосоо өмнө юуг бодолцох вэ?","What should I consider before changing jobs?"],
+];
+const topicOptions=[
+  ["auto","Асуултаас таних","From my question"],["general","Ерөнхий","General"],
+  ["love","Хайр, харилцаа","Relationships"],["career","Ажил, карьер","Work"],
+  ["growth","Хувийн хөгжил","Personal growth"],
+] as const;
 
-export default function TraditionalTarotReading({ onReset, userQuestion = "" }: Props) {
+export default function TraditionalTarotReading({single=false}:{single?:boolean}){
   const {locale,t}=useLanguage();
   const en=locale==="en";
   const tr=(mn:string,english:string)=>en?english:mn;
-  const suggestions=en?[
-    "What deserves my attention today?",
-    "What should I understand in this relationship?",
-    "What is my next practical career step?",
-    "Where can I begin growing?",
-  ]:[
-    "Өнөөдөр юунд төвлөрөх вэ?",
-    "Энэ харилцаанд би юу ойлгох хэрэгтэй вэ?",
-    "Ажлын дараагийн зөв алхам юу вэ?",
-    "Өөрийгөө хөгжүүлэхэд юунаас эхлэх вэ?",
-  ];
-  const [spread, setSpread] = useState<TarotSpread | null>(null);
-  const questionDraft=useLocalDraft("traditional-question",userQuestion);
+  const [session,setSession]=useState<ActiveReading|null>(null);
+  const [ready,setReady]=useState(false);
+  const [quickIndex,setQuickIndex]=useState(0);
+  const [topic,setTopic]=useState<ReadingTopic|"auto">("auto");
+  const [shuffling,setShuffling]=useState(false);
+  const [selectedIndex,setSelectedIndex]=useState<number|null>(null);
+  const [mobilePane,setMobilePane]=useState<"deck"|"reading">("deck");
+  const [busy,setBusy]=useState(false);
+  const saving=useRef(false);
+  const [saved,setSaved]=useState(false);
+  const [exporting,setExporting]=useState(false);
+  const [message,setMessage]=useState("");
+  const [error,setError]=useState("");
+  const desk=useRef<HTMLDivElement>(null);
+  const liveFocus=useRef(false);
+  const questionDraft=useLocalDraft(single?"single-question":"traditional-question");
   const question=questionDraft.text;
-  const setQuestion=questionDraft.setText;
-  const [customCount,setCustomCount] = useState(3);
-  const [customName,setCustomName] = useState("Миний дэлгэмэл");
-  const [savedSpreads,setSavedSpreads] = useState<SavedSpread[]>([]);
-  const [templateMessage,setTemplateMessage] = useState("");
-  const [customLabels,setCustomLabels] = useState<string[]>([]);
-  const [topic,setTopic] = useState<ReadingTopic|"auto">("auto");
-  const [drawn, setDrawn] = useState<DrawnCard[]>([]);
-  const [physicalSelections,setPhysicalSelections] = useState<{cardId:string;isReversed:boolean}[]>([]);
-  const [visibleCount, setVisibleCount] = useState(0);
-  const [restored,setRestored] = useState(false);
-  const notesDraft=useLocalDraft("traditional-notes");
-  const notes=notesDraft.text;
-  const setNotes=notesDraft.setText;
-  const [savedMessage, setSavedMessage] = useState("");
-  const [hasSaved,setHasSaved]=useState(false);
-  const [saving,setSaving]=useState(false);
-  const savingRef=useRef(false);
-  const readingIdRef=useRef<string|null>(null);
-  const savedNotesRef=useRef("");
-  const resetSaved=()=>{
-    readingIdRef.current=null;savedNotesRef.current="";
-    setHasSaved(false);
-  };
-  const [shareMessage,setShareMessage] = useState("");
-  const [exporting,setExporting] = useState(false);
-  const [error, setError] = useState("");
-  const [history, setHistory] = useState<{id:string; date:string; spread:string; question:string; reading:string}[]>([]);
+  const spread=session?.spread??quickSpreads[quickIndex];
+  const cards=session?.drawn??[];
+  const count=session?.visibleCount??0;
+  const finished=count>0&&count===cards.length;
+  const activeIndex=Math.min(selectedIndex??count-1,count-1);
+  const active=cards[activeIndex];
+  const phase=shuffling?"shuffle":!cards.length?"idle":finished?"read":"pick";
+  const notes=useLocalDraft(single?(active?"single-"+active.card.id+"-"+(active.isReversed?"reversed":"upright"):""):"traditional-notes");
+  const selectedTopic=topic==="auto"?undefined:topic;
+  const guidance=active?readingGuidance(active,question,selectedTopic,locale):null;
+  const fullReading=finished?(en?englishReading(cards,question,selectedTopic):interpretReading(cards,question,selectedTopic)):"";
+  const displayName=(s:TarotSpread)=>en?englishSpreadName(s):s.name;
+  const positionName=(index:number)=>en?englishSpreadPosition(spread,index+1).name:spread.positions[index]?.name;
+  const mobile=()=>window.matchMedia("(max-width: 720px)").matches;
+  function showDesk(){
+    requestAnimationFrame(()=>{
+      const top=desk.current?.getBoundingClientRect().top;
+      if(top!==undefined&&(top<0||top>window.innerHeight/2))desk.current?.scrollIntoView({block:"start",behavior:"instant"});
+    });
+  }
   useEffect(()=>{
     const frame=requestAnimationFrame(()=>{
-      const previous=loadActiveReading();
+      const previous=loadActiveReading(single);
       if(previous){
-        setSpread(previous.spread);setDrawn(previous.drawn);
-        setPhysicalSelections(previous.spread.positions.map(()=>({cardId:"",isReversed:false})));
-        setVisibleCount(previous.visibleCount);setTopic(previous.topic);
+        setSession(previous);setTopic(previous.topic);
+        if(previous.visibleCount)setMobilePane("reading");
       }
-      setRestored(true);
+      setReady(true);
     });
     return ()=>cancelAnimationFrame(frame);
-  },[]);
+  },[single]);
+  useEffect(()=>{if(ready)saveActiveReading(session,single);},[ready,session,single]);
   useEffect(()=>{
-    if(!restored)return;
-    saveActiveReading(spread?{spread,drawn,visibleCount,topic}:null);
-  },[restored,spread,drawn,visibleCount,topic]);
+    if(!shuffling)return;
+    const timer=window.setTimeout(()=>setShuffling(false),1420);
+    return ()=>window.clearTimeout(timer);
+  },[shuffling]);
   useEffect(()=>{
-    const frame=requestAnimationFrame(()=>{
-      try{setSavedSpreads(loadSavedSpreads());}
-      catch(cause){setError(cause instanceof Error?cause.message:"Хадгалсан дэлгэмлийг уншиж чадсангүй.");}
-    });
-    return()=>cancelAnimationFrame(frame);
-  },[]);
-  const saveTemplate=()=>{
-    try{
-      const labels=makeCustomSpread(customCount,customLabels).positions.map(p=>p.name);
-      setSavedSpreads(saveCustomSpread(customName.trim(),labels));
-      setTemplateMessage(tr("Дэлгэмлийг энэ төхөөрөмж дээр хадгаллаа.","Spread template saved on this device."));
-      setError("");
-    }catch(cause){setError(cause instanceof Error?cause.message:"Дэлгэмлийг хадгалж чадсангүй.");}
-  };
-  const result = locale==="en"?englishReading(drawn,question,topic === "auto" ? undefined : topic):interpretReading(drawn, question, topic === "auto" ? undefined : topic);
+    if(!liveFocus.current||shuffling)return;
+    const target=desk.current?.querySelector<HTMLElement>(phase==="pick"&&(!count||mobilePane==="deck")?".pick-card":".meaning-heading");
+    target?.focus({preventScroll:true});
+    liveFocus.current=false;
+  },[phase,count,shuffling,mobilePane]);
 
-  const refreshHistory = async () => {
-    try{setHistory((await listJournal()).slice(0,20));}
-    catch(cause){setError(cause instanceof Error?cause.message:"Уншилтын түүхийг уншиж чадсангүй.");}
-  };
-  const confirmDiscard=()=>{
-    if(notes.trim()&&!hasSaved)
-      return window.confirm(tr("Хадгалаагүй тэмдэглэл түр хадгалагдсан. Шинэ уншилт эхлүүлж, энэ тэмдэглэлийг арилгах уу?","This draft contains unsaved notes. Discard it to begin a new reading?"));
-    return true;
-  };
-  const chooseSpread = (next: TarotSpread) => {
-    if(!confirmDiscard())return;
-    resetSaved();
-    setSpread(next);setPhysicalSelections(next.positions.map(()=>({cardId:"",isReversed:false})));
-    setDrawn([]); setVisibleCount(0); setError(""); setSavedMessage(""); setNotes("");
-    refreshHistory();
-  };
-  const startQuickReading = (count:1|3 = 3) => {
-    if (!confirmDiscard()) return;
-    const quick=tarotSpreads.find(option=>option.cardCount===count)??tarotSpreads[0];
-    try {
-      const cards=drawSpread(tarotCards,quick,undefined,{allowReversed:getReadingPreferences().allowReversed});
-      resetSaved();
-      setSpread(quick);setDrawn(cards);setVisibleCount(0);setNotes("");
-      setError("");setSavedMessage("");emitFeedback("draw");
-    } catch(cause) {
-      setError(cause instanceof Error?cause.message:tr("Карт сугалж чадсангүй.","Could not draw cards."));
-    }
-  };
-  const makeReading = () => {
-    if (!spread || !confirmDiscard()) return;
-    try {
-      const cards = drawSpread(tarotCards,spread,undefined,{allowReversed:getReadingPreferences().allowReversed});
-      resetSaved();
-      setDrawn(cards);
-      emitFeedback("draw");
-      setVisibleCount(0);
-      setNotes("");
-      setError(""); setSavedMessage("");
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Карт холих үед алдаа гарлаа.");
-    }
-  };
-  const startPhysicalReading=()=>{
-    if(!spread || !confirmDiscard())return;
+  function clearFeedback(){setSaved(false);setMessage("");setError("");setSelectedIndex(null);}
+  function canReplace(){
+    return !saving.current&&(!notes.text.trim()||window.confirm(tr("Хадгалаагүй тэмдэглэлээ орхиод үргэлжлүүлэх үү?","Discard your unsaved note and continue?")));
+  }
+  function chooseSpread(next:TarotSpread){
+    if(!canReplace())return;
+    if(notes.text)notes.clear();
+    clearFeedback();setShuffling(false);setMobilePane("deck");
+    setSession({spread:next,drawn:[],visibleCount:0,topic});
+    showDesk();
+  }
+  function begin(next:TarotSpread,drawn:DrawnCard[],reserve:CardFace[],animate:boolean){
+    const prefs=getReadingPreferences();
+    clearFeedback();
+    if(notes.text)notes.clear();
+    setSession({spread:next,drawn,reserve,visibleCount:0,topic,journalId:crypto.randomUUID()});
+    setMobilePane("deck");liveFocus.current=true;
+    setShuffling(animate&&!prefs.reduceMotion&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    emitFeedback("draw");showDesk();
+  }
+  function shuffle(){
+    if(!ready||shuffling||!canReplace())return;
     try{
-      if(physicalSelections.length!==spread.cardCount ||
-         physicalSelections.some(choice=>choice.cardId==="")){
-        throw new Error(tr("Байрлал бүрт карт сонгоно уу.","Choose a card for every position."));
-      }
-      const cards=buildPhysicalReading(tarotCards,spread,
-        physicalSelections.map(choice=>({cardId:Number(choice.cardId),isReversed:choice.isReversed})));
-      resetSaved();
-      setDrawn(cards);setVisibleCount(0);setNotes("");
-      setError("");setSavedMessage("");emitFeedback("draw");
-    }catch(cause){
-      const message=cause instanceof Error?cause.message:"Invalid card selection.";
-      setError(!en&&message.includes("same physical card")?
-        "Нэг картыг олон байрлалд давхар сонгох боломжгүй.":message);
-    }
-  };
-  const revealNext=()=>{
-    if(visibleCount>=drawn.length)return;
-    emitFeedback("flip");
-    setVisibleCount(current=>Math.min(current+1,drawn.length));
-  };
-  const save = async () => {
-    if (!spread || !drawn.length || visibleCount !== drawn.length || !notesDraft.ready || !questionDraft.ready || hasSaved || savingRef.current) return;
-    savingRef.current=true;setSaving(true);
-    try {
-      const id=readingIdRef.current??crypto.randomUUID();
-      const nextNotes=readingIdRef.current?combineDailyNotes(savedNotesRef.current,notes.trim()):notes.trim();
-      await saveJournalReading({
-        id,
-        date:new Date().toISOString(),
-        spread:spread.name,
-        question:question.trim().slice(0,500),
-        reading:result,
-        notes:nextNotes,
-        cards:drawn.map(entry=>({id:entry.card.id,reversed:entry.isReversed,position:entry.position})),
-      });
-      readingIdRef.current=id;
-      savedNotesRef.current=nextNotes;
-      setHasSaved(true);
-      setNotes("");
-      setSavedMessage(tr("Энэ төхөөрөмж дээр уншилтыг хадгаллаа.","Reading saved on this device."));
-      refreshHistory();
-    } catch {
-      setError(tr("Төхөөрөмжийн хадгалах эрх эсвэл зай хүрэлцэхгүй байна.","Unable to save. Check browser storage and available space."));
-    } finally{
-      savingRef.current=false;setSaving(false);
-    }
-  };
-  const shareReading=async(format:SocialFormat)=>{
-    if(!spread||drawn.length===0||visibleCount!==drawn.length||exporting)return;
-    setExporting(true);setShareMessage("");
+      const {drawn,reserve}=dealChoices(spread,tarotCards,getReadingPreferences().allowReversed);
+      begin(spread,drawn,reserve,true);
+    }catch{setError(tr("Картыг хольж чадсангүй. Дахин оролдоорой.","Could not shuffle the deck. Please try again."));}
+  }
+  function reveal(offset:number){
+    if(!session||shuffling||count>=cards.length)return;
+    const picked=pickFromTable(cards,session.reserve??[],count,offset);
+    setSession({...session,...picked,visibleCount:count+1});
+    setSelectedIndex(count);setMobilePane("reading");liveFocus.current=true;
+    emitFeedback("flip");if(mobile())showDesk();
+  }
+  function startAgain(newQuestion=false){
+    if(!canReplace())return;
+    if(notes.text)notes.clear();
+    if(newQuestion){questionDraft.clear();setTopic("auto");}
+    clearFeedback();setSession(null);setShuffling(false);setMobilePane("deck");showDesk();
+  }
+  async function save(){
+    if(!session||!finished||saving.current||saved||!notes.ready||!questionDraft.ready)return;
+    saving.current=true;setBusy(true);setError("");
     try{
-      await exportReadingSocialPng({
-        id:crypto.randomUUID(),date:new Date().toISOString(),
-        spread:spread.name,question:"",reading:result,notes:"",
-        cards:drawn.map(entry=>({id:entry.card.id,reversed:entry.isReversed,position:entry.position})),
-      },tarotCards,format);
-      setShareMessage(tr("Хувийн асуулт, тэмдэглэл ороогүй зураг татагдлаа.","Image downloaded without private questions or notes."));
-      setError("");
-    }catch(cause){
-      setError(cause instanceof Error?cause.message:tr("Share зураг үүсгэж чадсангүй.","Could not export the image."));
-    }finally{setExporting(false);}
-  };
-  const clearHistory = async () => {
-    if(!window.confirm(tr("БҮХ хадгалсан уншилтаа энэ төхөөрөмжөөс бүрмөсөн устгах уу? Эхлээд JSON backup хийхийг зөвлөе.","Permanently delete ALL readings from this device? Export a backup first.")))return;
-    try {
-      await clearJournal();
-      setHistory([]);resetSaved();
-      setSavedMessage(tr("Энэ төхөөрөмж дээрх хадгалсан уншилтуудыг арилгалаа.","Journal cleared on this device."));
-    } catch {
-      setError("Хадгалсан уншилтыг арилгаж чадсангүй.");
-    }
-  };
-  const startAgain = () => {
-    if(!confirmDiscard())return;
-    resetSaved();
-    setSpread(null);setDrawn([]);setVisibleCount(0);setError("");setSavedMessage("");setNotes("");
-  };
-  return (
-    <section className="mx-auto max-w-6xl px-3 pb-16 sm:px-6">
-      <header className="mx-auto mb-10 max-w-2xl text-center">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-amber-300">THE ART OF REFLECTION</p>
-        <h2 className="font-serif text-4xl font-medium tracking-tight text-amber-50 sm:text-5xl">{t("Уламжлалт таро")}</h2>
-        <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-slate-300">
-          {tr("78 хөзрөөс уламжлалт байрлалаар санамсаргүй сонгож, бэлгэдлийг нь тайлбарлана. AI, төлбөртэй API, сервер шаардлагагүй.","Draw from 78 cards in a traditional spread, then reflect on their symbolism. No AI, paid API or backend is needed.")}
-        </p>
-      </header>
-      <details className="mx-auto mb-5 max-w-4xl">
-        <summary className="min-h-11 cursor-pointer rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-amber-100 hover:border-amber-300/40">
-          {tr("Анхны удаа ашиглаж байна уу? 3 алхамтай заавар","New to Tarot? See the three steps")}
-        </summary>
-      <section aria-label={tr("Анхны уншилтын алхам","First reading steps")} className="mt-3 rounded-2xl border border-amber-300/20 bg-white/5 px-5 py-5 sm:px-7">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="font-serif text-lg text-amber-100">{tr("Анх удаа ашиглаж байна уу?","New to Tarot?")}</h3>
-          <span className="text-xs text-slate-300">
-            {drawn.length>0&&visibleCount===drawn.length?"3 / 3":spread?"2 / 3":"1 / 3"} {tr("алхам","steps")}
-          </span>
-        </div>
-        <ol className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
-          {[
-            ["1",tr("Асуултаа бодож, дэлгэмэл сонгох","Choose a question and spread"),!spread],
-            ["2",tr("Картаа сугалж нэг нэгээр нь нээх","Draw cards, then reveal them one at a time"),!!spread&&(drawn.length===0||visibleCount<drawn.length)],
-            ["3",tr("Тайлбараа уншаад тэмдэглэл хадгалах","Read your reflection and save notes"),drawn.length>0&&visibleCount===drawn.length]
-          ].map(([number,label,active])=>(
-            <li key={String(number)} aria-current={active?"step":undefined}
-              className={"flex gap-3 rounded-xl border p-3 leading-6 "+
-                (active?"border-amber-300/50 bg-amber-300/10 text-amber-100":"border-white/10 text-slate-300")}>
-              <span aria-hidden="true" className="font-semibold text-amber-300">{number}.</span>
-              <span>{label}</span>
-            </li>
-          ))}
-        </ol>
-        <p className="mt-4 text-xs leading-5 text-slate-400">
-          {(locale==="en"?"This is a symbolic reflection exercise, not a reliable prediction of future events.":"Энэ нь өөрийн нөхцөлөө эргэцүүлэх бэлгэдлийн дасгал болохоос баталгаатай ирээдүйг хэлдэггүй.")}
-        </p>
-      </section>
-      </details>
-      {!spread && (
-        <div className="mx-auto max-w-4xl">
-          <div className="mb-6 rounded-2xl border border-amber-300/35 bg-gradient-to-r from-[#31213f] to-[#20182d] p-5 sm:p-7">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">{tr("Хурдан эхлэх","Quick start")}</p>
-            <h3 className="font-serif text-2xl text-amber-50">{tr("Уншлагаа шууд эхлүүлэх","Begin your reading")}</h3>
-            <p className="mt-2 max-w-lg text-sm leading-6 text-slate-300">{tr("Асуултаа бичих эсвэл алгасаад шууд картаа сугал. Нарийн тохиргоо шаардлагагүй.","Write a question or skip it. Draw a simple spread without advanced setup.")}</p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <button type="button" onClick={()=>startQuickReading(1)}
-                className="min-h-12 flex-1 rounded-full border border-amber-300/50 px-5 py-3 font-semibold text-amber-100 hover:bg-amber-300/10 sm:flex-none">
-                {tr("1 карт сугалах","Draw one card")}
-              </button>
-              <button type="button" onClick={()=>startQuickReading(3)}
-                className="min-h-12 flex-1 rounded-full bg-amber-300 px-6 py-3 font-semibold text-[#171127] hover:bg-amber-200 sm:flex-none">
-                {tr("3 карт сугалах","Draw three cards")}
-              </button>
-            </div>
-          </div>
-          <label htmlFor="tarot-question" className="mb-3 block text-sm font-medium text-amber-100">
-            {(locale==="en"?"Reflection question (optional)":"Эргэцүүлэх асуулт (заавал биш)")}
-          </label>
-          <textarea
-            id="tarot-question" value={question} onChange={(event) => setQuestion(event.target.value)}
-            maxLength={500} rows={3}
-            placeholder={tr("Жишээ: Энэ долоо хоногт ямар зүйлд анхаарах хэрэгтэй вэ?","Example: What should I focus on this week?")}
-            className="mb-3 w-full resize-y rounded-xl border border-amber-300/20 bg-white/5 p-4 text-base text-white placeholder:text-slate-400 focus:border-amber-300 focus:outline-none"
-          />
-          <div className="mb-5 flex flex-wrap items-center gap-2" role="group" aria-label={tr("Асуултын жишээ","Suggested reflection questions")}>
-            <span className="mr-1 text-xs text-slate-300">{tr("Санаа авах:","Need a prompt?")}</span>
-            {suggestions.map((prompt)=><button type="button" key={prompt} onClick={()=>setQuestion(prompt)}
-              className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs text-slate-200 hover:border-amber-300/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200">
-              {prompt}
-            </button>)}
-          </div>
-          <details id="reading-topic-settings" className="mb-8">
-            <summary className="min-h-11 cursor-pointer rounded-lg border border-white/15 px-4 py-3 text-sm text-amber-100">
-              {tr("Нэмэлт тохиргоо · Асуултын чиглэл","Optional · Question category")}
-            </summary>
-            <label htmlFor="tarot-topic" className="mt-4 mb-3 block text-sm font-medium text-amber-100">{tr("Асуултын чиглэл","Question topic")}</label>
-          <select id="tarot-topic" value={topic} onChange={event=>setTopic(event.target.value as ReadingTopic|"auto")}
-            className="w-full rounded-xl border border-white/20 bg-[#211a34] p-3 text-sm text-white sm:max-w-xs">
-            <option value="auto">{tr("Автоматаар тодорхойлох","Auto-detect")}</option>
-            <option value="general">{tr("Ерөнхий","General")}</option>
-            <option value="love">{tr("Хайр, харилцаа","Love & relationships")}</option>
-            <option value="career">{tr("Ажил, карьер","Work & career")}</option>
-            <option value="growth">{tr("Хувь хүний хөгжил","Personal growth")}</option>
-          </select>
-          </details>
-          <h3 className="mb-4 font-serif text-lg text-amber-100">{tr("Бусад дэлгэмэлүүд","Other spreads")}</h3>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {tarotSpreads.map((option) => (
-              <button type="button" key={option.id} onClick={() => chooseSpread(option)}
-                className="group rounded-2xl border border-amber-300/20 bg-gradient-to-br from-[#241b38] to-[#141326] p-6 text-left shadow-xl transition-colors hover:border-amber-300/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200">
-                <div className="mb-4 flex items-center justify-between">
-                  <span className="text-3xl font-serif text-amber-300" aria-hidden="true">✧</span>
-                  <span className="rounded-full border border-amber-300/30 px-3 py-1 text-xs text-amber-100">
-                    {option.cardCount} {tr("карт","cards")}
-                  </span>
-                </div>
-                <h3 className="font-serif text-xl text-amber-50">{en?englishSpreadName(option):option.name}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-300">{en?englishSpreadDescription(option):option.description}</p>
-                <span className="mt-5 block text-xs uppercase tracking-wider text-amber-300 group-hover:text-amber-100">
-                  {(locale==="en"?"Select":"Сонгох")}
-                </span>
-              </button>
-            ))}
-          </div>
-          {savedSpreads.length>0&&<section aria-label={tr("Миний хадгалсан дэлгэмлүүд","My saved spreads")} className="mt-8">
-            <h3 className="mb-4 font-serif text-xl text-amber-100">{tr("Хадгалсан дэлгэмлүүд","Saved spreads")}</h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {savedSpreads.map(template=>(
-                <div key={template.id} className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 p-3">
-                  <button type="button" onClick={()=>chooseSpread(savedToSpread(template))}
-                    className="min-h-12 flex-1 text-left text-sm text-amber-100 hover:text-white">
-                    <span className="block font-medium">{template.name}</span>
-                    <span className="block text-xs text-slate-300">{template.labels.length} {tr("карт · Сонгож унших","cards · Select to read")}</span>
-                  </button>
-                  <button type="button" aria-label={template.name+(en?" delete":" устгах")} onClick={()=>{
-                    if(!window.confirm(tr("Энэ хадгалсан дэлгэмлийг устгах уу?","Delete this saved spread?")))return;
-                    try{setSavedSpreads(deleteCustomSpread(template.id));setTemplateMessage(tr("Дэлгэмэл устлаа.","Spread deleted."));}
-                    catch(cause){setError(cause instanceof Error?cause.message:"Устгаж чадсангүй.");}
-                  }} className="rounded-full border border-red-300/30 px-4 py-2 text-sm text-red-200">{tr("Устгах","Delete")}</button>
-                </div>
-              ))}
-            </div>
-          </section>}
-          <details id="custom-spread-builder" className="group mt-8">
-            <summary className="min-h-12 cursor-pointer rounded-xl border border-white/15 bg-white/5 px-5 py-4 text-sm font-semibold text-amber-100 hover:border-amber-300/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200">
-              {tr("Нарийвчилсан тохиргоо · Өөрийн дэлгэмэл","Advanced · Create a custom spread")}
-            </summary>
-            <div className="mt-3 rounded-2xl border border-amber-300/25 bg-[#20192f] p-5 sm:p-7">
-            <h3 className="font-serif text-xl text-amber-100">{tr("Өөрийн дэлгэмэл үүсгэх","Create your own spread")}</h3>
-            <p className="mt-2 text-sm text-slate-300">
-              {(locale==="en"?"Set 1–12 cards and optionally name each position. Works without an AI service or the internet.":"1–12 картын тоо, байрлалын нэрсээ оруул. Интернэт эсвэл AI шаардлагагүй.")}
-            </p>
-            <label htmlFor="custom-spread-name" className="mt-5 block text-sm text-amber-100">{tr("Дэлгэмлийн нэр","Spread name")}</label>
-            <input id="custom-spread-name" value={customName} maxLength={60}
-              onChange={event=>setCustomName(event.target.value)}
-              className="mt-2 w-full max-w-sm rounded-lg border border-white/20 bg-[#120e1f] p-3 text-sm text-white"
-              placeholder={tr("Жишээ: Миний долоо хоног","Example: My week")}/>
-            <label htmlFor="custom-card-count" className="mt-5 block text-sm text-amber-100">{tr("Картын тоо","Number of cards")}</label>
-            <select id="custom-card-count" value={customCount}
-              onChange={event=>setCustomCount(Number(event.target.value))}
-              className="mt-2 rounded-lg border border-white/20 bg-[#120e1f] p-3 text-white">
-              {Array.from({length:12},(_,i)=>i+1).map(n=><option key={n} value={n}>{n} {tr("карт","cards")}</option>)}
-            </select>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({length:customCount},(_,index)=>(
-                <div key={index}>
-                  <label htmlFor={"custom-position-"+index} className="mb-1 block text-xs text-amber-100">
-                    {index+1}{tr("-р байрлал (заавал биш)"," position (optional)")}
-                  </label>
-                  <input id={"custom-position-"+index} maxLength={60}
-                    value={customLabels[index]||""}
-                    onChange={event=>setCustomLabels(old=>{
-                      const next=[...old];next[index]=event.target.value;return next;
-                    })}
-                    placeholder={String(index+1)+(en?" card":"-р карт")}
-                    className="w-full rounded-lg border border-white/20 bg-white/5 p-3 text-sm text-white focus:border-amber-300 focus:outline-none"/>
-                </div>
-              ))}
-            </div>
-            <button type="button" onClick={saveTemplate}
-              className="mr-3 mt-6 rounded-full border border-amber-300/40 px-6 py-3 text-sm font-semibold text-amber-100">
-              {(locale==="en"?"Save spread":"Дэлгэмлийг хадгалах")}
-            </button>
-            {templateMessage&&<p role="status" className="mt-3 text-sm text-emerald-200">{templateMessage}</p>}
-            <button type="button" onClick={()=>chooseSpread(makeCustomSpread(customCount,customLabels))}
-              className="mt-6 rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200">
-              {(locale==="en"?"Start custom spread":"Миний дэлгэмлийг эхлүүлэх")}
-            </button>
-            </div>
-          </details>
-        </div>
-      )}
-      {spread && (
-        <div>
-          <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-amber-300">{spread.cardCount} {tr("картын дэлгэмэл","card spread")}</p>
-              <h3 className="mt-2 font-serif text-3xl text-amber-50">{en?englishSpreadName(spread):spread.name}</h3>
-              {question.trim() && <p className="mt-2 max-w-xl text-sm text-slate-300">{tr("Асуулт: ","Question: ")}{question.trim()}</p>}
-            </div>
-            <button type="button" onClick={startAgain}
-              className="rounded-full border border-white/25 px-5 py-2 text-sm text-white transition-colors hover:border-amber-300">
-              {(locale==="en"?"Change spread":"Дэлгэмэл солих")}
-            </button>
-          </div>
-          {drawn.length === 0 ? (
-            <div className="mx-auto max-w-lg rounded-2xl border border-amber-300/20 bg-[#1c1830] px-8 py-12 text-center">
-              <p className="text-5xl text-amber-300" aria-hidden="true">✦</p>
-              <p className="my-5 text-sm leading-relaxed text-slate-200">
-                {(locale==="en"?"Cards are shuffled fairly without duplicates. Upright or reversed orientation is selected independently.":"Картуудыг жигд холиж, давхардалгүй сугална. Эгц эсвэл урвуу байрлалыг тусад нь санамсаргүй сонгоно.")}
-              </p>
-              <button type="button" onClick={makeReading}
-                className="w-full rounded-full bg-amber-300 px-8 py-3 font-semibold text-[#161024] transition-colors hover:bg-amber-200">
-                {(locale==="en"?"Shuffle and draw":"Хольж, хөзөр сугалах")}
-              </button>
-              <details className="mt-5 text-left" id="physical-deck-entry">
-                <summary className="min-h-11 cursor-pointer rounded-xl border border-white/20 px-4 py-3 text-sm font-medium text-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200">
-                  {tr("Бодит карт ашиглах · Гараар оруулах","Using a physical deck? Enter drawn cards")}
-                </summary>
-                <p className="mt-3 text-xs leading-6 text-slate-300">
-                  {tr("Бодит хөзрөөсөө татсан картыг байрлал бүрт сонгоорой. Нэг карт давхардаж болохгүй. Бүх мэдээлэл төхөөрөмж дээр үлдэнэ.","Select the cards you drew from your own deck, in position order. Each card can appear only once. Nothing leaves your device.")}
-                </p>
-                <div className="mt-3 space-y-3">
-                  {spread.positions.map((position,index)=>(
-                    <div key={position.position} className="rounded-xl border border-white/10 bg-white/5 p-3">
-                      <label htmlFor={"physical-card-"+index} className="block text-sm text-amber-100">
-                        {position.position}. {en?englishSpreadPosition(spread,position.position).name:position.name}
-                      </label>
-                      <select id={"physical-card-"+index} value={physicalSelections[index]?.cardId??""}
-                        onChange={event=>setPhysicalSelections(current=>current.map((choice,i)=>
-                          i===index?{...choice,cardId:event.target.value}:choice))}
-                        className="mt-2 w-full rounded-lg border border-white/20 bg-[#171127] p-3 text-sm text-white">
-                        <option value="">{tr("Карт сонгох","Choose a card")}</option>
-                        <optgroup label={tr("Их Аркан","Major Arcana")}>
-                          {tarotCards.filter(card=>card.arcana==="major").map(card=><option key={card.id} value={card.id}>
-                            {en?card.englishName:card.name}
-                          </option>)}
-                        </optgroup>
-                        {(["Wands","Cups","Swords","Pentacles"] as const).map(suit=>
-                          <optgroup key={suit} label={suit}>
-                            {tarotCards.filter(card=>card.suit===suit).map(card=><option key={card.id} value={card.id}>
-                              {en?card.englishName:card.name}
-                            </option>)}
-                          </optgroup>)}
-                      </select>
-                      <label className="mt-3 flex items-center gap-2 text-sm text-slate-200">
-                        <input type="checkbox" checked={physicalSelections[index]?.isReversed??false}
-                          onChange={event=>setPhysicalSelections(current=>current.map((choice,i)=>
-                            i===index?{...choice,isReversed:event.target.checked}:choice))}
-                          className="h-4 w-4 accent-amber-300"/>
-                        {tr("Урвуу карт","Reversed")}
-                      </label>
-                      {physicalSelections[index]?.cardId!==""&&tarotCards.some(card=>String(card.id)===physicalSelections[index]?.cardId)&&
-                        <div className="mt-3 flex items-center gap-3 rounded-lg bg-[#121022] p-2">
-                          <img
-                            src={tarotCards.find(card=>String(card.id)===physicalSelections[index]?.cardId)?.image}
-                            alt=""
-                            loading="lazy"
-                            className={"h-20 w-12 rounded object-cover "+(physicalSelections[index]?.isReversed?"rotate-180":"")}
-                          />
-                          <span className="text-xs leading-5 text-slate-200">
-                            {en?"Check the image and orientation against your deck.":"Зураг, байрлалыг бодит карттайгаа тулгаж шалгаарай."}
-                          </span>
-                        </div>}
-                    </div>
-                  ))}
-                </div>
-                <button type="button" onClick={startPhysicalReading}
-                  className="mt-4 w-full rounded-full border border-amber-300/60 px-6 py-3 text-sm font-semibold text-amber-100 hover:bg-amber-300/10">
-                  {tr("Сонгосон картуудыг унших","Read my selected cards")}
-                </button>
-              </details>
-            </div>
-          ) : (
-            <>
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
-                <span role="status" aria-live="polite">{visibleCount} / {drawn.length} {tr("карт нээсэн","cards revealed")}</span>
-                <span className="text-xs text-slate-400">{tr("Энэ tab-д үргэлжлүүлэх боломжтой","Progress stays in this tab")}</span>
-                {visibleCount < drawn.length && (
-                  <button type="button" onClick={revealNext}
-                    className="rounded-full bg-amber-300 px-6 py-3 font-medium text-[#161024] hover:bg-amber-200">
-                    {(locale==="en"?"Reveal next card":"Дараагийн картыг нээх")}
-                  </button>
-                )}
-              </div>
-              {spread.id==="celtic-cross"
-                ? <CelticCrossBoard cards={drawn} visibleCount={visibleCount}
-                    onReveal={revealNext}/>
-                :               <div className="grid grid-cols-2 items-start gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                {drawn.map((item,index) => (
-                  <div key={item.position} className="min-w-0 rounded-xl border border-white/10 bg-[#211b32] p-3">
-                    <div className="flex justify-center">
-                      <TarotCard card={item.card} size="sm" showMeaning={false} isRevealed={index < visibleCount}
-                        isReversed={item.isReversed} userQuestion={index < visibleCount ? undefined : ""}
-                        onClick={index===visibleCount?revealNext:undefined} />
-                    </div>
-                    <p className="mt-4 text-center text-sm font-semibold text-amber-100">{item.position}. {en?englishSpreadPosition(spread,item.position).name:item.positionName}</p>
-                    <p className="mt-2 text-center text-xs leading-relaxed text-slate-300">{en?englishSpreadPosition(spread,item.position).description:item.positionDescription}</p>
-                  </div>
-                ))}
-              </div>
-              }
-              {visibleCount === drawn.length && (
-                <div className="mx-auto mt-10 max-w-3xl rounded-2xl border border-amber-300/25 bg-gradient-to-b from-[#27203d] to-[#151224] p-6 sm:p-9">
-                  <h4 className="font-serif text-2xl text-amber-100">{t("Таны уншилтын тайлал")}</h4>
-                  <pre className="mt-5 whitespace-pre-wrap break-words font-sans text-sm leading-7 text-slate-100">{result}</pre>
-                  <label className="mt-8 block text-sm font-medium text-amber-100" htmlFor="reading-notes">{tr("Хувийн тэмдэглэл","Private notes")}</label>
-                  <textarea id="reading-notes" disabled={!notesDraft.ready} value={notes} onChange={(event)=>{setNotes(event.target.value);setHasSaved(false);setSavedMessage("");}}
-                    maxLength={2000} rows={3} placeholder={tr("Өөрийн бодож мэдэрсэн зүйлээ энд бич...","Write your thoughts and feelings here...")}
-                    className="mt-2 w-full rounded-lg border border-white/20 bg-white/5 p-4 text-sm text-white placeholder:text-slate-400 focus:border-amber-300 focus:outline-none"/>
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <button type="button" onClick={save} disabled={saving||hasSaved}
-                      className="rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#161024] hover:bg-amber-200">
-                      {saving?tr("Хадгалж байна...","Saving..."):hasSaved?tr("Хадгалсан","Saved"):tr("Төхөөрөмж дээр хадгалах","Save to this device")}
-                    </button>
-                    <button type="button" onClick={makeReading}
-                      className="rounded-full border border-white/30 px-6 py-3 text-sm text-white hover:border-amber-300">
-                      {(locale==="en"?"Shuffle again":"Дахин холих")}
-                    </button>
-                    <button type="button" disabled={exporting} onClick={()=>void shareReading("story")}
-                      className="rounded-full border border-amber-300/40 px-6 py-3 text-sm text-amber-100 disabled:opacity-60">
-                      {tr("Story зураг татах","Share as Story")}
-                    </button>
-                    <button type="button" disabled={exporting} onClick={()=>void shareReading("square")}
-                      className="rounded-full border border-amber-300/40 px-6 py-3 text-sm text-amber-100 disabled:opacity-60">
-                      {tr("Square зураг татах","Share square image")}
-                    </button>
-                  </div>
-                  <p className="mt-3 text-xs leading-5 text-slate-300">{tr("Хуваалцах зурагт зөвхөн карт, дэлгэмлийн нэр орно. Хувийн асуулт, тэмдэглэл багтахгүй.","Shared images show the cards and spread only; your question and private notes stay out.")}</p>
-                  {shareMessage&&<p role="status" className="mt-3 text-sm text-emerald-200">{shareMessage}</p>}
-                  {savedMessage && <p role="status" className="mt-4 text-sm text-emerald-200">{savedMessage}</p>}
-                </div>
-              )}
-            </>
-          )}
-          {notesDraft.error&&<p role="alert" className="mt-4 text-sm text-red-300">{notesDraft.error}</p>}
-      {questionDraft.error&&<p role="alert" className="mt-4 text-sm text-red-300">{questionDraft.error}</p>}
-      {error && <p role="alert" className="mt-6 text-center text-red-300">{error}</p>}
-          {history.length > 0 && (
-            <details className="mx-auto mt-10 max-w-3xl rounded-xl border border-white/10 p-5 text-sm text-slate-200">
-              <summary className="cursor-pointer text-amber-200">{tr("Өмнөх уншилтууд","Recent readings")} ({history.length})</summary>
-              <ul className="mt-4 space-y-3">
-                {history.map((entry) => <li key={entry.id} className="border-t border-white/10 py-3">
-                  <p className="font-medium text-amber-100">{entry.spread}</p>
-                  <p className="text-slate-300">{entry.question || tr("Асуулт оруулаагүй","No question entered")}</p>
-                  <p className="text-xs text-slate-400">{new Date(entry.date).toLocaleDateString(en?"en-US":"mn-MN")}</p>
-                </li>)}
-              </ul>
-              <button type="button" onClick={clearHistory} className="mt-4 rounded-full border border-red-300/50 px-4 py-2 text-xs text-red-200 hover:bg-red-400/10">{tr("Энэ төхөөрөмжөөс түүхийг арилгах","Clear journal from device")}</button>
-            </details>
-          )}
-        </div>
-      )}
-      <p className="mx-auto mt-10 max-w-3xl text-center text-xs leading-relaxed text-slate-400">
-        {tr("Таро, зурхай нь шинжлэх ухааны баталгаатай ирээдүй таамаглах арга биш. Энэ бүтээгдэхүүн нь соёлын бэлгэдэл болон өөрийгөө эргэцүүлэх зорилготой. Эрүүл мэнд, мөнгө, хууль зэрэг чухал шийдвэрийг зөвхөн картын тайлалд тулгуурлан бүү гарга.","Tarot and astrology are not scientifically reliable ways to predict the future. This app is for cultural symbolism and personal reflection. Never make important health, financial or legal decisions based solely on card interpretations.")}
-      </p>
-    </section>
-  );
+      const id=session.journalId??crypto.randomUUID();
+      await appendJournalReflection({id,date:new Date().toISOString(),spread:spread.name,
+        question:question.trim().slice(0,500),reading:fullReading,notes:notes.text.trim(),
+        cards:cards.map(c=>({id:c.card.id,reversed:c.isReversed,position:c.position}))});
+      if(!session.journalId)setSession({...session,journalId:id});
+      setSaved(true);notes.clear();setMessage(tr("Энэ төхөөрөмж дээр уншилтыг хадгаллаа.","Reading saved on this device."));
+    }catch(cause){setError(cause instanceof Error?cause.message:tr("Уншлагыг хадгалж чадсангүй.","Could not save your reading."));}
+    finally{saving.current=false;setBusy(false);}
+  }
+  async function share(format:SocialFormat){
+    if(exporting||!finished)return;
+    setExporting(true);setError("");
+    try{
+      await exportReadingSocialPng({id:crypto.randomUUID(),date:new Date().toISOString(),spread:spread.name,question:"",reading:"",notes:"",
+        cards:cards.map(c=>({id:c.card.id,reversed:c.isReversed,position:c.position}))},tarotCards,format);
+      setMessage(tr("Хувийн асуулт, тэмдэглэл ороогүй зураг татагдлаа.","Image downloaded without your question or notes."));
+    }catch{setError(tr("Зургийг татаж чадсангүй.","Could not download the image."));}
+    finally{setExporting(false);}
+  }
+  const step=phase==="idle"?0:count===0?1:2;
+  const maxChoices=session?.reserve?.length?Math.min(5,cards.length-count+session.reserve.length):1;
+  const notesId=single?"single-card-notes":"reading-notes";
+  return <section className="reading-page">
+    <header className="reading-intro">
+      <div className="section-heading"><h1>{single?tr("Нэг картын уншилт","Single-card reading"):t("Уламжлалт таро")}</h1>
+        <p>{tr("Түр саатаад, өнөөдөр сэтгэлд тань байгаа нэг зүйлээ бодоорой.","Take a moment with one thing that has been on your mind.")}</p>
+      </div>
+      <ol className="reading-steps" aria-label={tr("Уншлагын дараалал","Reading progress")}>
+        {[tr("Асуулт","Question"),tr("Сонголт","Draw"),tr("Тайлал","Reading")].map((label,i)=><li key={label} className={i<=step?"reached":""} aria-current={i===step?"step":undefined}>
+          <span>{i<step?<Icon name="check" size={12}/>:i+1}</span>{label}</li>)}
+      </ol>
+    </header>
+    <div ref={desk} className="reading-desk" data-pane={mobilePane} data-live={cards.length>0}>
+      {cards.length>0&&<div className="mobile-switch" role="group" aria-label={tr("Уншлагын хэсэг","Reading panel")}>
+        <button type="button" aria-pressed={mobilePane==="deck"} onClick={()=>setMobilePane("deck")}><Icon name="cards" size={16}/>{tr("Карт","Cards")}</button>
+        <button type="button" disabled={!count} aria-pressed={mobilePane==="reading"} onClick={()=>setMobilePane("reading")}><Icon name="book" size={16}/>{tr("Тайлал","Reading")}</button>
+      </div>}
+      <DeckTable phase={phase} choices={maxChoices} active={active} visibleCount={count} total={spread.cardCount} onPick={reveal} onShuffle={ready&&questionDraft.ready?shuffle:undefined}>
+        {count>0&&<div role="group" aria-label={tr("Нээсэн картууд","Revealed cards")} className="position-list">
+          {cards.slice(0,count).map((card,i)=><button key={card.card.id} type="button" aria-pressed={activeIndex===i} onClick={()=>{setSelectedIndex(i);setMobilePane("reading");}}>
+            <img alt="" src={card.card.image} className={card.isReversed?"rotate-180":""} width="20" height="32" onError={cardFallback}/>
+            <span>{i+1}. {positionName(i)}</span></button>)}
+        </div>}
+        {session&&<button type="button" className="text-button change-spread" disabled={busy} onClick={()=>startAgain()}>{t("Дэлгэмэл солих")}</button>}
+      </DeckTable>
+      <div className="reading-panel" aria-busy={shuffling}>
+        {!cards.length?<><div className="panel-kicker"><Icon name="pen" size={16}/>{tr("Уншлагын эхлэл","Before you draw")}</div>
+          <h2>{session?displayName(spread):tr("Юу бодогдож байна вэ?","What’s on your mind?")}</h2>
+          <p className="panel-lead" id="question-hint">{tr("Асуултаа бичвэл тайлалтай холбож өгнө. Дотроо бодоод шууд карт сонгосон ч болно.","Write your question for a more personal reading, or keep it in mind and draw.")}</p>
+          <label className="field-label" htmlFor="tarot-question">{tr("Таны асуулт","Your question")} <span>{tr("заавал биш","optional")}</span></label>
+          <textarea id="tarot-question" aria-describedby="question-hint" disabled={!questionDraft.ready} value={question} onChange={e=>questionDraft.setText(e.target.value)}
+            maxLength={500} rows={2} placeholder={tr("Жишээ нь, ажлаа солихоосоо өмнө юуг бодолцох вэ?","What should I consider before changing jobs?")}/>
+          <div className="prompt-list" role="group" aria-label={tr("Жишээ асуултууд","Example questions")}><small>{tr("Жишээ","Try")}</small>{prompts.map(([mn,english,q,eq])=><button key={mn} type="button" disabled={!questionDraft.ready} onClick={()=>questionDraft.setText(en?eq:q)}>{en?english:mn}</button>)}</div>
+          {!single&&!session&&<fieldset className="spread-picker"><legend>{tr("Хэдэн карт сугалах вэ?","Choose your spread")}</legend>
+            {quickSpreads.map((s,i)=><button type="button" key={s.id} aria-pressed={quickIndex===i} onClick={()=>setQuickIndex(i)}>
+              <i className={"mini-spread n"+s.cardCount} aria-hidden="true"><b/>{i===1&&<><b/><b/></>}</i>
+              <span><strong>{i?tr("Гурван карт","Three cards"):tr("Нэг карт","One card")}</strong><small>{i?tr("Гурван өнцөг","Three perspectives"):tr("Нэг гол санаа","One clear focus")}</small></span>
+            </button>)}</fieldset>}
+          <button type="button" className="primary-button shuffle-action" disabled={!ready||!questionDraft.ready} onClick={shuffle}><Icon name="shuffle"/>
+            {tr("Картаа холих","Shuffle the deck")}<Icon name="arrow" size={19}/></button>
+          <details className="minor-disclosure" id="reading-topic-settings"><summary>{tr("Асуултын чиглэл сонгох","Set a question topic")}</summary>
+            <label htmlFor="tarot-topic">{t("Асуултын чиглэл")}</label><select id="tarot-topic" value={topic} onChange={e=>setTopic(e.target.value as typeof topic)}>
+              {topicOptions.map(([value,mn,english])=><option key={value} value={value}>{en?english:mn}</option>)}</select></details>
+          {(session||single)&&<PhysicalDeckEntry key={spread.id} spread={spread} onReady={cards=>{if(canReplace())begin(spread,cards,[],false);}}/>}
+        </>:<>
+          <div className="panel-kicker"><Icon name="book" size={16}/>{displayName(spread)}</div>
+          {shuffling?<div role="status"><h2>{tr("Картыг хольж байна…","Shuffling the cards…")}</h2><p className="panel-lead">{tr("Хөзрөө дэлгэсний дараа хүссэн нэгээ сонгоорой.","Choose a card when the deck opens.")}</p></div>:
+            active&&guidance?<article className="current-meaning" key={active.card.id}>
+              <div className="meaning-title"><img src={active.card.image} alt="" width="40" height="64" className={active.isReversed?"rotate-180":""} onError={cardFallback}/>
+                <div><div className="position-line">{positionName(activeIndex)} · {active.isReversed?tr("Урвуу","Reversed"):tr("Эгц","Upright")}</div>
+                  <h2 className="meaning-heading" tabIndex={-1}>{en?active.card.englishName:active.card.name}</h2></div></div>
+              <p className="card-meaning">{en?englishCardMeaning(active.card,active.isReversed):active.isReversed?active.card.reversedMeaning:active.card.meaning}</p>
+              {question.trim()&&<blockquote className="your-question">{question.trim()}</blockquote>}
+              <p>{guidance.lead} {guidance.question}</p>
+              <div className="next-step"><Icon name="pen" size={17}/><div><h3>{tr("Туршаад үзэх нэг алхам","One step to try")}</h3><p>{guidance.action}</p></div></div>
+            </article>:<><h2 className="meaning-heading" tabIndex={-1}>{tr("Нэг картаа сонгоорой","Choose a card")}</h2>
+              <p className="panel-lead">{session?.reserve?.length?tr("Доош харсан картуудаас аль нэгийг дараарай. Сонгосон картын тань утга энд гарна.","Tap any face-down card on the table. Its meaning will open here."):tr("Эхний картыг дарахад байрлалынх нь тайлал гарна.","Turn over the first card to see its meaning in this position.")}</p>
+              {question.trim()&&<blockquote className="your-question">{question.trim()}</blockquote>}</>}
+          {!shuffling&&!finished&&<div className="next-controls">
+            {count>0&&<button className="primary-button mobile-next" type="button" onClick={()=>{setMobilePane("deck");liveFocus.current=true;showDesk();}}>{tr("Ширээнээс дахин сонгох","Choose from the table")}<Icon name="arrow"/></button>}
+            <button type="button" className="text-button" onClick={()=>reveal(0)}>{t("Дараагийн картыг нээх")}<Icon name="arrow" size={16}/></button>
+          </div>}
+          {finished&&<div className="reading-actions">
+            <details className="summary-disclosure"><summary>{t("Таны уншилтын тайлал")}</summary>
+              <div className="reading-prose">{fullReading.split("\n\n").map((paragraph,i)=><p key={i}>{paragraph}</p>)}</div></details>
+            <label className="field-label" htmlFor={notesId}>{t("Хувийн тэмдэглэл")} <span>{tr("заавал биш","optional")}</span></label>
+            <textarea id={notesId} rows={2} maxLength={2000} disabled={!notes.ready} value={notes.text} onChange={e=>{notes.setText(e.target.value);setSaved(false);setMessage("");}} placeholder={tr("Юу нь танд хамгийн ойр санагдав?","What stayed with you?")}/>
+            <div className="action-row"><button type="button" className="primary-button" disabled={busy||saved||!notes.ready} onClick={save}><Icon name={saved?"check":"journal"} size={17}/>{busy?tr("Хадгалж байна…","Saving…"):saved?tr("Хадгалсан","Saved"):t("Төхөөрөмж дээр хадгалах")}</button>
+              <button type="button" className="text-button" disabled={busy} onClick={()=>startAgain(true)}>{tr("Шинэ уншлага","New reading")}</button></div>
+            <details className="minor-disclosure"><summary>{tr("Зураг татах ба дахин холих","Download or reshuffle")}</summary><div className="action-row">
+              <button className="text-button" type="button" onClick={()=>share("story")} disabled={exporting}>{tr("Story зураг татах","Share as Story")}</button>
+              <button className="text-button" type="button" onClick={()=>share("square")} disabled={exporting}>{tr("Дөрвөлжин зураг татах","Share square image")}</button>
+              <button className="text-button" type="button" onClick={shuffle} disabled={busy}>{t("Дахин холих")}</button></div>
+              <small>{tr("Зурагт зөвхөн дэлгэмлийн нэр, картууд орно.","Only the cards and spread name appear in the image.")}</small></details>
+          </div>}
+        </>}
+        {message&&<p role="status" className="form-message">{message}</p>}
+        {(error||notes.error||questionDraft.error)&&<p role="alert" className="form-error">{error||notes.error||questionDraft.error}</p>}
+      </div>
+    </div>
+    {session?.spread.id==="celtic-cross"&&cards.length>0&&!shuffling&&<CelticCrossBoard cards={cards} visibleCount={count} onReveal={()=>reveal(0)}/>}
+    {!cards.length&&!single&&<SpreadTools chooseSpread={chooseSpread}/>}
+  </section>;
 }

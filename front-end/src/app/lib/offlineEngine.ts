@@ -27,17 +27,7 @@ export interface DrawnCard {
   positionName: string;
   positionDescription: string;
 }
-/** Unbiased Fisher-Yates draw, unique cards, per-card reversal. */
-export function drawSpread(
-  cards: readonly TarotCard[],
-  spread: TarotSpread,
-  randomInt: (max: number) => number = secureRandomInt,
-  options: {allowReversed?:boolean} = {}
-): DrawnCard[] {
-  if (!spread || spread.cardCount < 1 || spread.cardCount > cards.length ||
-      spread.positions.length !== spread.cardCount) {
-    throw new Error("Invalid spread or incomplete deck");
-  }
+export function shuffleDeck(cards: readonly TarotCard[], randomInt = secureRandomInt): TarotCard[] {
   if (new Set(cards.map((card) => card.id)).size !== cards.length) {
     throw new Error("Deck contains duplicate cards");
   }
@@ -49,6 +39,51 @@ export function drawSpread(
     }
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
+  return shuffled;
+}
+
+/** Keep two spare faces so even the last position offers a genuine choice. */
+export type CardFace = Pick<DrawnCard, "card" | "isReversed">;
+export function dealChoices(spread: TarotSpread, cards: readonly TarotCard[], allowReversed: boolean) {
+  if (!Number.isInteger(spread.cardCount) || spread.cardCount < 1 || spread.positions.length !== spread.cardCount || cards.length < spread.cardCount + 2) {
+    throw new Error("Invalid spread or incomplete deck");
+  }
+  const deck = shuffleDeck(cards);
+  const face = (card: TarotCard): CardFace => ({card, isReversed: allowReversed && secureRandomInt(2) === 0});
+  const drawn = spread.positions.map((position, index) => ({
+    ...face(deck[index]), position: position.position, positionName: position.name,
+    positionDescription: position.description,
+  }));
+  return {drawn, reserve: deck.slice(drawn.length, drawn.length + 2).map(face)};
+}
+
+/** Move the chosen face into the next position without moving position labels. */
+export function pickFromTable(drawn: DrawnCard[], reserve: CardFace[], next: number, offset: number) {
+  const faces = [...drawn, ...reserve];
+  const index = next + offset;
+  if (!Number.isInteger(offset) || offset < 0 || index >= faces.length || next < 0 || next >= drawn.length) {
+    throw new RangeError("Card choice outside the table");
+  }
+  const [picked] = faces.splice(index, 1);
+  faces.splice(next, 0, picked);
+  return {
+    drawn: drawn.map((item, i) => ({...item, card: faces[i].card, isReversed: faces[i].isReversed})),
+    reserve: faces.slice(drawn.length).map(({card, isReversed}) => ({card, isReversed})),
+  };
+}
+
+/** Unbiased Fisher-Yates draw, unique cards, per-card reversal. */
+export function drawSpread(
+  cards: readonly TarotCard[],
+  spread: TarotSpread,
+  randomInt: (max: number) => number = secureRandomInt,
+  options: {allowReversed?:boolean} = {}
+): DrawnCard[] {
+  if (!spread || spread.cardCount < 1 || spread.cardCount > cards.length ||
+      spread.positions.length !== spread.cardCount) {
+    throw new Error("Invalid spread or incomplete deck");
+  }
+  const shuffled = shuffleDeck(cards, randomInt);
   return spread.positions.map((position, index) => ({
     card: shuffled[index],
     position: position.position,

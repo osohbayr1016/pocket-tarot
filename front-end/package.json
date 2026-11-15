@@ -17,6 +17,8 @@
     "assets:verify": "node scripts/verify-artwork.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/source-sans-3": "5.3.1",
+    "@fontsource/spectral": "5.3.0",
     "astronomy-engine": "2.1.19",
     "next": "16.4.6",
     "react": "19.3.1",

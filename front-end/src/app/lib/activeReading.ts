@@ -1,6 +1,6 @@
 import {tarotCards} from "../data/tarotCards.ts";
 import type {TarotSpread} from "../data/tarotSpreads.ts";
-import type {DrawnCard} from "./offlineEngine.ts";
+import type {CardFace, DrawnCard} from "./offlineEngine.ts";
 import type {ReadingTopic} from "./readingIntelligence.ts";
 
 /** Only public card IDs and layout state are kept for this tab; not questions or notes. */
@@ -8,6 +8,8 @@ const KEY="pocket-tarot-active-reading-v1";
 export type ActiveReading={
   spread:TarotSpread;
   drawn:DrawnCard[];
+  reserve?:CardFace[];
+  journalId?:string;
   visibleCount:number;
   topic:ReadingTopic|"auto";
 };
@@ -42,23 +44,38 @@ export function parseActiveReading(text:string):ActiveReading|null{
     }
     if(!Number.isInteger(raw.visibleCount)||raw.visibleCount<0||raw.visibleCount>drawn.length)return null;
     if(!TOPICS.has(raw.topic))return null;
-    return {spread,drawn,visibleCount:raw.visibleCount,topic:raw.topic};
+    const reserve:CardFace[]=[];
+    if(raw.reserve!==undefined){
+      if(!Array.isArray(raw.reserve)||raw.reserve.length>2||(!drawn.length&&raw.reserve.length))return null;
+      for(const item of raw.reserve){
+        const card=tarotCards.find(c=>c.id===item?.id);
+        if(!card||seen.has(card.id)||typeof item.reversed!=="boolean")return null;
+        seen.add(card.id);
+        reserve.push({card,isReversed:item.reversed});
+      }
+    }
+    const journalId=typeof raw.journalId==="string"&&/^[0-9a-f-]{36}$/i.test(raw.journalId)?raw.journalId:undefined;
+    return {spread,drawn,reserve,journalId,visibleCount:raw.visibleCount,topic:raw.topic};
   }catch{return null;}
 }
-export function loadActiveReading():ActiveReading|null{
+export function loadActiveReading(single=false):ActiveReading|null{
+  const key=single?KEY+"-single":KEY;
   try{
-    const text=sessionStorage.getItem(KEY);
+    const text=sessionStorage.getItem(key);
     if(!text)return null;
     const data=parseActiveReading(text);
-    if(!data)sessionStorage.removeItem(KEY);
+    if(!data)sessionStorage.removeItem(key);
     return data;
   }catch{return null;}
 }
-export function saveActiveReading(reading:ActiveReading|null):void{
+export function saveActiveReading(reading:ActiveReading|null,single=false):void{
+  const key=single?KEY+"-single":KEY;
   try{
-    if(!reading){sessionStorage.removeItem(KEY);return;}
-    sessionStorage.setItem(KEY,JSON.stringify({
+    if(!reading){sessionStorage.removeItem(key);return;}
+    sessionStorage.setItem(key,JSON.stringify({
       version:1,spread:reading.spread,visibleCount:reading.visibleCount,topic:reading.topic,
+      journalId:reading.journalId,
+      reserve:reading.reserve?.map(({card,isReversed})=>({id:card.id,reversed:isReversed})),
       cards:reading.drawn.map(item=>({id:item.card.id,reversed:item.isReversed,position:item.position})),
     }));
   }catch{/* Session storage may be disabled; card reading remains usable. */}

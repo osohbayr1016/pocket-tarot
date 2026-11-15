@@ -27,14 +27,14 @@ export default function CelticCrossBoard({cards,visibleCount,onReveal}:Props){
   const details=(item:DrawnCard)=>en&&spread?englishSpreadPosition(spread,item.position):{name:item.positionName,description:item.positionDescription};
   const revealed=(position:number)=>position<=visibleCount;
   return <section aria-label={en?"Celtic Cross — ten-card layout":"Келтийн загалмай — 10 картын байрлал"}>
-    <p className="mb-3 text-center text-xs leading-6 text-slate-300">
+    <p className="mb-3 text-center text-xs leading-6 text-muted">
       {en?"The cross is on the left; cards 7–10 form the staff on the right. On phones, swipe horizontally to see the full layout.":"Загалмай — зүүн талд, 7–10 картын босоо багана — баруун талд. Гар утаснаас хэвтээ гүйлгэн харж болно."}
     </p>
     <div tabIndex={0} role="region" aria-label={en?"Scrollable Celtic Cross visual layout":"Келтийн загалмайн визуал байршил, хэвтээ гүйлгэх"}
-      className="overflow-x-auto rounded-2xl border border-amber-300/25 bg-[#181329] p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200">
+      className="overflow-x-auto rounded-2xl border border-rule bg-sheet p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-pine">
       <div className="relative mx-auto h-[710px] min-w-[680px] max-w-[780px]" aria-hidden="true">
-        <div className="absolute left-[8%] top-[9%] h-[68%] w-[55%] rounded-full border border-amber-300/10"/>
-        <div className="absolute bottom-[8%] right-[8%] h-[87%] w-px bg-amber-300/15"/>
+        <div className="absolute left-[8%] top-[9%] h-[68%] w-[55%] rounded-full border border-rule"/>
+        <div className="absolute bottom-[8%] right-[8%] h-[87%] w-px bg-tint"/>
         {cards.map((item,index)=>{
           const pos=slots[item.position];
           if(!pos)return null;
@@ -44,38 +44,38 @@ export default function CelticCrossBoard({cards,visibleCount,onReveal}:Props){
             style={{left:pos.left+"%",top:pos.top+"%",zIndex:item.position===2?12:shown?2:1}}
             className="absolute w-[105px] -translate-x-1/2 -translate-y-1/2 text-center">
             <div className={"relative mx-auto h-[125px] w-[77px] overflow-hidden rounded-md border-2 shadow-xl "+
-              (shown?"border-amber-200/70 bg-[#f5e6c4]":"border-amber-400/40 bg-[#2b2443]")+
+              (shown?"border-pine/50 bg-wash":"border-pine/50 bg-wash")+
               (pos.rotate?" rotate-90":"")}>
               {shown?
                 <img src={item.card.image} width={77} height={125}
                   alt="" className={"h-full w-full object-cover "+(item.isReversed?"rotate-180":"")}/>:
-                <div className="flex h-full items-center justify-center font-serif text-3xl text-amber-300">✦</div>}
+                <div className="flex h-full items-center justify-center font-serif text-3xl text-pine">✦</div>}
             </div>
-            {!pos.rotate&&<span className="mt-1 block truncate text-xs font-semibold text-amber-100">
+            {!pos.rotate&&<span className="mt-1 block truncate text-xs font-semibold text-ink">
               {item.position}. {details(item).name}
             </span>}
-            {pos.rotate&&<span className="mt-2 block text-xs font-semibold text-amber-100">
+            {pos.rotate&&<span className="mt-2 block text-xs font-semibold text-ink">
               {en?"2. Crossing":"2. Хөндлөн"}
             </span>}
-            {isNext&&<span className="mt-1 block text-[10px] text-emerald-200">{en?"Next card":"Дараагийн карт"}</span>}
+            {isNext&&<span className="mt-1 block text-[10px] text-success">{en?"Next card":"Дараагийн карт"}</span>}
           </div>;
         })}
       </div>
     </div>
-    <h4 className="mt-7 text-center font-serif text-lg text-amber-100">{en?"Position meanings and reveal order":"Картуудын утга ба нээх дараалал"}</h4>
+    <h4 className="mt-7 text-center font-serif text-lg text-ink">{en?"Position meanings and reveal order":"Картуудын утга ба нээх дараалал"}</h4>
     <ol className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {cards.map((item,index)=>{
         const shown=index<visibleCount;
         const next=index===visibleCount;
         return <li key={item.position} className={"rounded-xl border p-4 text-sm "+
-          (next?"border-amber-300/60 bg-amber-300/10":"border-white/10 bg-white/5")}>
-          <p className="font-semibold text-amber-100">{item.position}. {details(item).name}</p>
-          <p className="mt-1 text-xs leading-5 text-slate-300">{details(item).description}</p>
+          (next?"border-pine/50 bg-tint":"border-rule bg-sheet")}>
+          <p className="font-semibold text-ink">{item.position}. {details(item).name}</p>
+          <p className="mt-1 text-xs leading-5 text-muted">{details(item).description}</p>
           {shown?
-            <p className="mt-2 text-slate-100">{en?item.card.englishName:item.card.name}{item.isReversed?(en?" — reversed":" — урвуу"):(en?" — upright":" — эгц")}</p>:
+            <p className="mt-2 text-ink">{en?item.card.englishName:item.card.name}{item.isReversed?(en?" — reversed":" — урвуу"):(en?" — upright":" — эгц")}</p>:
             <button type="button" disabled={!next} onClick={onReveal}
               aria-label={item.position+". "+details(item).name+(en?" — reveal card":" картыг нээх")}
-              className="mt-3 min-h-11 rounded-full border border-amber-300/40 px-4 py-2 text-xs text-amber-100 disabled:opacity-50">
+              className="mt-3 min-h-11 rounded-full border border-pine/50 px-4 py-2 text-xs text-ink disabled:opacity-50">
               {next?(en?"Reveal this card":"Энэ картыг нээх"):(en?"Reveal earlier cards first":"Өмнөх картыг эхлээд нээнэ")}
             </button>}
         </li>;

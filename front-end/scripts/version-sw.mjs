@@ -19,7 +19,7 @@ function scan(dir){
 }
 scan("src");
 scan("public/tarot/rws");
-include.push("package.json","next.config.ts");
+include.push("package.json","next.config.ts","public/tarot/table-back.svg","public/icon.svg","public/manifest.webmanifest");
 for(const file of include.sort()){
   hash.update(relative(root,join(root,file)));
   hash.update(readFileSync(join(root,file)));
