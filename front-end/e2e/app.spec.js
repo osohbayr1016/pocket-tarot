@@ -1,9 +1,9 @@
 const {test,expect} = require("@playwright/test");
 const groupFor={
-  "Таро дэлгэмэл":"Таро","Нэг карт":"Таро","78 карт":"Таро","Таро сурах":"Таро",
+  "Уншлага":"Таро","Нэг карт":"Таро","Картын сан":"Таро","Таро сурах":"Таро",
   "Орд":"Зурхай","Төрсөн үеийн тэнгэр":"Зурхай","Сарны календарь":"Зурхай",
-  "Өдрийн карт":"Өдөр тутам","Өдрийн санаа":"Өдөр тутам","Зүүд":"Өдөр тутам","Удирдамж":"Өдөр тутам",
-  "Миний түүх":"Тэмдэглэл","Offline карт":"Офлайн","Хувийн тохиргоо":"Офлайн",
+  "Өдрийн карт":"Өдөр тутам","Өдрийн санаа":"Өдөр тутам","Зүүдний тайлал":"Өдөр тутам","Амьдралын зөвлөгөө":"Өдөр тутам",
+  "Хадгалсан уншлага":"Тэмдэглэл","Карт татах":"Офлайн","Хувийн тохиргоо":"Офлайн",
 };
 async function openView(page,name){
   const group=groupFor[name];
@@ -27,8 +27,8 @@ test("unfinished tarot reading resumes after navigation and reload",async({page}
   await page.goto("/");
   await shuffleQuick(page,3);
   await page.getByRole("button",{name:/Дараагийн картыг нээх/}).click();
-  await openView(page,"Миний түүх");
-  await openView(page,"Таро дэлгэмэл");
+  await openView(page,"Хадгалсан уншлага");
+  await openView(page,"Уншлага");
   await expect(page.getByText("1 / 3 карт нээсэн")).toBeVisible();
   await page.reload();
   await expect(page.getByText("1 / 3 карт нээсэн")).toBeVisible();
@@ -102,7 +102,7 @@ test("offline-first tarot: three-card spread, sequential reveal and history",asy
   await page.locator("#reading-notes").fill("E2E тэмдэглэл");
   await page.getByRole("button",{name:/Төхөөрөмж дээр хадгалах/}).click();
   await expect(page.getByText(/энэ төхөөрөмж дээр уншилтыг хадгаллаа/i)).toBeVisible();
-  await openView(page,"Миний түүх");
+  await openView(page,"Хадгалсан уншлага");
   await expect(page.getByRole("heading",{name:"Уншилтын түүх"})).toBeVisible();
   await page.getByRole("button",{name:"Дэлгэрэнгүй"}).first().click();
   await expect(page.getByRole("textbox",{name:"Тэмдэглэл засах"})).toHaveValue("E2E тэмдэглэл");
@@ -113,7 +113,7 @@ test("offline-first tarot: three-card spread, sequential reveal and history",asy
 });
 test("all 78 local card images are discoverable",async({page})=>{
   await page.goto("/");
-  await openView(page,"78 карт");
+  await openView(page,"Картын сан");
   await expect(page.locator("main button img[alt]")).toHaveCount(78);
   await page.getByRole("button",{name:/The Fool/}).first().click();
   await expect(page.getByRole("dialog")).toBeVisible();
@@ -129,7 +129,7 @@ test("one-card draw, date zodiac and dream reflection work without API",async({p
   await page.locator("#horoscope-birth-date").fill("2024-02-29");
   await page.getByRole("button",{name:"Ордны тайлбар харах"}).click();
   await expect(page.getByText(/Загас \(Ус\)/)).toBeVisible();
-  await openView(page,"Зүүд");
+  await openView(page,"Зүүдний тайлал");
   await page.locator("#dream-text").fill("Би далайд сэлж байсан");
   await page.getByRole("button",{name:"Бэлгэдлийг тайлбарлах"}).click();
   await expect(page.getByText(/Ус: мэдрэмж/)).toBeVisible();
@@ -190,14 +190,14 @@ test("opt-in offline card pack saves all 78 images and survives an offline libra
   test.skip(browserName!=="chromium","Cache Storage integration is validated by Chromium; other browsers run online smoke tests.");
   test.setTimeout(90000);
   await page.goto("/");
-  await openView(page,"Offline карт");
+  await openView(page,"Карт татах");
   await expect(page.getByRole("heading",{name:"Офлайн картын сан"})).toBeVisible();
   await page.getByRole("button",{name:"78 зураг offline татах"}).click();
   await expect(page.getByRole("progressbar",{name:"Offline карт таталтын явц"}))
     .toHaveAttribute("aria-valuenow","78",{timeout:70000});
   await expect(page.getByText("78 / 78")).toBeVisible();
   await context.setOffline(true);
-  await openView(page,"78 карт");
+  await openView(page,"Картын сан");
   await expect(page.locator("main button img")).toHaveCount(78);
   const first=page.locator("main button img").first();
   await expect.poll(()=>first.evaluate(img=>img.complete && img.naturalWidth>0)).toBe(true);
@@ -207,7 +207,7 @@ test("opt-in offline card pack saves all 78 images and survives an offline libra
 test("deep links and browser back restore the correct grouped view",async({page})=>{
   await page.goto("/?view=natal");
   await expect(page.getByRole("heading",{name:"Төрсөн үеийн тэнгэрийн зураг"})).toBeVisible();
-  await openView(page,"78 карт");
+  await openView(page,"Картын сан");
   await expect(page).toHaveURL(/view=library/);
   await expect(page.getByRole("heading",{name:"78 картын сан"})).toBeVisible();
   await page.goBack();
@@ -242,7 +242,7 @@ test("journal favorites filter and search work on saved readings",async({page})=
   await drawSingle(page);
   await page.locator("#single-card-notes").fill("Unique favorite journal search token");
   await page.getByRole("button",{name:"Төхөөрөмж дээр хадгалах",exact:true}).click();
-  await openView(page,"Миний түүх");
+  await openView(page,"Хадгалсан уншлага");
   await page.getByRole("button",{name:"Дуртайд нэмэх"}).click();
   await page.getByLabel("Зөвхөн дуртай уншилт").check();
   await page.getByRole("searchbox",{name:"Уншилт хайх"}).fill("Unique favorite journal");
@@ -282,7 +282,7 @@ test("legacy account JSON can be imported locally without a backend request",asy
     if(req.url().includes("/api/"))external.push(req.url());
   });
   await page.goto("/");
-  await openView(page,"Миний түүх");
+  await openView(page,"Хадгалсан уншлага");
   page.on("dialog",dialog=>void dialog.accept());
   const payload={readings:[{
     id:"old17",cardId:6,cardName:"The Lovers",cardMeaning:"Хуучин картын тайлал",
@@ -383,7 +383,7 @@ test("offline lunar calendar renders a month and changes months without API call
 
 test("tarot library filters all 56 minors by suit and shows educational details",async({page})=>{
   await page.goto("/");
-  await openView(page,"78 карт");
+  await openView(page,"Картын сан");
   await page.locator("#library-suit").selectOption("Cups");
   await expect(page.getByText("Нийт 14 / 78 карт харагдаж байна.")).toBeVisible();
   await expect(page.locator("main button img[alt]")).toHaveCount(14);
@@ -426,7 +426,7 @@ test("Celtic Cross has a spatial crossing and 10 accessible numbered cards",asyn
 });
 test("IndexedDB journal supports more than 100 readings with pagination and export",async({page})=>{
   await page.goto("/");
-  await openView(page,"Миний түүх");
+  await openView(page,"Хадгалсан уншлага");
   const readings=Array.from({length:105},(_,i)=>({
     id:"large-"+String(i).padStart(3,"0"),
     date:new Date(Date.UTC(2024,10,1,12,i%60)).toISOString(),
@@ -631,17 +631,17 @@ test("category links navigate immediately and back restores the previous page an
   await page.goto("/");
   await openView(page,"Орд");
   await page.getByRole("link",{name:"Офлайн",exact:true}).click();
-  await expect(page.getByRole("link",{name:"Offline карт",exact:true})).toBeVisible();
+  await expect(page.getByRole("link",{name:"Карт татах",exact:true})).toBeVisible();
   await page.goBack();
   await expect(page).toHaveURL(/view=horoscope/);
   await expect(page.getByRole("link",{name:"Орд",exact:true})).toHaveAttribute("aria-current","page");
-  await expect(page.getByRole("link",{name:"Offline карт",exact:true})).toHaveCount(0);
+  await expect(page.getByRole("link",{name:"Карт татах",exact:true})).toHaveCount(0);
 });
 
 
 test("journal re-import preserves locally edited notes instead of overwriting them",async({page})=>{
   await page.goto("/");
-  await openView(page,"Миний түүх");
+  await openView(page,"Хадгалсан уншлага");
   const id="reimport-preserve-local-notes";
   const payload={
     format:"pocket-tarot-readings",version:2,
@@ -675,7 +675,7 @@ test("daily card saves append notes instead of replacing today's reflection",asy
   await expect(page.locator("#daily-notes")).toHaveValue("");
   await page.locator("#daily-notes").fill("Second thought this evening");
   await page.getByRole("button",{name:"Өдрийн тэмдэглэл хадгалах"}).click();
-  await openView(page,"Миний түүх");
+  await openView(page,"Хадгалсан уншлага");
   const download=page.waitForEvent("download");
   await page.getByRole("button",{name:"JSON export"}).click();
   const blob=await download;
@@ -690,7 +690,7 @@ test("manual reversed cards are preserved when automatic reversals are disabled"
   await page.goto("/");
   await openView(page,"Хувийн тохиргоо");
   await page.getByLabel("Урвуу карт оруулах").uncheck();
-  await openView(page,"Таро дэлгэмэл");
+  await openView(page,"Уншлага");
   await page.locator(".spread-catalog").getByRole("button",{name:/Нэг карт/}).click();
   await page.locator("#physical-deck-entry > summary").click();
   await page.locator("#physical-card-0").selectOption("0");
@@ -699,7 +699,7 @@ test("manual reversed cards are preserved when automatic reversals are disabled"
   await page.getByRole("button",{name:"Дараагийн картыг нээх"}).click();
   await page.getByRole("button",{name:"Төхөөрөмж дээр хадгалах"}).click();
   await expect(page.getByText("Энэ төхөөрөмж дээр уншилтыг хадгаллаа.")).toBeVisible();
-  await openView(page,"Миний түүх");
+  await openView(page,"Хадгалсан уншлага");
   const download=page.waitForEvent("download");
   await page.getByRole("button",{name:"JSON export"}).click();
   const blob=await download;
@@ -719,7 +719,7 @@ test("re-saving the same spread updates a single journal entry and appends notes
   await page.locator("#reading-notes").fill("Follow-up reflection");
   await page.getByRole("button",{name:"Төхөөрөмж дээр хадгалах"}).click();
   await expect(page.getByRole("button",{name:"Хадгалсан"})).toBeDisabled();
-  await openView(page,"Миний түүх");
+  await openView(page,"Хадгалсан уншлага");
   const download=page.waitForEvent("download");
   await page.getByRole("button",{name:"JSON export"}).click();
   const blob=await download;
@@ -732,7 +732,7 @@ test("re-saving the same spread updates a single journal entry and appends notes
 
 test("journal filters saved readings by inclusive local date range and resets",async({page})=>{
   await page.goto("/");
-  await openView(page,"Миний түүх");
+  await openView(page,"Хадгалсан уншлага");
   const payload={
     format:"pocket-tarot-readings",version:2,
     readings:[2,3,4].map(day=>({
@@ -767,7 +767,7 @@ test("rapid double-click on daily Save cannot append the same note twice",async(
   await save.evaluate(button=>{button.click();button.click();});
   await expect(page.locator("#daily-notes")).toHaveValue("");
   await expect(page.getByRole("status").filter({hasText:"Өдрийн тэмдэглэл хадгалагдлаа."})).toBeVisible();
-  await openView(page,"Миний түүх");
+  await openView(page,"Хадгалсан уншлага");
   const pendingDownload=page.waitForEvent("download");
   await page.getByRole("button",{name:"JSON export"}).click();
   const download=await pendingDownload;
@@ -780,7 +780,7 @@ test("rapid double-click on daily Save cannot append the same note twice",async(
 
 test("journal CSV summary exports only filtered cards and no private free text",async({page})=>{
   await page.goto("/");
-  await openView(page,"Миний түүх");
+  await openView(page,"Хадгалсан уншлага");
   const records=[
     {id:"csv-one",date:"2024-10-01T12:00:00.000Z",spread:"Sensitive old spread",
       question:"SECRET_QUESTION_ONE",reading:"SECRET_READING_ONE",notes:"SECRET_NOTES_ONE",
@@ -814,12 +814,12 @@ test("journal CSV summary exports only filtered cards and no private free text",
 test("journal refreshes from IndexedDB when returning from another browser tab",async({page,context,browserName})=>{
   test.skip(browserName!=="chromium","Cross-tab IndexedDB synchronization smoke runs in Chromium.");
   await page.goto("/");
-  await openView(page,"Миний түүх");
+  await openView(page,"Хадгалсан уншлага");
   await expect(page.getByText("Одоогоор уншилт алга")).toBeVisible();
   const other=await context.newPage();
   try{
     await other.goto("/");
-    await openView(other,"Миний түүх");
+    await openView(other,"Хадгалсан уншлага");
     const payload={format:"pocket-tarot-readings",version:2,readings:[{
       id:"other-tab",date:"2024-11-02T12:00:00.000Z",spread:"One card",
       question:"Cross-tab reflection",reading:"Stored only on this device",notes:"",
@@ -875,4 +875,32 @@ test("guide, reduced motion, a chosen face and a deep-linked library detail",asy
   await expect(page.getByRole("dialog").getByRole("heading",{name:"Сар",exact:true})).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page).toHaveURL(/view=library$/);
+});
+
+test("the deck splits into two packets and every dealt card has a usable center",async({page})=>{
+  await page.emulateMedia({reducedMotion:"no-preference"});
+  await page.goto("/");
+  await shuffleQuick(page,3);
+  const packets=page.locator(".riffle-card");
+  await expect(packets).toHaveCount(14);
+  const separated=await packets.evaluateAll(cards=>{
+    for(const card of cards){
+      const [animation]=card.getAnimations();
+      if(!animation)return false;
+      animation.pause();
+      animation.currentTime=Number.parseFloat(getComputedStyle(card).animationDelay)*1000+355;
+    }
+    return Math.abs(cards[0].getBoundingClientRect().left-cards[1].getBoundingClientRect().left)>65;
+  });
+  expect(separated).toBe(true);
+  const choices=page.getByRole("group",{name:"Доош харсан картууд"}).getByRole("button");
+  await expect(choices).toHaveCount(5);
+  for(const width of [1280,768,390,320]){
+    await page.setViewportSize({width,height:840});
+    await choices.first().scrollIntoViewIfNeeded();
+    await expect.poll(()=>choices.evaluateAll(cards=>cards.every(card=>{
+      const {left,top,width,height}=card.getBoundingClientRect();
+      return document.elementFromPoint(left+width/2,top+height/2)?.closest("button")===card;
+    }))).toBe(true);
+  }
 });

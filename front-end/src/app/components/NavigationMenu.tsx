@@ -5,11 +5,11 @@ import {Icon, type IconName} from "./InterfaceIcon";
 
 export type Section = "reading"|"single"|"library"|"learn"|"horoscope"|"natal"|"moon"|"daily"|"daily-card"|"dream"|"guidance"|"history"|"offline"|"settings"|"guide";
 const groups: {icon:IconName;label:string;views:{id:Section;label:string}[]}[]=[
-  {icon:"cards",label:"Таро",views:[{id:"reading",label:"Таро дэлгэмэл"},{id:"single",label:"Нэг карт"},{id:"library",label:"78 карт"},{id:"learn",label:"Таро сурах"}]},
+  {icon:"cards",label:"Таро",views:[{id:"reading",label:"Уншлага"},{id:"single",label:"Нэг карт"},{id:"library",label:"Картын сан"},{id:"learn",label:"Таро сурах"}]},
   {icon:"orbit",label:"Зурхай",views:[{id:"horoscope",label:"Орд"},{id:"natal",label:"Төрсөн үеийн тэнгэр"},{id:"moon",label:"Сарны календарь"}]},
-  {icon:"sun",label:"Өдөр тутам",views:[{id:"daily-card",label:"Өдрийн карт"},{id:"daily",label:"Өдрийн санаа"},{id:"dream",label:"Зүүд"},{id:"guidance",label:"Удирдамж"}]},
-  {icon:"journal",label:"Тэмдэглэл",views:[{id:"history",label:"Миний түүх"}]},
-  {icon:"offline",label:"Офлайн",views:[{id:"offline",label:"Offline карт"},{id:"settings",label:"Хувийн тохиргоо"}]},
+  {icon:"sun",label:"Өдөр тутам",views:[{id:"daily-card",label:"Өдрийн карт"},{id:"daily",label:"Өдрийн санаа"},{id:"dream",label:"Зүүдний тайлал"},{id:"guidance",label:"Амьдралын зөвлөгөө"}]},
+  {icon:"journal",label:"Тэмдэглэл",views:[{id:"history",label:"Хадгалсан уншлага"}]},
+  {icon:"offline",label:"Офлайн",views:[{id:"offline",label:"Карт татах"},{id:"settings",label:"Хувийн тохиргоо"}]},
 ];
 export function isSection(value:unknown):value is Section{
   return value==="guide"||groups.some(group=>group.views.some(view=>view.id===value));

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { tarotCards, type TarotCard } from "./data/tarotCards";
@@ -42,6 +42,7 @@ export default function Home() {
   const [suit,setSuit] = useState<"all"|"Wands"|"Cups"|"Swords"|"Pentacles">("all");
   const [element,setElement] = useState<"all"|"Гал"|"Ус"|"Агаар"|"Шороо">("all");
   const [libraryCard,setLibraryCard] = useState<TarotCard|null>(null);
+  const libraryOpener=useRef<HTMLButtonElement|null>(null);
   useEffect(()=>{
     // Hydration-safe deep-link initialization; back/forward also restore sections.
     const readUrl=()=>{
@@ -49,7 +50,13 @@ export default function Home() {
       const candidate=params.get("view");
       setSection(isSection(candidate)?candidate:"reading");
       const id=params.get("card");
-      setLibraryCard(candidate==="library"&&id!==null?tarotCards.find(card=>String(card.id)===id)??null:null);
+      const card=candidate==="library"&&id!==null?tarotCards.find(card=>String(card.id)===id)??null:null;
+      setLibraryCard(card);
+      if(!card&&libraryOpener.current){
+        const opener=libraryOpener.current;
+        libraryOpener.current=null;
+        if(candidate==="library")requestAnimationFrame(()=>opener.focus({preventScroll:true}));
+      }
     };
     const frame=requestAnimationFrame(readUrl);
     window.addEventListener("popstate",readUrl);
@@ -153,7 +160,7 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {filtered.map((card)=>(
-                <button type="button" key={card.id} onClick={()=>openCard(card)}
+                <button type="button" key={card.id} onClick={e=>{libraryOpener.current=e.currentTarget;openCard(card);}}
                   className="library-tile">
                   <div className="library-print">
                     <img src={card.image} onError={cardFallback}
