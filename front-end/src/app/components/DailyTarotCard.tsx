@@ -4,10 +4,11 @@ import { tarotCards } from "../data/tarotCards";
 import { interpretReading } from "../lib/offlineEngine";
 import {saveDailyJournalReading} from "../lib/journalDb";
 import TarotCard from "./TarotCard";
+import {readingGuidance} from "../lib/readingIntelligence";
 import {getReadingPreferences} from "../lib/readingPreferences";
 import {useLocalDraft} from "../lib/useLocalDraft";
 import {useLanguage} from "../lib/LanguageProvider";
-import {englishReading} from "../lib/englishTarot";
+import {englishReading,englishCardMeaning} from "../lib/englishTarot";
 
 function hashDay(text:string):number{
   let hash=2166136261;
@@ -53,10 +54,9 @@ export default function DailyTarotCard(){
   const seed=hashDay(date);
   const card=tarotCards[seed%78];
   const isReversed=allowReversed && (seed>>>8)%2===0;
-  const reading=card?(locale==="en"?englishReading:interpretReading)([{
-    card,position:1,isReversed,positionName:"Өдрийн бэлгэдэл",
-    positionDescription:"Өдөрт нэг удаа эргэцүүлэх сэдэв",
-  }]):"";
+  const drawn={card,position:1,isReversed,positionName:"Өдрийн бэлгэдэл",positionDescription:"Өдөрт нэг удаа эргэцүүлэх сэдэв"};
+  const guidance=readingGuidance(drawn,"",undefined,locale);
+  const reading=(en?englishReading:interpretReading)([drawn]);
   const save=async()=>{
     // The ref flips before React paints the disabled state, so two clicks in
     // the same event loop cannot append an identical daily note twice.
@@ -78,28 +78,30 @@ export default function DailyTarotCard(){
       savingRef.current=false;setSaving(false);
     }
   };
-  if(!date)return <div className="p-10 text-center text-slate-300">{en?"Preparing your daily card...":"Өдрийн картыг бэлдэж байна..."}</div>;
-  return <section className="mx-auto max-w-3xl px-3 pb-16 text-center">
-    <p className="text-xs uppercase tracking-[0.3em] text-amber-300">{en?"Daily card journal":"Өдрийн картын тэмдэглэл"}</p>
-    <h1 className="mt-3 font-serif text-4xl text-amber-50">{t("Өнөөдрийн карт")}</h1>
-    <p className="mt-4 text-sm text-slate-300">{date} · {en?"One consistent card for this calendar day.":"Тухайн өдөр тогтмол нэг карт харагдана."}</p>
-    <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-amber-300/20 bg-[#211a34] p-6">
+  if(!date)return <div className="p-10 text-center text-muted">{en?"Preparing your daily card...":"Өдрийн картыг бэлдэж байна..."}</div>;
+  return <section className="daily-page">
+    <div className="section-heading">
+    <h1 className="mt-3 font-serif text-4xl text-ink">{t("Өнөөдрийн карт")}</h1>
+    <p className="mt-4 text-sm text-muted">{date} · {en?"One consistent card for this calendar day.":"Тухайн өдөр тогтмол нэг карт харагдана."}</p>
+    </div><div className="daily-layout"><div className="detail-art">
       <TarotCard card={card} isRevealed isReversed={isReversed} size="lg" showMeaning={false}/>
-      <pre className="mt-6 whitespace-pre-wrap text-left font-sans text-sm leading-7 text-slate-200">{reading}</pre>
-      <label htmlFor="daily-notes" className="mt-6 block text-left text-sm font-semibold text-amber-100">{en?"Daily notes":"Өдрийн тэмдэглэл"}</label>
+      </div><div className="reading-panel"><h2>{en?card.englishName:card.name}</h2>
+      <p className="mt-3 text-lg">{en?englishCardMeaning(card,isReversed):isReversed?card.reversedMeaning:card.meaning}</p>
+      <p className="panel-lead">{guidance.question}</p><div className="next-step"><div><h3>{en?"One step to try":"Туршаад үзэх нэг алхам"}</h3><p>{guidance.action}</p></div></div>
+      <label htmlFor="daily-notes" className="mt-6 block text-left text-sm font-semibold text-ink">{en?"Daily notes":"Өдрийн тэмдэглэл"}</label>
       <textarea id="daily-notes" value={draft.text} disabled={!draft.ready} onChange={event=>draft.setText(event.target.value)}
         rows={3} maxLength={2000} placeholder={en?"Today’s intentions and reflections...":"Өнөөдрийн зорилго, бодол..."}
-        className="mt-2 w-full rounded-lg border border-white/20 bg-white/5 p-3 text-sm text-white placeholder:text-slate-400"/>
-      <p className="mt-2 text-left text-xs text-slate-400">{en?"Your draft saves locally as you type. Saving another note today appends it without erasing earlier reflections.":"Draft нь төхөөрөмж дээр хадгалагдана. Нэг өдөр дахин хадгалахад өмнөх тэмдэглэлийг устгахгүй, үргэлжлүүлэн нэмнэ."}</p>
+        className="mt-2 w-full rounded-lg border border-rule bg-sheet p-3 text-sm text-ink placeholder:text-muted"/>
+      <p className="mt-2 text-left text-xs text-muted">{en?"Your draft saves locally as you type. Saving another note today appends it without erasing earlier reflections.":"Draft нь төхөөрөмж дээр хадгалагдана. Нэг өдөр дахин хадгалахад өмнөх тэмдэглэлийг устгахгүй, үргэлжлүүлэн нэмнэ."}</p>
       <button type="button" disabled={!draft.ready||saving} aria-busy={saving} onClick={save}
-        className="mt-4 rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60">
+        className="mt-4 rounded-full bg-pine px-6 py-3 text-sm font-semibold text-on-pine hover:bg-deep disabled:cursor-not-allowed disabled:opacity-60">
         {saving?(en?"Saving reflection...":"Тэмдэглэл хадгалж байна..."):
           (en?"Save daily reflection":"Өдрийн тэмдэглэл хадгалах")}
       </button>
-      {message&&<p role="status" className="mt-4 text-sm text-emerald-200">{message}</p>}
-      {draft.error&&<p role="alert" className="mt-3 text-sm text-red-300">{draft.error}</p>}
-      {error&&<p role="alert" className="mt-4 text-sm text-red-300">{error}</p>}
-      <p className="mt-5 text-xs text-slate-400">{en?"This card is selected deterministically by local date and does not predict future events.":"Өдрийн карт нь огнооноос детерминистик сонгогдох бөгөөд ирээдүйн баттай таамаглал биш."}</p>
-    </div>
+      {message&&<p role="status" className="mt-4 text-sm text-success">{message}</p>}
+      {draft.error&&<p role="alert" className="mt-3 text-sm text-danger">{draft.error}</p>}
+      {error&&<p role="alert" className="mt-4 text-sm text-danger">{error}</p>}
+      <p className="mt-5 text-xs text-muted">{en?"This card is selected deterministically by local date and does not predict future events.":"Өдрийн карт нь огнооноос детерминистик сонгогдох бөгөөд ирээдүйн баттай таамаглал биш."}</p>
+    </div></div>
   </section>;
 }

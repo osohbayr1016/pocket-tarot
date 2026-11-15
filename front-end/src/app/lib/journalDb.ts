@@ -162,9 +162,13 @@ export function combineDailyNotes(existing:string,incoming:string):string{
   return combined;
 }
 export async function saveDailyJournalReading(value:SavedReading):Promise<void>{
-  const record=sanitized(value);
-  if(!/^daily-\d{4}-\d{2}-\d{2}$/.test(record.id))
+  if(!/^daily-\d{4}-\d{2}-\d{2}$/.test(value.id))
     throw new Error("Invalid daily journal ID.");
+  return appendJournalReflection(value);
+}
+
+export async function appendJournalReflection(value:SavedReading):Promise<void>{
+  const record=sanitized(value);
   if(!withIndexedDb()){
     const existing=loadReadings().find(item=>item.id===record.id);
     addReading(existing?{...existing,notes:combineDailyNotes(existing.notes,record.notes)}:record);

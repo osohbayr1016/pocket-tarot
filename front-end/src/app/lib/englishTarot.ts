@@ -1,5 +1,5 @@
 import type {TarotCard} from "../data/tarotCards.ts";
-import {detectReadingTopic,type ReadingTopic} from "./readingIntelligence.ts";
+import {readingGuidance,type ReadingTopic} from "./readingIntelligence.ts";
 /** Independently authored concise English reflection texts for all 78 RWS cards. */
 const major:[string,string][]=[
 ["A fresh start invites curiosity and mindful courage.","A rushed leap or unclear plan deserves a second look."],
@@ -95,15 +95,11 @@ export function englishCardMeaning(card:TarotCard,reversed=false):string{
   const pair=card.arcana==="major"?major[card.id]:suits[card.suit||""]?.[card.id-22-["Wands","Cups","Swords","Pentacles"].indexOf(card.suit||"")*14];
   return pair?.[reversed?1:0]||"Reflect on the card's imagery, context and your own circumstances.";
 }
-const EN_REFLECTIONS:Record<ReadingTopic,string>={
-  general:"What can you verify in real life, and what is one constructive next step?",
-  love:"Which feeling or boundary deserves a respectful conversation? What can you check rather than assume?",
-  career:"Which skill or practical evidence would help your next work decision? Choose one measurable action.",
-  growth:"What small habit could you practice this week, and how will you notice progress?",
-};
 export function englishReading(cards:readonly {card:TarotCard;isReversed:boolean;position:number;positionName:string}[],question="",chosenTopic?:ReadingTopic):string{
-  const parts=["Tarot is a symbolic reflection practice, not a scientific prediction."];
-  if(question.trim())parts.push("Your question: "+question.trim().slice(0,300));
+  if(!cards.length)return "Choose a card to begin.";
+  const guide=readingGuidance(cards[cards.length-1],question,chosenTopic,"en");
+  const parts=[guide.lead];
+  if(question.trim())parts.push("Your question: "+question.trim().slice(0,500));
   for(const entry of cards){
     parts.push("Position "+entry.position+": "+entry.card.englishName+" — "+(entry.isReversed?"Reversed":"Upright")+
       "\n"+englishCardMeaning(entry.card,entry.isReversed));
@@ -113,7 +109,6 @@ export function englishReading(cards:readonly {card:TarotCard;isReversed:boolean
     parts.push("Across the cards: compare how "+(suitsPresent.length?suitsPresent.join(", "):"the Major Arcana")+
       " relate to your question. Look for tensions and shared themes before deciding what to do.");
   }
-  const topic=chosenTopic??detectReadingTopic(question);
-  parts.push("Reflection: "+EN_REFLECTIONS[topic]);
+  parts.push("Reflection: "+guide.question,"One step to try\n"+guide.action,"Tarot is a symbolic reflection practice.");
   return parts.join("\n\n");
 }

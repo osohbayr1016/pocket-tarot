@@ -15,7 +15,7 @@ function coords(angle:number,radius:number){
 }
 function ChartWheel({chart,en}:{chart:NatalChart;en:boolean}){
   return <svg viewBox="0 0 420 420" role="img" aria-label={en?"Natal wheel with 12 signs and 10 planetary positions":"12 ордын дугуй график ба 10 гарагийн байрлал"}
-    className="mx-auto aspect-square w-full max-w-lg text-amber-200">
+    className="mx-auto aspect-square w-full max-w-lg text-pine">
     <circle cx="210" cy="210" r="184" fill="#151127" stroke="#b9a179" strokeWidth="2"/>
     <circle cx="210" cy="210" r="145" fill="none" stroke="#b9a179" strokeOpacity=".65"/>
     <circle cx="210" cy="210" r="96" fill="none" stroke="#b9a179" strokeOpacity=".35"/>
@@ -76,19 +76,19 @@ export default function NatalChartPage(){
   };
   return <section className="mx-auto max-w-6xl px-3 pb-20">
     <header className="mx-auto mb-9 max-w-2xl text-center">
-      <p className="text-xs uppercase tracking-[0.3em] text-amber-300">Astronomical natal chart • Local calculation</p>
-      <h1 className="mt-3 font-serif text-4xl text-amber-50">{en?"Natal chart":"Төрсөн үеийн тэнгэрийн зураг"}</h1>
-      <p className="mt-4 text-sm leading-relaxed text-slate-300">
+      <p className="text-xs uppercase tracking-[0.3em] text-pine">Astronomical natal chart • Local calculation</p>
+      <h1 className="mt-3 font-serif text-4xl text-ink">{en?"Natal chart":"Төрсөн үеийн тэнгэрийн зураг"}</h1>
+      <p className="mt-4 text-sm leading-relaxed text-muted">
         {en?"Calculate the Sun, Moon, eight planets, ascendant, 12 Whole Sign houses and angular aspects entirely offline. Astronomical positions do not validate astrology's predictive claims.":
         "Нар, Сар, 8 гараг, ascendant, 12 Whole Sign house, гаригуудын өнцгийг офлайн тооцоолно. Astronomical calculation нь зурхайн тайлбарын үнэн зөвийг батлахгүй."}
       </p>
     </header>
     <div className="grid gap-8 lg:grid-cols-[360px_1fr]">
-      <div className="h-fit rounded-2xl border border-amber-300/20 bg-[#211a34] p-6">
-        <h2 className="mb-5 font-serif text-xl text-amber-100">{en?"Birth details":"Төрсөн мэдээлэл"}</h2>
+      <div className="h-fit rounded-2xl border border-rule bg-sheet p-6">
+        <h2 className="mb-5 font-serif text-xl text-ink">{en?"Birth details":"Төрсөн мэдээлэл"}</h2>
         <div className="space-y-4">
           <div>
-            <label htmlFor="natal-city" className="mb-2 block text-sm text-amber-100">
+            <label htmlFor="natal-city" className="mb-2 block text-sm text-ink">
               {(locale==="en"?"Birth city / time zone":"Төрсөн хот / цагийн бүс")}
             </label>
             <select id="natal-city" value={city} onChange={event=>{
@@ -96,13 +96,13 @@ export default function NatalChartPage(){
               setCity(id);setChart(null);
               const chosen=OFFLINE_CITIES.find(place=>place.id===id);
               if(chosen){setLat(String(chosen.latitude));setLon(String(chosen.longitude));setOffset("");}
-            }} className="w-full rounded-lg border border-white/20 bg-[#100e1e] p-3 text-sm text-white">
+            }} className="w-full rounded-lg border border-rule bg-paper p-3 text-sm text-ink">
               <option value="manual">{en?"Other city — enter UTC offset and coordinates":"Өөр хот — UTC offset, координатаа гараар оруулах"}</option>
               {OFFLINE_CITIES.map(place=>(
                 <option key={place.id} value={place.id}>{en?place.timeZone.replace(/_/g," "):place.label}</option>
               ))}
             </select>
-            {cityPreset&&<p className="mt-2 text-xs leading-5 text-slate-300">
+            {cityPreset&&<p className="mt-2 text-xs leading-5 text-muted">
               {cityPreset.timeZone} · {en?"The IANA time-zone database is used to resolve historic DST offsets. Verify the place and recorded birth time.":
               "Төрсөн огнооны DST болон түүхэн цагийн бүсийг төхөөрөмжийн IANA мэдээллээс тооцоолно. Төрсөн газраа, тухайн үеийн цагийг нягтлаарай."}
             </p>}
@@ -114,70 +114,70 @@ export default function NatalChartPage(){
             {name:en?"Latitude":"Өргөрөг latitude",type:"number",value:lat,set:setLat,id:"natal-lat"},
             {name:en?"Longitude":"Уртраг longitude",type:"number",value:lon,set:setLon,id:"natal-lon"},
           ].filter(field=>city==="manual"||field.id!=="natal-offset").map(field=><div key={field.id}>
-            <label htmlFor={field.id} className="mb-2 block text-sm text-amber-100">{field.name}</label>
+            <label htmlFor={field.id} className="mb-2 block text-sm text-ink">{field.name}</label>
             <input id={field.id} type={field.type} value={field.value} onChange={e=>field.set(e.target.value)}
               step={field.id==="natal-offset"?"0.25":field.type==="number"?"any":undefined}
-              className="w-full rounded-lg border border-white/20 bg-[#100e1e] p-3 text-sm text-white focus:border-amber-300 focus:outline-none"/>
+              className="w-full rounded-lg border border-rule bg-paper p-3 text-sm text-ink focus:border-pine focus:outline-none"/>
           </div>)}
         </div>
-        <p className="mt-5 text-xs leading-6 text-slate-400">
+        <p className="mt-5 text-xs leading-6 text-muted">
           {en?"City presets use approximate central coordinates and historic IANA time zones. For manual locations, enter the offset at the actual birth date (including DST). Uncertain birth time or coordinates can change the chart.":
           "Хот сонговол координатын ойролцоо төв цэг, IANA timezone ашиглана. Хот сонгоогүй бол UTC offset нь төрсөн үеийн DST өөрчлөлтийг тусгасан байх ёстой. Хуучин/тодорхойгүй төрсөн цаг, хотын захын бодит координат chart-д нөлөөлж болохыг анхаараарай."}
         </p>
         <button type="button" onClick={calculate}
-          className="mt-5 w-full rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-[#171127] hover:bg-amber-200">
+          className="mt-5 w-full rounded-full bg-pine px-6 py-3 text-sm font-semibold text-on-pine hover:bg-deep">
           {(locale==="en"?"Calculate birth chart":"Тэнгэрийн зураг тооцоолох")}
         </button>
-        {error&&<p role="alert" className="mt-4 text-sm text-red-300">{error}</p>}
+        {error&&<p role="alert" className="mt-4 text-sm text-danger">{error}</p>}
       </div>
-      <div className="min-w-0 rounded-2xl border border-amber-300/20 bg-[#211a34] p-5 sm:p-8">
+      <div className="min-w-0 rounded-2xl border border-rule bg-sheet p-5 sm:p-8">
         {!chart?(
           <div className="flex min-h-96 flex-col items-center justify-center text-center">
-            <div className="mb-5 text-6xl text-amber-300" aria-hidden="true">✦</div>
-            <p className="font-serif text-2xl text-amber-100">{en?"Your birth-time sky":"Төрсөн үеийн тэнгэрийн байрлал"}</p>
-            <p className="mt-3 max-w-sm text-sm leading-6 text-slate-300">
+            <div className="mb-5 text-6xl text-pine" aria-hidden="true">✦</div>
+            <p className="font-serif text-2xl text-ink">{en?"Your birth-time sky":"Төрсөн үеийн тэнгэрийн байрлал"}</p>
+            <p className="mt-3 max-w-sm text-sm leading-6 text-muted">
               {en?"Enter your birth information to calculate planetary positions locally. No server or external API is required.":
               "Мэдээллээ оруулбал гарагуудын тооцоолсон байрлал энд харагдана. Сервер, API ашиглахгүй."}
             </p>
           </div>
         ):(
           <div>
-            <p className="text-center text-xs text-slate-400">UTC: {chart.utc}</p>
+            <p className="text-center text-xs text-muted">UTC: {chart.utc}</p>
             <ChartWheel chart={chart} en={en}/>
-            <p className="mt-4 text-center text-sm text-amber-100">
+            <p className="mt-4 text-center text-sm text-ink">
               Ascendant: {en?englishAstroSign(chart.ascendantSign):chart.ascendantSign} · {en?"Moon phase angle ":"Сарны фазын өнцөг "}{chart.moonPhase.toFixed(1)}°
             </p>
-            <h2 className="mt-9 font-serif text-2xl text-amber-100">{en?"Planetary positions":"Гарагуудын байрлал"}</h2>
-            <div className="mt-4 overflow-x-auto rounded-xl border border-white/10">
+            <h2 className="mt-9 font-serif text-2xl text-ink">{en?"Planetary positions":"Гарагуудын байрлал"}</h2>
+            <div className="mt-4 overflow-x-auto rounded-xl border border-rule">
               <table className="w-full min-w-96 text-left text-sm">
-                <thead className="bg-white/5 text-amber-100"><tr>
+                <thead className="bg-sheet text-ink"><tr>
                   <th className="p-3">{en?"Celestial body":"Тэнгэрийн биет"}</th><th className="p-3">{en?"Zodiac sign":"Орд"}</th><th className="p-3">{en?"Degrees":"Градус"}</th><th className="p-3">House</th>
                 </tr></thead>
                 <tbody>
-                  {chart.bodies.map(body=><tr key={body.name} className="border-t border-white/10">
+                  {chart.bodies.map(body=><tr key={body.name} className="border-t border-rule">
                     <td className="p-3">{en?englishAstroBody(body.name):body.name}</td><td className="p-3">{en?englishAstroSign(body.sign):body.sign}</td>
                     <td className="p-3">{body.signDegree.toFixed(2)}°</td><td className="p-3">{body.house}</td>
                   </tr>)}
                 </tbody>
               </table>
             </div>
-            <h2 className="mt-9 font-serif text-2xl text-amber-100">{en?"Planetary aspects":"Гарагийн аспект"}</h2>
-            {chart.aspects.length===0?<p className="mt-3 text-sm text-slate-300">{en?"No qualifying aspects found.":"Тохирох өнцөг илрээгүй."}</p>:
-              <ul className="mt-4 grid gap-2 text-sm text-slate-200 sm:grid-cols-2">
-                {chart.aspects.slice(0,16).map((a,index)=><li key={index} className="rounded-lg bg-white/5 p-3">
+            <h2 className="mt-9 font-serif text-2xl text-ink">{en?"Planetary aspects":"Гарагийн аспект"}</h2>
+            {chart.aspects.length===0?<p className="mt-3 text-sm text-muted">{en?"No qualifying aspects found.":"Тохирох өнцөг илрээгүй."}</p>:
+              <ul className="mt-4 grid gap-2 text-sm text-ink sm:grid-cols-2">
+                {chart.aspects.slice(0,16).map((a,index)=><li key={index} className="rounded-lg bg-sheet p-3">
                   {en?englishAstroBody(a.a):a.a} – {en?englishAstroBody(a.b):a.b}: {en?englishAstroAspect(a.type):a.type} ({a.separation.toFixed(1)}°, orb {a.orb.toFixed(1)}°)
                 </li>)}
               </ul>}
-            <h2 className="mt-9 font-serif text-2xl text-amber-100">{en?"Whole Sign Houses":"Whole Sign Houses"}</h2>
+            <h2 className="mt-9 font-serif text-2xl text-ink">{en?"Whole Sign Houses":"Whole Sign Houses"}</h2>
             <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-              {chart.houseSigns.map((name,i)=><div key={i} className="rounded-lg bg-white/5 p-3 text-center text-sm text-slate-100">
-                <span className="block text-xs text-amber-300">{i+1}{en?" house":"-р house"}</span>{en?englishAstroSign(name):name}
+              {chart.houseSigns.map((name,i)=><div key={i} className="rounded-lg bg-sheet p-3 text-center text-sm text-ink">
+                <span className="block text-xs text-pine">{i+1}{en?" house":"-р house"}</span>{en?englishAstroSign(name):name}
               </div>)}
             </div>
             <TransitComparison natal={chart}/>
           </div>
         )}
-        <p className="mt-8 text-xs leading-6 text-slate-400">
+        <p className="mt-8 text-xs leading-6 text-muted">
           {en?"Tropical zodiac / geocentric ecliptic coordinates / Whole Sign houses. Birth time, coordinates and historic UTC offset affect results. Uses Astronomy Engine 2.1.19 (MIT). Not Placidus, sidereal astrology or a scientifically reliable prediction.":
           "Tropical zodiac / geocentric true ecliptic of date / Whole Sign houses. Нарийн цаг, координат болон UTC offset орд, ascendant, house-д нөлөөлнө. Astronomy Engine 2.1.19 (MIT) ашигладаг. Энэ нь Placidus house, sidereal zodiac, эсвэл ирээдүйн баттай зөгнөл биш."}
         </p>

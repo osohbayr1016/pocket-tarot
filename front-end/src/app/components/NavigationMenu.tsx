@@ -1,67 +1,48 @@
 "use client";
-import {useState} from "react";
+import type {MouseEvent, ReactNode} from "react";
 import {useLanguage} from "../lib/LanguageProvider";
-export type Section = "reading"|"single"|"library"|"learn"|"horoscope"|"natal"|"moon"|"daily"|"daily-card"|"dream"|"guidance"|"history"|"offline"|"settings";
-export const NAV_GROUPS: readonly {id:string;label:string;views:readonly {id:Section;label:string}[]}[]=[
-  {id:"tarot",label:"Таро",views:[
-    {id:"reading",label:"Таро дэлгэмэл"},{id:"single",label:"Нэг карт"},
-    {id:"library",label:"78 карт"},{id:"learn",label:"Таро сурах"}
-  ]},
-  {id:"astro",label:"Зурхай",views:[
-    {id:"horoscope",label:"Орд"},{id:"natal",label:"Төрсөн үеийн тэнгэр"},{id:"moon",label:"Сарны календарь"}
-  ]},
-  {id:"daily",label:"Өдөр тутам",views:[
-    {id:"daily-card",label:"Өдрийн карт"},{id:"daily",label:"Өдрийн санаа"},
-    {id:"dream",label:"Зүүд"},{id:"guidance",label:"Удирдамж"}
-  ]},
-  {id:"journal",label:"Тэмдэглэл",views:[{id:"history",label:"Миний түүх"}]},
-  {id:"settings",label:"Офлайн",views:[{id:"offline",label:"Offline карт"},{id:"settings",label:"Хувийн тохиргоо"}]}
+import {Icon, type IconName} from "./InterfaceIcon";
+
+export type Section = "reading"|"single"|"library"|"learn"|"horoscope"|"natal"|"moon"|"daily"|"daily-card"|"dream"|"guidance"|"history"|"offline"|"settings"|"guide";
+const groups: {icon:IconName;label:string;views:{id:Section;label:string}[]}[]=[
+  {icon:"cards",label:"Таро",views:[{id:"reading",label:"Уншлага"},{id:"single",label:"Нэг карт"},{id:"library",label:"Картын сан"},{id:"learn",label:"Таро сурах"}]},
+  {icon:"orbit",label:"Зурхай",views:[{id:"horoscope",label:"Орд"},{id:"natal",label:"Төрсөн үеийн тэнгэр"},{id:"moon",label:"Сарны календарь"}]},
+  {icon:"sun",label:"Өдөр тутам",views:[{id:"daily-card",label:"Өдрийн карт"},{id:"daily",label:"Өдрийн санаа"},{id:"dream",label:"Зүүдний тайлал"},{id:"guidance",label:"Амьдралын зөвлөгөө"}]},
+  {icon:"journal",label:"Тэмдэглэл",views:[{id:"history",label:"Хадгалсан уншлага"}]},
+  {icon:"offline",label:"Офлайн",views:[{id:"offline",label:"Карт татах"},{id:"settings",label:"Хувийн тохиргоо"}]},
 ];
 export function isSection(value:unknown):value is Section{
-  return typeof value==="string"&&NAV_GROUPS.some(g=>g.views.some(v=>v.id===value));
+  return value==="guide"||groups.some(group=>group.views.some(view=>view.id===value));
 }
-export function groupForSection(section:Section){
-  return NAV_GROUPS.find(group=>group.views.some(view=>view.id===section))||NAV_GROUPS[0];
+type NavProps={onNavigate:(next:Section)=>void};
+export function ViewLink({view,onNavigate,children,className,current}:NavProps & {view:Section;children:ReactNode;className?:string;current?:boolean}){
+  const click=(event:MouseEvent<HTMLAnchorElement>)=>{
+    if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+    event.preventDefault();
+    onNavigate(view);
+  };
+  return <a className={className} href={"/?view="+view} onClick={click} aria-current={current?"page":undefined}>{children}</a>;
 }
-export default function NavigationMenu({section,onNavigate}:{
-  section:Section;onNavigate:(next:Section)=>void;
-}){
-  // Switching a category only reveals its submenu. It does not create a
-  // phantom browser-history entry for the category's first view.
+export default function NavigationMenu({section,onNavigate}:NavProps & {section:Section}){
   const {locale,setLocale,t}=useLanguage();
-  // Category previews are tied to the section that opened them. A browser
-  // back/forward navigation must not leave an unrelated submenu visible.
-  const [previewGroup,setPreviewGroup]=useState<{id:string;section:Section}|null>(null);
-  const selectedGroup=groupForSection(section);
-  const active=NAV_GROUPS.find(group=>group.id===previewGroup?.id&&previewGroup.section===section)||selectedGroup;
-  return <nav aria-label={locale==="en"?"Main navigation":"Үндсэн цэс"} className="mx-auto max-w-7xl px-4 sm:px-8">
-    <div className="mb-2 flex justify-end">
-      <button type="button" onClick={()=>setLocale(locale==="mn"?"en":"mn")}
-        aria-label={locale==="mn"?"Switch language to English":"Монгол хэл рүү шилжих"}
-        className="min-h-11 rounded-full border border-amber-300/30 px-4 py-2 text-sm font-semibold text-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300">
-        {locale==="mn"?"EN":"MN"} · {locale==="mn"?"English":"Монгол"}
-      </button>
+  const group=groups.find(group=>group.views.some(view=>view.id===section));
+  const en=locale==="en";
+  return <header className="masthead">
+    <div className="masthead-row">
+      <ViewLink view="reading" onNavigate={onNavigate} className="wordmark"><img src="/icon.svg" alt="" width="36" height="36"/>Pocket Tarot</ViewLink>
+      <nav className="destinations" aria-label={en?"Main navigation":"Үндсэн цэс"}>
+        {groups.map(item=><ViewLink key={item.icon} view={item.views[0].id} onNavigate={onNavigate}
+          className={"destination"+(group===item?" active":"")} current={section===item.views[0].id}>
+          <Icon name={item.icon} size={19}/><span>{t(item.label)}</span>
+        </ViewLink>)}
+      </nav>
+      <div className="masthead-tools">
+        <ViewLink view="guide" onNavigate={onNavigate} current={section==="guide"} className="guide-link"><Icon name="book" size={17}/>{en?"Guide":"Заавар"}</ViewLink>
+        <button type="button" className="language" onClick={()=>setLocale(en?"mn":"en")} aria-label={en?"Монгол хэл рүү шилжих":"Switch language to English"}><Icon name="globe" size={15}/>{en?"MN":"EN"}</button>
+      </div>
     </div>
-    <div className="flex gap-2 overflow-x-auto overscroll-x-contain border-b border-white/10 pb-3 sm:flex-wrap sm:overflow-visible" aria-label={locale==="en"?"Main categories":"Үндсэн ангиллууд"}>
-      {NAV_GROUPS.map(group=>(
-        <button type="button" key={group.id}
-          aria-current={group.id===selectedGroup.id?"page":undefined}
-          aria-pressed={group.id===active.id} onClick={()=>setPreviewGroup({id:group.id,section})}
-          className={"min-h-11 shrink-0 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 "+
-            (group.id===active.id?"bg-amber-300 text-[#171127]":"border border-white/15 text-slate-200 hover:border-amber-300/50 hover:text-amber-200")}>
-          {t(group.label)}
-        </button>
-      ))}
-    </div>
-    <div className="flex gap-2 overflow-x-auto overscroll-x-contain py-3 sm:flex-wrap sm:overflow-visible" aria-label={locale==="en"?t(active.label)+" sections":active.label+" хэсгүүд"}>
-      {active.views.map(view=>(
-        <button type="button" key={view.id} aria-current={section===view.id?"page":undefined}
-          aria-pressed={section===view.id} onClick={()=>{setPreviewGroup(null);onNavigate(view.id);}}
-          className={"min-h-11 shrink-0 whitespace-nowrap rounded-xl border px-4 py-2.5 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 "+
-            (section===view.id?"border-amber-300/60 bg-amber-300/10 text-amber-100":"border-white/10 text-slate-200 hover:border-amber-300/50 hover:text-amber-100")}>
-          {t(view.label)}
-        </button>
-      ))}
-    </div>
-  </nav>;
+    {group&&<div className="subnav-bar"><nav className="subnav" aria-label={en?"Section navigation":"Хэсгийн цэс"}>
+      {group.views.map(view=><ViewLink key={view.id} view={view.id} onNavigate={onNavigate} current={section===view.id}>{t(view.label)}</ViewLink>)}
+    </nav></div>}
+  </header>;
 }

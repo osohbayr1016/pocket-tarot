@@ -5,11 +5,11 @@ export type Locale="mn"|"en";
 const KEY="pocket-tarot-locale-v1";
 const EN:Record<string,string>={
   "Таро":"Tarot","Зурхай":"Astrology","Өдөр тутам":"Daily","Тэмдэглэл":"Journal","Офлайн":"Offline",
-  "Таро дэлгэмэл":"Tarot spreads","Нэг карт":"Single card","78 карт":"Card library",
+  "Уншлага":"Reading table","Нэг карт":"Single card","Картын сан":"Card library",
   "Таро сурах":"Learn Tarot","Орд":"Zodiac","Төрсөн үеийн тэнгэр":"Natal chart",
   "Сарны календарь":"Moon calendar","Өдрийн карт":"Daily card","Өдрийн санаа":"Daily reflection",
-  "Зүүд":"Dream symbols","Удирдамж":"Life guidance","Миний түүх":"My journal",
-  "Offline карт":"Offline deck","Хувийн тохиргоо":"Preferences",
+  "Зүүдний тайлал":"Dream symbols","Амьдралын зөвлөгөө":"Life guidance","Хадгалсан уншлага":"My journal",
+  "Карт татах":"Offline deck","Хувийн тохиргоо":"Preferences",
   "Уламжлалт таро":"Traditional Tarot","Шинэ эхлэл":"New beginning",
   "Асуултын чиглэл":"Question topic","Таны уншилтын тайлал":"Your reading",
   "Хувийн тэмдэглэл":"Private notes","Төхөөрөмж дээр хадгалах":"Save to this device",

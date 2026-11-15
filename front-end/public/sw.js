@@ -5,7 +5,7 @@
 const VERSION = "pocket-tarot-v3";
 const SHELL = VERSION + "-shell";
 const ASSETS = "pocket-tarot-art-v1";
-const SHELL_ASSETS = ["/", "/privacy", "/terms", "/manifest.webmanifest", "/tarot/card-placeholder.svg", "/icon.svg"];
+const SHELL_ASSETS = ["/", "/privacy", "/terms", "/manifest.webmanifest", "/tarot/card-placeholder.svg", "/tarot/table-back.svg", "/icon.svg", "/tarot/rws/17_Star.webp", "/tarot/rws/18_Moon.webp", "/tarot/rws/19_Sun.webp"];
 const SHELL_PAGES = new Set(["/", "/privacy", "/terms"]);
 // Filled by scripts/manifest-sw.mjs after the production build.
 const BUILD_ASSETS = [];
@@ -76,7 +76,7 @@ self.addEventListener("fetch",event=>{
     })());
     return;
   }
-  if(url.pathname.startsWith("/_next/static/")){
+  if(url.pathname.startsWith("/_next/static/") || SHELL_ASSETS.includes(url.pathname)){
     event.respondWith((async()=>{
       const cache=await caches.open(SHELL);
       const cached=await cache.match(req);

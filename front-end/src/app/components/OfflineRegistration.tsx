@@ -35,10 +35,10 @@ export default function OfflineRegistration() {
   },[]);
   if(!updateReady)return null;
   return <div role="status" aria-live="polite"
-    className="fixed inset-x-3 bottom-3 z-50 mx-auto flex max-w-lg flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300/50 bg-[#171127] p-4 text-sm text-amber-50 shadow-2xl">
+    className="fixed inset-x-3 bottom-3 z-50 mx-auto flex max-w-lg flex-wrap items-center justify-between gap-3 rounded-2xl border border-pine/50 bg-sheet p-4 text-sm text-ink shadow-2xl">
     <span>Pocket Tarot шинэчлэгдлээ. Шинэ хувилбарыг нээх үү?</span>
     <button type="button" onClick={()=>window.location.reload()}
-      className="rounded-full bg-amber-300 px-4 py-2 font-semibold text-[#171127] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
+      className="rounded-full bg-pine px-4 py-2 font-semibold text-on-pine focus-visible:outline focus-visible:outline-2 focus-visible:outline-pine">
       Шинэчлэх
     </button>
   </div>;

@@ -24,26 +24,26 @@ export default function LifeGuidance() {
     {id:"questions",label:en?"Question you are asking":"Өөрөөсөө асууж буй асуулт",value:questions,update:setQuestions,required:false},
   ];
   return <section className="mx-auto max-w-2xl px-3">
-    <header className="mb-9 text-center"><p className="text-xs uppercase tracking-[0.25em] text-amber-300">Personal reflection</p>
-      <h2 className="mt-3 font-serif text-4xl text-amber-50">{en?"Life reflection guide":"Амьдралын удирдамж"}</h2>
-      <p className="mt-3 text-sm text-slate-300">{en?"Organize your goals and obstacles locally, without AI prediction.":"AI таамаглал биш. Өөрийн зорилго, саадыг цэгцлэх орон нутгийн туслах."}</p>
+    <header className="mb-9 text-center"><p className="text-xs uppercase tracking-[0.25em] text-pine">Personal reflection</p>
+      <h2 className="mt-3 font-serif text-4xl text-ink">{en?"Life reflection guide":"Амьдралын удирдамж"}</h2>
+      <p className="mt-3 text-sm text-muted">{en?"Organize your goals and obstacles locally, without AI prediction.":"AI таамаглал биш. Өөрийн зорилго, саадыг цэгцлэх орон нутгийн туслах."}</p>
     </header>
-    <div className="space-y-5 rounded-2xl border border-amber-300/20 bg-[#201b33] p-6 sm:p-9">
-      <div><label htmlFor="life-birth" className="mb-2 block text-sm font-medium text-amber-100">{en?"Birth date (required)":"Төрсөн огноо (заавал)"}</label>
+    <div className="space-y-5 rounded-2xl border border-rule bg-sheet p-6 sm:p-9">
+      <div><label htmlFor="life-birth" className="mb-2 block text-sm font-medium text-ink">{en?"Birth date (required)":"Төрсөн огноо (заавал)"}</label>
         <input id="life-birth" type="date" required value={birthDate} onChange={(event)=>setBirthDate(event.target.value)}
-          className="w-full rounded-lg border border-white/20 bg-[#121122] p-3 text-white"/></div>
+          className="w-full rounded-lg border border-rule bg-paper p-3 text-ink"/></div>
       {fields.map((field)=><div key={field.id}>
-        <label htmlFor={field.id} className="mb-2 block text-sm font-medium text-amber-100">{field.label}{field.required?" *":""}</label>
+        <label htmlFor={field.id} className="mb-2 block text-sm font-medium text-ink">{field.label}{field.required?" *":""}</label>
         <textarea id={field.id} required={field.required} value={field.value} maxLength={500}
           onChange={(event)=>field.update(event.target.value)} rows={2}
-          className="w-full resize-y rounded-lg border border-white/20 bg-white/5 p-3 text-white focus:border-amber-300 focus:outline-none"/>
+          className="w-full resize-y rounded-lg border border-rule bg-sheet p-3 text-ink focus:border-pine focus:outline-none"/>
       </div>)}
-      <button type="button" onClick={calculate} className="w-full rounded-full bg-amber-300 px-6 py-3 font-semibold text-[#171127] hover:bg-amber-200">
+      <button type="button" onClick={calculate} className="w-full rounded-full bg-pine px-6 py-3 font-semibold text-on-pine hover:bg-deep">
         {en?"Create reflection steps":"Эргэцүүлэх алхам гаргах"}
       </button>
-      {error&&<p role="alert" className="text-sm text-red-300">{error}</p>}
-      {result&&<pre className="whitespace-pre-wrap rounded-xl bg-white/5 p-5 font-sans text-sm leading-7 text-slate-100">{result}</pre>}
-      <p className="text-xs text-slate-400">{en?"Your answers stay on this page and are never sent to a server.":"Оруулсан мэдээлэл сервер рүү илгээгдэхгүй, зөвхөн энэ хуудсан дээр боловсруулагдана."}</p>
+      {error&&<p role="alert" className="text-sm text-danger">{error}</p>}
+      {result&&<pre className="whitespace-pre-wrap rounded-xl bg-sheet p-5 font-sans text-sm leading-7 text-ink">{result}</pre>}
+      <p className="text-xs text-muted">{en?"Your answers stay on this page and are never sent to a server.":"Оруулсан мэдээлэл сервер рүү илгээгдэхгүй, зөвхөн энэ хуудсан дээр боловсруулагдана."}</p>
     </div>
   </section>;
 }

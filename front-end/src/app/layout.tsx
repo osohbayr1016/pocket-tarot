@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   applicationName:"Pocket Tarot",
   openGraph:{type:"website",siteName:"Pocket Tarot",title:"Pocket Tarot — Reflect with 78 Tarot cards",description:"Private offline Tarot readings, learning, journaling and symbolic astronomy.",locale:"mn_MN"},
   twitter:{card:"summary",title:"Pocket Tarot",description:"Private offline Tarot readings and reflective journaling."},
-  description:"Tarot-ын 78 карт, уламжлалт дэлгэмэл, ордын бэлгэдэл ба өөрийгөө эргэцүүлэх офлайн тооцоолол. AI/API шаардлагагүй.",
+  description:"Асуултаа бодоод карт сонгоорой. 78 картын зураг, монгол тайлал, хувийн тэмдэглэл.",
   robots: {index:true,follow:true},
   manifest:"/manifest.webmanifest",
   icons: {icon:"/icon.svg",apple:"/icon.svg"},
