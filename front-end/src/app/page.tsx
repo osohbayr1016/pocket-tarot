@@ -70,19 +70,18 @@ export default function Home() {
   )),[arcana,query,suit,element]);
 
   const navigate = (next: Section) => {
+    if(section===next&&!libraryCard)return;
     const current=new URL(window.location.href);
-    if(section!==next||libraryCard){
-      current.searchParams.delete("card");
-      current.hash="";
-      current.searchParams.set("view",next);
-      window.history.pushState({view:next},"",current.pathname+current.search+current.hash);
-    }
+    current.searchParams.delete("card");
+    current.hash="";
+    current.searchParams.set("view",next);
+    window.history.pushState({view:next},"",current.pathname+current.search);
     setSection(next);
     setLibraryCard(null);
-    window.requestAnimationFrame(()=>{
-      document.getElementById("main-content")?.focus({preventScroll:true});
-      window.scrollTo({top:0,behavior:"instant"});
-    });
+    // The main element persists across views. Finish moving focus in this
+    // interaction so a later frame cannot take it back from a text field.
+    document.getElementById("main-content")?.focus({preventScroll:true});
+    window.scrollTo({top:0,behavior:"instant"});
   };
   function openCard(card:TarotCard,replace=false){
     const url=new URL(window.location.href);

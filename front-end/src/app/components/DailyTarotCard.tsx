@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { tarotCards } from "../data/tarotCards";
 import { interpretReading } from "../lib/offlineEngine";
 import {saveDailyJournalReading} from "../lib/journalDb";
@@ -57,15 +57,20 @@ export default function DailyTarotCard(){
   const drawn={card,position:1,isReversed,positionName:"Өдрийн бэлгэдэл",positionDescription:"Өдөрт нэг удаа эргэцүүлэх сэдэв"};
   const guidance=readingGuidance(drawn,"",undefined,locale);
   const reading=(en?englishReading:interpretReading)([drawn]);
-  const save=async()=>{
+  const save=async(event:FormEvent<HTMLFormElement>)=>{
+    event.preventDefault();
     // The ref flips before React paints the disabled state, so two clicks in
     // the same event loop cannot append an identical daily note twice.
     if(!date||!draft.ready||savingRef.current)return;
+    // Capture the value shown by the browser, including a just-committed
+    // composition or autofill, before the first render or asynchronous write.
+    const submittedNotes=new FormData(event.currentTarget).get("notes");
+    if(typeof submittedNotes!=="string")return;
     savingRef.current=true;setSaving(true);setError("");setMessage("");
     try{
       await saveDailyJournalReading({
         id:"daily-"+date,date:new Date().toISOString(),spread:"Өдрийн карт",
-        question:"Өнөөдөр юунд анхаарах вэ?",reading,notes:draft.text.slice(0,2000),
+        question:"Өнөөдөр юунд анхаарах вэ?",reading,notes:submittedNotes.slice(0,2000),
         cards:[{id:card.id,reversed:isReversed,position:1}],
       });
       draft.clear();
@@ -88,16 +93,16 @@ export default function DailyTarotCard(){
       </div><div className="reading-panel"><h2>{en?card.englishName:card.name}</h2>
       <p className="mt-3 text-lg">{en?englishCardMeaning(card,isReversed):isReversed?card.reversedMeaning:card.meaning}</p>
       <p className="panel-lead">{guidance.question}</p><div className="next-step"><div><h3>{en?"One step to try":"Туршаад үзэх нэг алхам"}</h3><p>{guidance.action}</p></div></div>
-      <label htmlFor="daily-notes" className="mt-6 block text-left text-sm font-semibold text-ink">{en?"Daily notes":"Өдрийн тэмдэглэл"}</label>
-      <textarea id="daily-notes" value={draft.text} disabled={!draft.ready} onChange={event=>draft.setText(event.target.value)}
+      <form onSubmit={save}><label htmlFor="daily-notes" className="mt-6 block text-left text-sm font-semibold text-ink">{en?"Daily notes":"Өдрийн тэмдэглэл"}</label>
+      <textarea id="daily-notes" name="notes" value={draft.text} disabled={!draft.ready} readOnly={saving} onChange={event=>draft.setText(event.target.value)}
         rows={3} maxLength={2000} placeholder={en?"Today’s intentions and reflections...":"Өнөөдрийн зорилго, бодол..."}
         className="mt-2 w-full rounded-lg border border-rule bg-sheet p-3 text-sm text-ink placeholder:text-muted"/>
       <p className="mt-2 text-left text-xs text-muted">{en?"Your draft saves locally as you type. Saving another note today appends it without erasing earlier reflections.":"Draft нь төхөөрөмж дээр хадгалагдана. Нэг өдөр дахин хадгалахад өмнөх тэмдэглэлийг устгахгүй, үргэлжлүүлэн нэмнэ."}</p>
-      <button type="button" disabled={!draft.ready||saving} aria-busy={saving} onClick={save}
+      <button type="submit" disabled={!draft.ready||saving} aria-busy={saving}
         className="mt-4 rounded-full bg-pine px-6 py-3 text-sm font-semibold text-on-pine hover:bg-deep disabled:cursor-not-allowed disabled:opacity-60">
         {saving?(en?"Saving reflection...":"Тэмдэглэл хадгалж байна..."):
           (en?"Save daily reflection":"Өдрийн тэмдэглэл хадгалах")}
-      </button>
+      </button></form>
       {message&&<p role="status" className="mt-4 text-sm text-success">{message}</p>}
       {draft.error&&<p role="alert" className="mt-3 text-sm text-danger">{draft.error}</p>}
       {error&&<p role="alert" className="mt-4 text-sm text-danger">{error}</p>}

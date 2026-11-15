@@ -904,3 +904,21 @@ test("the deck splits into two packets and every dealt card has a usable center"
     }))).toBe(true);
   }
 });
+
+test("daily save captures the visible form value even when the last browser edit and submit coincide",async({page})=>{
+  await page.goto("/?view=daily-card");
+  const field=page.locator("#daily-notes");
+  await expect(field).toBeEnabled();
+  await field.evaluate(input=>{
+    // A native editor can commit composition or autofill immediately before submit.
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,"value").set.call(input,"Сүүлийн бичсэн үг");
+    input.form.requestSubmit();
+  });
+  await expect(page.getByRole("status").filter({hasText:/Өдрийн тэмдэглэл хадгалагдлаа/})).toBeVisible();
+  await field.fill("Дараагийн тэмдэглэл");
+  await page.getByRole("button",{name:"Өдрийн тэмдэглэл хадгалах"}).click();
+  await expect(field).toHaveValue("");
+  await openView(page,"Хадгалсан уншлага");
+  await page.getByRole("button",{name:"Дэлгэрэнгүй",exact:true}).click();
+  await expect(page.getByRole("textbox",{name:"Тэмдэглэл засах"})).toHaveValue("Сүүлийн бичсэн үг\n\nДараагийн тэмдэглэл");
+});
