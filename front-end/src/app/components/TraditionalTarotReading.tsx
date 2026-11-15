@@ -60,7 +60,7 @@ export default function TraditionalTarotReading({single=false}:{single?:boolean}
   const finished=count>0&&count===cards.length;
   const activeIndex=Math.min(selectedIndex??count-1,count-1);
   const active=cards[activeIndex];
-  const phase=shuffling?"shuffle":!cards.length?"idle":count>0&&!showChoices||finished?"read":"pick";
+  const phase=shuffling?"shuffle":!cards.length?"idle":(count>0&&!showChoices)||finished?"read":"pick";
   const notes=useLocalDraft(single?(active?"single-"+active.card.id+"-"+(active.isReversed?"reversed":"upright"):""):"traditional-notes");
   const selectedTopic=topic==="auto"?undefined:topic;
   const guidance=active?readingGuidance(active,question,selectedTopic,locale):null;
